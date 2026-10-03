@@ -158,7 +158,7 @@ button.primary {
 }
 #modal-backdrop.hidden { display: none; }
 .hidden { display: none !important; }
-#invite-backdrop, #confirm-backdrop, #keys-backdrop, #detail-backdrop {
+#invite-backdrop, #confirm-backdrop, #keys-backdrop, #detail-backdrop, #reminder-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.4);
   display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
 }
@@ -835,7 +835,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 2:59 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 3:05 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
