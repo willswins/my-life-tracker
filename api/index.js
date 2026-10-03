@@ -103,6 +103,8 @@ button.primary {
 .itype-bug { background: #e5493a; }
 .card { cursor: pointer; }
 .card.dragging { opacity: 0.4; }
+.card.is-deleted { opacity: 0.65; }
+#trash-toggle.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
 .cards.dragover { outline: 2px dashed #93c5fd; outline-offset: -2px; border-radius: 10px; }
 .card h3 { margin: 0 0 0.35rem; font-size: 0.98rem; }
 .card .details { margin: 0 0 0.5rem; font-size: 0.85rem; color: #374151; white-space: pre-wrap; }
@@ -164,6 +166,7 @@ button.danger-btn { color: #b91c1c; }
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
+      <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
     <span id="user-email" title="Signed in">__USER_EMAIL__</span>
     <button id="add-card" class="primary">+ Add card</button>
@@ -259,7 +262,9 @@ button.danger-btn { color: #b91c1c; }
     </form>
     <div class="modal-actions">
       <button type="button" id="d-edit">Edit</button>
+      <button type="button" id="d-restore" class="hidden">Restore</button>
       <button type="button" id="d-delete" class="danger-btn">Delete</button>
+      <button type="button" id="d-purge" class="danger-btn hidden">Delete forever</button>
       <span class="spacer"></span>
       <button type="button" id="d-close" class="primary">Close</button>
     </div>
@@ -282,6 +287,7 @@ let filter = 'all';
 let searchText = '';
 let editingId = null;
 let detailId = null;
+let showDeleted = false;
 
 async function api(method, path, body) {
   const r = await fetch(path, {
@@ -297,9 +303,13 @@ async function api(method, path, body) {
   return r.status === 204 ? null : r.json();
 }
 
+async function loadCards() {
+  cards = await api('GET', '/api/cards' + (showDeleted ? '?deleted=only' : ''));
+}
+
 async function init() {
   try {
-    cards = await api('GET', '/api/cards');
+    await loadCards();
   } catch (e) {
     document.querySelector('#board').innerHTML =
       '<p style="color:#b91c1c">Could not load cards. Please refresh.</p>';
@@ -332,7 +342,7 @@ function render() {
     box.innerHTML = '';
     list.forEach((c) => box.appendChild(cardEl(c)));
   });
-  document.querySelectorAll('.filters button').forEach((b) =>
+  document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
     b.classList.toggle('active', b.dataset.filter === filter));
   document.querySelectorAll('.lane').forEach((laneEl) => {
     const box = laneEl.querySelector('.cards');
@@ -355,7 +365,7 @@ function render() {
 
 function cardEl(c) {
   const el = document.createElement('div');
-  el.className = \`card tag-\${c.tag} size-\${c.priority}\`;
+  el.className = \`card tag-\${c.tag} size-\${c.priority}\` + (showDeleted ? ' is-deleted' : '');
   el.draggable = true;
   el.addEventListener('dragstart', (e) => {
     e.dataTransfer.setData('text/plain', String(c.id));
@@ -366,6 +376,7 @@ function cardEl(c) {
   const idx = LANES.indexOf(c.lane);
   const leftBtn = idx > 0 ? \`<button data-act="left" title="Move to \${escHtml(LANE_LABELS[LANES[idx - 1]])}">\\u2190</button>\` : '';
   const rightBtn = idx < LANES.length - 1 ? \`<button data-act="right" title="Move to \${escHtml(LANE_LABELS[LANES[idx + 1]])}">\\u2192</button>\` : '';
+  const doneBtn = c.lane !== 'done' ? \`<button data-act="done" title="Mark completed">\\u2713 Done</button>\` : '';
   const due = c.due_date
     ? \`<div class="meta">\${isOverdue(c) ? '<span class="overdue">Overdue: ' : 'Due: '}\${escHtml(c.due_date)}\${isOverdue(c) ? '</span>' : ''}\${c.owner ? ' \\u00b7 ' + escHtml(c.owner) : ''}</div>\`
     : (c.owner ? \`<div class="meta">\${escHtml(c.owner)}</div>\` : '');
@@ -373,11 +384,14 @@ function cardEl(c) {
   el.innerHTML =
     \`<div class="card-top"><span class="itype itype-\${it}" title="\${escHtml(ITYPE_LABELS[it] || it)}">\${ITYPE_GLYPH[it] || ''}</span>\` +
     \`<span class="pill tag-\${c.tag}">\${c.tag === 'work' ? 'Work' : 'Personal'}</span>\` +
-    \`<span class="pill size-\${c.priority}">\${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span></div>\` +
+    \`<span class="pill size-\${c.priority}">\${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>\` +
+    (showDeleted ? \`<span class="pill size-low">Deleted</span>\` : '') + \`</div>\` +
     \`<h3>\${escHtml(c.title)}</h3>\` +
     (c.details ? \`<p class="details">\${escHtml(c.details)}</p>\` : '') +
     due +
-    \`<div class="actions">\${leftBtn}\${rightBtn}<button data-act="edit">Edit</button><button data-act="del" class="danger">Delete</button></div>\`;
+    (showDeleted
+      ? \`<div class="actions"><button data-act="restore">Restore</button></div>\`
+      : \`<div class="actions">\${leftBtn}\${rightBtn}\${doneBtn}<button data-act="edit">Edit</button></div>\`);
   el.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', (e) => { e.stopPropagation(); act(c.id, b.dataset.act); });
   });
@@ -397,12 +411,14 @@ async function act(id, action) {
       }
     } else if (action === 'edit') {
       openModal(c);
-    } else if (action === 'del') {
-      if (confirm(\`Delete "\${c.title}"?\`)) {
-        await api('DELETE', '/api/cards?id=' + encodeURIComponent(id));
-        cards = cards.filter((x) => x.id !== id);
-        render();
-      }
+    } else if (action === 'done') {
+      const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(id), { lane: 'done' });
+      Object.assign(c, updated);
+      render();
+    } else if (action === 'restore') {
+      const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(id), { restore: true });
+      cards = cards.filter((x) => x.id !== id);
+      render();
     }
   } catch (e) {
     alert('Could not save that change. Please try again.');
@@ -461,8 +477,13 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
     alert('Could not save the card. Please try again.');
   }
 });
-document.querySelectorAll('.filters button').forEach((b) =>
+document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
   b.addEventListener('click', () => { filter = b.dataset.filter; render(); }));
+document.getElementById('trash-toggle').addEventListener('click', async (e) => {
+  showDeleted = !showDeleted;
+  e.target.classList.toggle('active', showDeleted);
+  try { await loadCards(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
+});
 document.getElementById('search').addEventListener('input', (e) => {
   searchText = e.target.value;
   render();
@@ -488,6 +509,11 @@ async function openDetail(id) {
   document.getElementById('d-title').textContent = c.title;
   document.getElementById('d-meta').innerHTML = metaLine(c);
   document.getElementById('d-details').textContent = c.details || '';
+  const isDel = !!c.deleted_at;
+  document.getElementById('d-edit').classList.toggle('hidden', isDel);
+  document.getElementById('d-delete').classList.toggle('hidden', isDel);
+  document.getElementById('d-restore').classList.toggle('hidden', !isDel);
+  document.getElementById('d-purge').classList.toggle('hidden', !isDel);
   document.getElementById('d-comments').innerHTML = '<p class="empty-note">Loading comments…</p>';
   document.getElementById('detail-backdrop').classList.remove('hidden');
   try {
@@ -530,6 +556,26 @@ document.getElementById('d-delete').addEventListener('click', async () => {
   if (!c || !confirm(\`Delete "\${c.title}"?\`)) return;
   try {
     await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id));
+    cards = cards.filter((x) => x.id !== c.id);
+    closeDetail();
+    render();
+  } catch (e) { alert('Could not delete the card. Please try again.'); }
+});
+document.getElementById('d-restore').addEventListener('click', async () => {
+  const c = cards.find((x) => x.id === detailId);
+  if (!c) return;
+  try {
+    await api('PATCH', '/api/cards?id=' + encodeURIComponent(c.id), { restore: true });
+    cards = cards.filter((x) => x.id !== c.id);
+    closeDetail();
+    render();
+  } catch (e) { alert('Could not restore the card. Please try again.'); }
+});
+document.getElementById('d-purge').addEventListener('click', async () => {
+  const c = cards.find((x) => x.id === detailId);
+  if (!c || !confirm(\`Permanently delete "\${c.title}"? This cannot be undone.\`)) return;
+  try {
+    await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id) + '&hard=true');
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();

@@ -15,6 +15,7 @@
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
+      <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
     <span id="user-email" title="Signed in">__USER_EMAIL__</span>
     <button id="add-card" class="primary">+ Add card</button>
@@ -110,7 +111,9 @@
     </form>
     <div class="modal-actions">
       <button type="button" id="d-edit">Edit</button>
+      <button type="button" id="d-restore" class="hidden">Restore</button>
       <button type="button" id="d-delete" class="danger-btn">Delete</button>
+      <button type="button" id="d-purge" class="danger-btn hidden">Delete forever</button>
       <span class="spacer"></span>
       <button type="button" id="d-close" class="primary">Close</button>
     </div>

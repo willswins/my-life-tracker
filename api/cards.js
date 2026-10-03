@@ -40,7 +40,9 @@ module.exports = async (req, res) => {
     const scope = `user_email=eq.${encodeURIComponent(email)}`;
 
     if (req.method === 'GET') {
-      const rows = await sb('GET', `/rest/v1/cards?${scope}&order=created_at.asc`);
+      const mode = url.searchParams.get('deleted');
+      const del = mode === 'only' ? 'deleted_at=not.is.null' : mode === 'all' ? '' : 'deleted_at=is.null';
+      const rows = await sb('GET', `/rest/v1/cards?${scope}${del ? '&' + del : ''}&order=created_at.asc`);
       return send(200, rows);
     }
     if (req.method === 'POST') {
@@ -58,12 +60,18 @@ module.exports = async (req, res) => {
       const body = await readBody(req);
       const row = clean(body);
       delete row.user_email;
+      if (body.restore === true) row.deleted_at = null;
       const updated = await sb('PATCH', `/rest/v1/cards?id=eq.${encodeURIComponent(id)}&${scope}`, row);
       if (!updated.length) return send(404, { ok: false });
       return send(200, updated[0]);
     }
     if (req.method === 'DELETE' && id) {
-      await sb('DELETE', `/rest/v1/cards?id=eq.${encodeURIComponent(id)}&${scope}`);
+      const q = `id=eq.${encodeURIComponent(id)}&${scope}`;
+      if (url.searchParams.get('hard') === 'true') {
+        await sb('DELETE', `/rest/v1/cards?${q}`);
+      } else {
+        await sb('PATCH', `/rest/v1/cards?${q}`, { deleted_at: new Date().toISOString() });
+      }
       res.writeHead(204, { 'Cache-Control': 'no-store' });
       res.end();
       return;

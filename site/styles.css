@@ -95,6 +95,8 @@ button.primary {
 .itype-bug { background: #e5493a; }
 .card { cursor: pointer; }
 .card.dragging { opacity: 0.4; }
+.card.is-deleted { opacity: 0.65; }
+#trash-toggle.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
 .cards.dragover { outline: 2px dashed #93c5fd; outline-offset: -2px; border-radius: 10px; }
 .card h3 { margin: 0 0 0.35rem; font-size: 0.98rem; }
 .card .details { margin: 0 0 0.5rem; font-size: 0.85rem; color: #374151; white-space: pre-wrap; }
