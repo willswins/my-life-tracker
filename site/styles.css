@@ -31,7 +31,6 @@ header {
 }
 .header-left { display: flex; align-items: center; gap: 0.6rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
-.header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .search-add { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 240px; }
 .search-add input[type="search"] { flex: 1; min-width: 0; width: auto; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
@@ -84,14 +83,16 @@ button.primary {
 .signout:hover { text-decoration: underline; }
 
 #board {
+  padding: 1rem 1.25rem 3rem;
+}
+#lanes {
   display: grid;
   grid-template-columns: repeat(4, minmax(260px, 1fr));
   gap: 1rem;
-  padding: 1rem 1.25rem 3rem;
   align-items: start;
 }
-@media (max-width: 1100px) { #board { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { #board { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { #lanes { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { #lanes { grid-template-columns: 1fr; } }
 
 .lane { background: var(--lane); border-radius: 12px; padding: 0.75rem; min-height: 200px; }
 .lane h2 { font-size: 0.95rem; margin: 0.25rem 0.25rem 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
@@ -214,9 +215,6 @@ pre#ingest-docs {
 }
 
 /* ---- Five-view extension: Tasks / Reminders / Journal / Links / Inbox ---- */
-
-/* Board-only header controls hide on the other views */
-body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 .view { padding: 1rem 1.25rem 3rem; max-width: 900px; }
 .view-head {
