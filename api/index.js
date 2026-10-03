@@ -279,6 +279,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .rem-detail { display: none; margin-top: 0.3rem; }
 .rem-row.expanded .rem-detail { display: block; }
 .rem-row.expanded .link-line2, .rem-row.expanded .link-line3 { display: none; }
+.rem-row .link-line3 {
+  white-space: normal;
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .rem-actions { display: flex; flex: none; }
 
 
@@ -827,7 +832,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 2:50 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 2:54 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
