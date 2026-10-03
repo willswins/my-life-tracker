@@ -461,6 +461,27 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .about-meta div { display: flex; gap: 16px; margin: 8px 0; }
 .about-meta dt { font-weight: 600; min-width: 90px; }
 .about-meta dd { margin: 0; color: var(--muted); }
+
+/* Journal list screen */
+.filter-pills { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+.filter-pill.active { background: #dbeafe; border-color: transparent; color: #1d4ed8; font-weight: 700; }
+#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 5rem; }
+.entry-card {
+  display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
+  width: 100%; cursor: pointer; font: inherit; color: inherit;
+}
+.entry-date { flex: 0 0 4.2rem; }
+.entry-date .d { font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
+.entry-date .w { font-size: 0.8rem; color: var(--muted); }
+.entry-preview { flex: 1; color: var(--muted); font-size: 0.92rem; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fab {
+  position: fixed; right: 1.25rem; bottom: 1.5rem; width: 3.5rem; height: 3.5rem;
+  border-radius: 50%; border: none; background: var(--work); color: #fff;
+  font-size: 1.8rem; line-height: 1; cursor: pointer; z-index: 30;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+}
+#j-back { margin-bottom: 0.6rem; }
 </style>
 </head>
 <body data-view="tasks">
@@ -528,6 +549,16 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 </main>
 
 <main id="view-journal" class="view hidden">
+  <div id="j-list-screen">
+    <div class="filter-pills">
+      <button class="pill filter-pill active" data-f="all">All</button>
+      <button class="pill filter-pill" data-f="month">This Month</button>
+    </div>
+    <div id="j-entries"></div>
+    <button id="j-fab" class="fab" aria-label="New entry">+</button>
+  </div>
+  <div id="j-day-screen" class="hidden">
+    <button id="j-back" class="quiet-btn">‹ All entries</button>
   <div class="date-nav">
     <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
     <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
@@ -545,6 +576,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   <div id="j-preview" class="journal-preview hidden"></div>
   <div class="view-actions">
     <button id="j-save" class="primary">Save</button>
+  </div>
   </div>
 </main>
 
@@ -804,7 +836,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 12:35 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 1:06 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1405,7 +1437,7 @@ async function switchView(name, push = true) {
   try {
     await updateBadges();
     if (name === 'reminders') renderReminders();
-    else if (name === 'journal') await loadJournal();
+    else if (name === 'journal') await showJournalList();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
     else if (name === 'about') renderAbout();
@@ -1618,6 +1650,77 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 });
 
 /* ---------- Journal ---------- */
+let journalFilter = 'all';
+let journalEntries = [];
+
+function fmtEntryDate(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  return {
+    date: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    weekday: d.toLocaleDateString(undefined, { weekday: 'short' }),
+  };
+}
+
+async function loadJournalList() {
+  const box = document.getElementById('j-entries');
+  box.innerHTML = '<p class="empty-note">Loading entries…</p>';
+  try {
+    journalEntries = await api('GET', '/api/daybook/journal?list=100');
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Could not load entries.</p>';
+    return;
+  }
+  renderJournalList();
+}
+
+function renderJournalList() {
+  const box = document.getElementById('j-entries');
+  const thisMonth = localDateStr(new Date()).slice(0, 7);
+  const items = journalFilter === 'month'
+    ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
+    : journalEntries;
+  if (!items.length) {
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + to write your first.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  items.forEach((e) => {
+    const f = fmtEntryDate(e.date);
+    const b = document.createElement('button');
+    b.className = 'soft-card entry-card';
+    b.innerHTML = \`<span class="entry-date"><span class="d">\${escHtml(f.date)}</span><br><span class="w">\${escHtml(f.weekday)}</span></span>\` +
+      \`<span class="entry-preview">\${escHtml(e.preview || '—')}</span>\`;
+    b.addEventListener('click', () => openJournalDay(e.date));
+    box.appendChild(b);
+  });
+}
+
+function openJournalDay(date) {
+  journalDate = date;
+  document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-day-screen').classList.remove('hidden');
+  loadJournal();
+}
+
+function showJournalList() {
+  document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-list-screen').classList.remove('hidden');
+  loadJournalList();
+}
+
+document.querySelectorAll('.filter-pill').forEach((p) => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach((x) => x.classList.remove('active'));
+    p.classList.add('active');
+    journalFilter = p.dataset.f;
+    renderJournalList();
+  });
+});
+document.getElementById('j-fab').addEventListener('click', () => {
+  openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('j-back').addEventListener('click', showJournalList);
+
 async function loadJournal() {
   const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
   document.getElementById('j-date-label').textContent =
