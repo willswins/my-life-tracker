@@ -1143,21 +1143,43 @@ function renderJournalList() {
     const b = document.createElement('button');
     b.className = 'soft-card entry-card';
     b.innerHTML = `<span class="entry-date"><span class="d">${escHtml(f.date)}</span><br><span class="w">${escHtml(f.weekday)}</span></span>` +
-      `<span class="entry-preview">${escHtml(e.preview || '—')}</span>`;
-    b.addEventListener('click', () => openJournalDay(e.date));
+      `<span class="entry-preview">${escHtml(e.preview || '—')}</span>` +
+      `<span class="entry-chev">›</span>`;
+    b.addEventListener('click', () => openJournalDetail(e.date));
     box.appendChild(b);
   });
+}
+
+let journalDetailDate = null;
+
+async function openJournalDetail(date) {
+  journalDetailDate = date;
+  const f = fmtEntryDate(date);
+  document.getElementById('j-detail-date').innerHTML =
+    escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
+  document.getElementById('j-detail-body').textContent = 'Loading…';
+  document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.remove('hidden');
+  try {
+    const e = await api('GET', '/api/daybook/journal?date=' + date);
+    document.getElementById('j-detail-body').textContent = (e && e.body) || '—';
+  } catch (err) {
+    document.getElementById('j-detail-body').textContent = 'Could not load entry.';
+  }
 }
 
 function openJournalDay(date) {
   journalDate = date;
   document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-day-screen').classList.remove('hidden');
   loadJournal();
 }
 
 function showJournalList() {
   document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-list-screen').classList.remove('hidden');
   loadJournalList();
 }
@@ -1172,6 +1194,26 @@ document.querySelectorAll('#view-journal .filters button').forEach((p) => {
 });
 document.getElementById('j-add').addEventListener('click', () => {
   openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('j-detail-back').addEventListener('click', showJournalList);
+document.getElementById('j-detail-edit').addEventListener('click', () => {
+  if (journalDetailDate) openJournalDay(journalDetailDate);
+});
+document.getElementById('j-detail-delete').addEventListener('click', async () => {
+  if (!journalDetailDate) return;
+  const yes = await confirmAction({
+    title: 'Delete this entry?',
+    message: 'The journal entry for this day will be permanently removed.',
+    okText: 'Delete',
+  });
+  if (!yes) return;
+  try {
+    await api('DELETE', '/api/daybook/journal?date=' + journalDetailDate);
+    toast('Entry deleted.');
+    showJournalList();
+  } catch (err) {
+    toast('Could not delete the entry. Please try again.');
+  }
 });
 document.getElementById('journal-search').addEventListener('input', (e) => {
   clearTimeout(journalSearchTimer);
