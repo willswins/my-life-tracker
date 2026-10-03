@@ -68,8 +68,7 @@ header h1 { font-size: 1.25rem; margin: 0; }
 }
 #menu button:hover, #menu a:hover { background: var(--lane); }
 .menu-appname {
-  padding: 0.55rem 0.8rem; font-weight: 700; font-size: 0.95rem;
-  border-bottom: 1px solid var(--line); margin-bottom: 0.25rem; cursor: default;
+  padding: 0.55rem 0.8rem 0.35rem; font-weight: 700; font-size: 0.95rem; cursor: default;
 }
 #invites-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
 #invite-form { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
@@ -419,6 +418,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
       <button id="menu-btn" aria-label="Menu">☰<span id="menu-dot" class="menu-dot hidden"></span></button>
       <div id="menu" class="hidden">
         <div class="menu-appname">DayBook</div>
+        <hr class="menu-sep">
         <button data-view="tasks" class="view-link">Tasks <span class="badge" id="badge-tasks"></span></button>
         <button data-view="reminders" class="view-link">Reminders <span class="badge" id="badge-reminders"></span></button>
         <button data-view="journal" class="view-link">Journal</button>
