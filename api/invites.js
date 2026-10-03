@@ -7,6 +7,7 @@ const { isAdmin } = require('./_authz');
 const { readBody, sb } = require('./_db');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GMAIL_RE = /^[^\s@]+@(gmail|googlemail)\.com$/i;
 
 module.exports = async (req, res) => {
   const email = getSessionEmail(req, process.env.SESSION_SECRET || '');
@@ -38,6 +39,7 @@ module.exports = async (req, res) => {
       const body = await readBody(req);
       const target = (body.email || '').trim().toLowerCase();
       if (!EMAIL_RE.test(target)) return send(400, { ok: false, error: 'valid email required' });
+      if (!GMAIL_RE.test(target)) return send(400, { ok: false, error: 'gmail_only' });
       const existing = await sb(
         'GET',
         `/rest/v1/allowed_users?email=eq.${encodeURIComponent(target)}&select=email`

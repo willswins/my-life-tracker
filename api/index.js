@@ -151,6 +151,10 @@ button.primary {
 }
 #modal-backdrop.hidden { display: none; }
 .hidden { display: none !important; }
+#invite-backdrop, #confirm-backdrop, #keys-backdrop, #detail-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
+}
 .modal {
   background: #fff; border-radius: 14px; padding: 1.25rem;
   width: 100%; max-width: 480px; max-height: 90vh; overflow: auto;
@@ -349,8 +353,6 @@ pre#ingest-docs {
       <p><strong>Copy this key now — it is never shown again.</strong></p>
       <code id="new-key-value"></code>
     </div>
-    <h4>Usage</h4>
-    <pre id="ingest-docs"></pre>
     <div class="modal-actions">
       <span class="spacer"></span>
       <button type="button" id="keys-close" class="primary">Close</button>
@@ -750,17 +752,6 @@ function confirmAction({ title, message, confirmLabel }) {
 function openKeys() {
   document.getElementById('keys-backdrop').classList.remove('hidden');
   document.getElementById('new-key').classList.add('hidden');
-  document.getElementById('ingest-docs').textContent =
-\`# Create a card as you (replace KEY with your connector key)
-curl -X POST \${location.origin}/api/ingest \\
-  -H "Authorization: Bearer KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"title":"From my journal","details":"...","tag":"personal","priority":"normal"}'
-
-# Fields: title (required), details, tag (work|personal),
-# priority (high|normal|low), issue_type (task|story|bug),
-# lane (now|next|waiting|done), due_date (YYYY-MM-DD), owner.
-# GET /api/ingest lists your active cards (for dedup).\`;
   loadKeys();
 }
 function closeKeys() {

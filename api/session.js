@@ -54,7 +54,12 @@ module.exports = async (req, res) => {
     if (typeof payload.exp !== 'number' || payload.exp < now) throw new Error('expired');
 
     const email = (payload.email || '').toLowerCase();
-    if (!payload.email_verified || !email || !(await isAllowed(email))) {
+    if (!payload.email_verified || !email || !/^[^\s@]+@(gmail|googlemail)\.com$/.test(email)) {
+      res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: false, error: 'gmail_only' }));
+      return;
+    }
+    if (!(await isAllowed(email))) {
       res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify({ ok: false, error: 'not_allowed' }));
       return;

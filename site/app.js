@@ -367,17 +367,6 @@ function confirmAction({ title, message, confirmLabel }) {
 function openKeys() {
   document.getElementById('keys-backdrop').classList.remove('hidden');
   document.getElementById('new-key').classList.add('hidden');
-  document.getElementById('ingest-docs').textContent =
-`# Create a card as you (replace KEY with your connector key)
-curl -X POST ${location.origin}/api/ingest \
-  -H "Authorization: Bearer KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"From my journal","details":"...","tag":"personal","priority":"normal"}'
-
-# Fields: title (required), details, tag (work|personal),
-# priority (high|normal|low), issue_type (task|story|bug),
-# lane (now|next|waiting|done), due_date (YYYY-MM-DD), owner.
-# GET /api/ingest lists your active cards (for dedup).`;
   loadKeys();
 }
 function closeKeys() {
