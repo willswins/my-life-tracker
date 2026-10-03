@@ -1335,9 +1335,9 @@ function setBadge(id, n, hot) {
 async function updateBadges() {
   try {
     const [rems, lks, ib] = await Promise.all([
-      api('GET', '/api/reminders'),
-      api('GET', '/api/links'),
-      api('GET', '/api/inbox?badge=1'),
+      api('GET', '/api/daybook/reminders'),
+      api('GET', '/api/daybook/links'),
+      api('GET', '/api/daybook/inbox?badge=1'),
     ]);
     reminders = rems;
     allLinks = lks;
@@ -1442,7 +1442,7 @@ async function remAct(id, a) {
     if (a === 'snooze') {
       const mins = prompt('Snooze for how many minutes?', '30');
       if (mins === null) return;
-      await api('POST', '/api/reminders?id=' + encodeURIComponent(id), {
+      await api('POST', '/api/daybook/reminders?id=' + encodeURIComponent(id), {
         action: 'snooze', minutes: parseInt(mins, 10) || 30,
       });
     } else if (a === 'dismiss') {
@@ -1452,7 +1452,7 @@ async function remAct(id, a) {
         confirmLabel: 'Dismiss',
       });
       if (!yes) return;
-      await api('POST', '/api/reminders?id=' + encodeURIComponent(id), { action: 'dismiss' });
+      await api('POST', '/api/daybook/reminders?id=' + encodeURIComponent(id), { action: 'dismiss' });
     }
     await updateBadges();
     renderReminders();
@@ -1499,9 +1499,9 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
   if (!data.title) return;
   try {
     if (editingReminderId) {
-      await api('PATCH', '/api/reminders?id=' + encodeURIComponent(editingReminderId), data);
+      await api('PATCH', '/api/daybook/reminders?id=' + encodeURIComponent(editingReminderId), data);
     } else {
-      await api('POST', '/api/reminders', data);
+      await api('POST', '/api/daybook/reminders', data);
     }
     closeReminderModal();
     await updateBadges();
@@ -1513,7 +1513,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 
 /* ---------- Journal ---------- */
 async function loadJournal() {
-  const e = await api('GET', '/api/journal?date=' + journalDate);
+  const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
   document.getElementById('j-date').value = journalDate;
   document.getElementById('j-body').value = e ? (e.body || '') : '';
   journalPreview = false;
@@ -1530,7 +1530,7 @@ async function loadJournalDots() {
   const month = journalDate.slice(0, 7);
   let dates = [];
   try {
-    dates = await api('GET', '/api/journal?month=' + month);
+    dates = await api('GET', '/api/daybook/journal?month=' + month);
   } catch (e) { /* non-fatal */ }
   const set = new Set(dates);
   const [y, m] = month.split('-').map(Number);
@@ -1590,7 +1590,7 @@ document.getElementById('j-preview-toggle').addEventListener('click', () => {
 });
 document.getElementById('j-save').addEventListener('click', async () => {
   try {
-    await api('POST', '/api/journal', { date: journalDate, body: document.getElementById('j-body').value });
+    await api('POST', '/api/daybook/journal', { date: journalDate, body: document.getElementById('j-body').value });
     await loadJournalDots();
   } catch (e) {
     alert('Could not save the journal entry. Please try again.');
@@ -1603,7 +1603,7 @@ async function loadLinks() {
   if (linkSearch) p.set('q', linkSearch);
   if (linkTag) p.set('tag', linkTag);
   const qs = p.toString();
-  links = await api('GET', '/api/links' + (qs ? '?' + qs : ''));
+  links = await api('GET', '/api/daybook/links' + (qs ? '?' + qs : ''));
   renderLinks();
   refreshLinkTagFilter();
 }
@@ -1685,7 +1685,7 @@ async function linkAct(id, a) {
         confirmLabel: 'Delete',
       });
       if (!yes) return;
-      await api('DELETE', '/api/links?id=' + encodeURIComponent(id));
+      await api('DELETE', '/api/daybook/links?id=' + encodeURIComponent(id));
       await updateBadges();
       await loadLinks();
     }
@@ -1726,8 +1726,8 @@ document.getElementById('link-form').addEventListener('submit', async (e) => {
   if (!data.url || !data.title) return;
   try {
     const res = editingLinkId
-      ? await api('PATCH', '/api/links?id=' + encodeURIComponent(editingLinkId), data)
-      : await api('POST', '/api/links', data);
+      ? await api('PATCH', '/api/daybook/links?id=' + encodeURIComponent(editingLinkId), data)
+      : await api('POST', '/api/daybook/links', data);
     closeLinkModal();
     const notice = document.getElementById('already-saved');
     if (res && res.alreadySaved) {
@@ -1763,7 +1763,7 @@ document.getElementById('link-tag-filter').addEventListener('change', (e) => {
 
 /* ---------- Inbox ---------- */
 async function loadInbox() {
-  inboxItems = await api('GET', '/api/inbox?triaged=' + (inboxShowTriaged ? 'all' : 'false'));
+  inboxItems = await api('GET', '/api/daybook/inbox?triaged=' + (inboxShowTriaged ? 'all' : 'false'));
   renderInbox();
 }
 
@@ -1824,7 +1824,7 @@ document.getElementById('inbox-form').addEventListener('submit', async (e) => {
   const text = input.value.trim();
   if (!text) return;
   try {
-    await api('POST', '/api/inbox', { text, source: 'manual' });
+    await api('POST', '/api/daybook/inbox', { text, source: 'manual' });
     input.value = '';
     await updateBadges();
     await loadInbox();
@@ -1844,7 +1844,7 @@ async function discardInbox(id) {
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/inbox?id=' + encodeURIComponent(id));
+    await api('DELETE', '/api/daybook/inbox?id=' + encodeURIComponent(id));
     await updateBadges();
     await loadInbox();
   } catch (e) {
@@ -1937,7 +1937,7 @@ document.getElementById('triage-form').addEventListener('submit', async (e) => {
     if (!data.title) data.title = data.url;
   }
   try {
-    await api('POST', '/api/inbox?id=' + encodeURIComponent(triageItem.id), { to: triageDest, data });
+    await api('POST', '/api/daybook/inbox?id=' + encodeURIComponent(triageItem.id), { to: triageDest, data });
     closeTriage();
     await updateBadges();
     await loadInbox();

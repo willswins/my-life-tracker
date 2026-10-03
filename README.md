@@ -66,10 +66,17 @@ signed-in email.
 | Endpoint | Purpose |
 | -------- | ------- |
 | `/api/cards` | Kanban cards (GET/POST/PATCH/DELETE, soft delete) |
-| `/api/reminders` | Reminders; `POST ?id=…` with `{action:'dismiss'}` or `{action:'snooze', minutes}` |
-| `/api/journal` | `GET ?date=YYYY-MM-DD`, `GET ?month=YYYY-MM` (entry dates), `POST` upsert |
-| `/api/links` | Link shelf; `GET ?q=…&tag=…` search; `POST` returns the existing row on URL conflict |
-| `/api/inbox` | `GET ?triaged=false\|true\|all`, `GET ?badge=1` (untriaged count), `POST` capture, `POST ?id=…` `{to:'task'\|'reminder'\|'journal'\|'link', data}` triage, `DELETE` discard |
+| `/api/daybook/reminders` | Reminders; `POST ?id=…` with `{action:'dismiss'}` or `{action:'snooze', minutes}` |
+| `/api/daybook/journal` | `GET ?date=YYYY-MM-DD`, `GET ?month=YYYY-MM` (entry dates), `POST` upsert |
+| `/api/daybook/links` | Link shelf; `GET ?q=…&tag=…` search; `POST` returns the existing row on URL conflict |
+| `/api/daybook/inbox` | `GET ?triaged=false\|true\|all`, `GET ?badge=1` (untriaged count), `POST` capture, `POST ?id=…` `{to:'task'\|'reminder'\|'journal'\|'link', data}` triage, `DELETE` discard |
+
+> **Vercel Hobby hard limit: max 12 serverless functions per deployment.**
+> Every non-underscore `.js` file directly under `api/` counts as one function
+> (`api/daybook/[view].js` counts as one; `api/_*.js` helpers do not). The four
+> views share the single `api/daybook/[view].js` dispatcher for this reason.
+> **Never add a new top-level file under `api/`** — fold new endpoints into an
+> existing function instead. Exceeding 12 fails every deploy.
 
 ## Environment variables (set in Vercel, never in git)
 

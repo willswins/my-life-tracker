@@ -161,3 +161,21 @@ schedule-change email arrives between deploy and first open.
 Deliberately deterministic: schema, actions, five screens against known conventions.
 No speculative research required. If the runtime can't support an index or the RRULE
 subset, surface it as a build-time finding — not a reason to redesign the taxonomy.
+
+## Implementation note — Supabase port (2026-10-03)
+
+This spec was written against a SQLite/Drizzle artifact; the shipped implementation
+targets this repo (Supabase Postgres + Vercel serverless, vanilla JS). Adaptations:
+
+- Tables use UUID PKs (`gen_random_uuid()`), `user_email text not null` scoping on
+  every row, `timestamptz` timestamps, RLS enabled with no public policies.
+  Migration: `supabase/migration-007.sql`.
+- **Vercel Hobby allows max 12 serverless functions per deployment** (every
+  non-underscore `.js` file directly under `api/` counts). The board already
+  used 11, so the four views share ONE dispatcher: `api/daybook/[view].js`
+  routes `/api/daybook/reminders|journal|links|inbox` to the logic in
+  `api/_reminders.js`, `api/_journal.js`, `api/_links.js`, `api/_inbox.js`
+  (underscore prefix = helper, not counted). Never add a new top-level file
+  under `api/` — fold new endpoints into an existing function.
+- RRULE next-occurrence is computed server-side in the reminders handler
+  (DAILY/WEEKLY/MONTHLY/YEARLY + INTERVAL + BYDAY + BYMONTHDAY + UNTIL subset).
