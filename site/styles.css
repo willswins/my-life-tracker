@@ -165,6 +165,7 @@ button.primary {
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
   padding: 0.5rem 1rem; cursor: pointer; font-size: 0.9rem;
 }
+.modal-actions button.primary { background: var(--ink); color: #fff; border: 0; }
 .modal-actions .spacer { flex: 1; }
 .modal-actions { align-items: center; }
 button.danger-btn { color: #b91c1c; }

@@ -173,6 +173,7 @@ button.primary {
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
   padding: 0.5rem 1rem; cursor: pointer; font-size: 0.9rem;
 }
+.modal-actions button.primary { background: var(--ink); color: #fff; border: 0; }
 .modal-actions .spacer { flex: 1; }
 .modal-actions { align-items: center; }
 button.danger-btn { color: #b91c1c; }
@@ -603,7 +604,7 @@ document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
 document.getElementById('trash-toggle').addEventListener('click', async (e) => {
   showDeleted = !showDeleted;
   e.target.classList.toggle('active', showDeleted);
-  try { await loadCards(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
+  try { await loadCards(); render(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
 });
 document.getElementById('search').addEventListener('input', (e) => {
   searchText = e.target.value;
@@ -726,7 +727,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
 });
 
 // ---- In-app confirmation for destructive actions ----

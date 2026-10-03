@@ -216,7 +216,7 @@ document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
 document.getElementById('trash-toggle').addEventListener('click', async (e) => {
   showDeleted = !showDeleted;
   e.target.classList.toggle('active', showDeleted);
-  try { await loadCards(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
+  try { await loadCards(); render(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
 });
 document.getElementById('search').addEventListener('input', (e) => {
   searchText = e.target.value;
@@ -339,7 +339,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
 });
 
 // ---- In-app confirmation for destructive actions ----
