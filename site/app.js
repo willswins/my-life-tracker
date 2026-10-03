@@ -428,6 +428,11 @@ document.getElementById('menu-connectors').addEventListener('click', () => {
   menuEl.classList.add('hidden');
   openKeys();
 });
+document.getElementById('menu-refresh').addEventListener('click', async () => {
+  menuEl.classList.add('hidden');
+  try { await loadCards(); }
+  catch (e) { alert('Could not refresh. Please try again.'); }
+});
 
 // ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {
