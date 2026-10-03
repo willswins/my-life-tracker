@@ -812,21 +812,9 @@ function openReminderModal(r) {
   d.setMinutes(0, 0, 0);
   document.getElementById('r-at').value = toLocalInput(d);
   updateDtField();
-  const rruleSel = document.getElementById('r-rrule');
-  rruleSel.innerHTML =
-    '<option value="">None</option>' +
-    '<option value="FREQ=DAILY">Daily</option>' +
-    '<option value="FREQ=WEEKLY">Weekly</option>' +
-    '<option value="FREQ=MONTHLY">Monthly</option>' +
-    '<option value="FREQ=YEARLY">Yearly</option>';
   const rv = r ? (r.recurrence || '') : '';
-  if (rv && ![...rruleSel.options].some((o) => o.value === rv)) {
-    const o = document.createElement('option');
-    o.value = rv;
-    o.textContent = (rruleLabel(rv) || 'Custom') + ' (custom)';
-    rruleSel.appendChild(o);
-  }
-  rruleSel.value = rv;
+  document.getElementById('r-rrule').value = rv;
+  document.getElementById('r-rrule-btn').textContent = rruleLabel(rv) || 'None';
   document.getElementById('r-tag').value = r && r.tag ? r.tag : '';
   document.getElementById('r-status').value = r ? r.status : 'active';
   document.getElementById('reminder-backdrop').classList.remove('hidden');
@@ -835,6 +823,7 @@ function openReminderModal(r) {
 function closeReminderModal() {
   document.getElementById('reminder-backdrop').classList.add('hidden');
   editingReminderId = null;
+  closeDropdown();
 }
 
 /* ---------- Custom date/time picker (replaces native datetime-local) ---------- */
@@ -943,6 +932,52 @@ document.getElementById('dt-done').addEventListener('click', commitDtPicker);
 document.getElementById('dt-cancel').addEventListener('click', closeDtPicker);
 document.getElementById('dt-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'dt-backdrop') closeDtPicker();
+});
+
+/* ---------- Reusable custom dropdown (replaces native select) ---------- */
+function closeDropdown() {
+  const m = document.getElementById('dd-menu');
+  if (m) m.classList.add('hidden');
+}
+function openDropdown(btn, items, current, onPick) {
+  const menu = document.getElementById('dd-menu');
+  menu.innerHTML = '';
+  items.forEach(([value, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitem');
+    b.textContent = label;
+    if (value === current) b.classList.add('dd-current');
+    b.addEventListener('click', () => { closeDropdown(); onPick(value, label); });
+    menu.appendChild(b);
+  });
+  menu.classList.remove('hidden');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.left, window.innerWidth - mw - 8);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 8) y = Math.max(8, r.top - mh - 6);
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top = y + 'px';
+  menu.style.minWidth = Math.max(150, r.width) + 'px';
+}
+function rruleItems() {
+  return [['', 'None'], ['FREQ=DAILY', 'Daily'], ['FREQ=WEEKLY', 'Weekly'],
+    ['FREQ=MONTHLY', 'Monthly'], ['FREQ=YEARLY', 'Yearly']];
+}
+document.getElementById('r-rrule-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const cur = document.getElementById('r-rrule').value;
+  const items = rruleItems();
+  if (cur && !items.some(([v]) => v === cur)) {
+    items.push([cur, (rruleLabel(cur) || 'Custom') + ' (custom)']);
+  }
+  const menu = document.getElementById('dd-menu');
+  if (!menu.classList.contains('hidden')) { closeDropdown(); return; }
+  openDropdown(e.currentTarget, items, cur, (v, label) => {
+    document.getElementById('r-rrule').value = v;
+    document.getElementById('r-rrule-btn').textContent = label;
+  });
 });
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
@@ -1232,9 +1267,14 @@ document.addEventListener('click', (e) => {
   const rmenu = document.getElementById('rem-menu');
   if (rmenu && !rmenu.classList.contains('hidden') &&
       !e.target.closest('#rem-menu') && !e.target.closest('.link-menu-btn')) closeRemMenu();
+  const dd = document.getElementById('dd-menu');
+  if (dd && !dd.classList.contains('hidden') &&
+      !e.target.closest('#dd-menu') && !e.target.closest('.dd-field')) closeDropdown();
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  const ddm = document.getElementById('dd-menu');
+  if (ddm && !ddm.classList.contains('hidden')) { closeDropdown(); return; }
   const dt = document.getElementById('dt-backdrop');
   if (dt && !dt.classList.contains('hidden')) { closeDtPicker(); return; }
   closeLinkMenu(); closeRemMenu();

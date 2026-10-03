@@ -290,13 +290,8 @@
         <button type="button" id="r-at-btn" class="dt-field">Pick date &amp; time</button>
       </label>
       <label>Recurrence
-        <select id="r-rrule">
-          <option value="">None</option>
-          <option value="FREQ=DAILY">Daily</option>
-          <option value="FREQ=WEEKLY">Weekly</option>
-          <option value="FREQ=MONTHLY">Monthly</option>
-          <option value="FREQ=YEARLY">Yearly</option>
-        </select>
+        <input id="r-rrule" type="hidden">
+        <button type="button" id="r-rrule-btn" class="dd-field">None</button>
       </label>
     </div>
     <div class="row">
@@ -383,6 +378,8 @@
     </div>
   </form>
 </div>
+
+<div id="dd-menu" class="popup-menu hidden" role="menu"></div>
 
 <!--APP-->
 </body>
