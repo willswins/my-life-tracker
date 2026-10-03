@@ -185,6 +185,7 @@ button.primary {
 .modal-actions { align-items: center; }
 #reminder-form .modal-actions { flex-direction: column; align-items: stretch; }
 #reminder-form .modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
+#r-at { max-width: 210px; }
 button.danger-btn { color: #b91c1c; }
 .modal.detail { max-width: 560px; }
 .modal.detail h4 { margin: 1rem 0 0.5rem; font-size: 0.9rem; }
@@ -843,7 +844,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 3:21 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 3:47 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
