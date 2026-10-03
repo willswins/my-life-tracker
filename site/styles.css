@@ -229,7 +229,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
   padding: 0.45rem 0.8rem; cursor: pointer; font-size: 0.85rem;
 }
-.view-actions { margin-top: 0.75rem; }
+.view-actions {
+  position: sticky; bottom: 0; margin-top: 0.75rem;
+  padding: 0.6rem 0 calc(0.6rem + env(safe-area-inset-bottom));
+  background: #fafafa;
+}
 
 /* Menu badges + hamburger dot */
 .badge {
