@@ -275,25 +275,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 }
 .rem-row.is-overdue { border-left: 5px solid #b91c1c; }
 .rem-row.is-snoozed { opacity: 0.75; }
-.rem-time { font-size: 0.8rem; color: var(--muted); min-width: 5.5rem; flex: none; }
-.rem-main { flex: 1; min-width: 0; }
-.rem-main h4 { margin: 0 0 0.15rem; font-size: 0.95rem; }
-.rem-main p { margin: 0; font-size: 0.8rem; color: var(--muted); }
-.rec-label {
-  font-size: 0.72rem; font-weight: 600; color: var(--work);
-  background: var(--work-bg); border-radius: 999px; padding: 0.1rem 0.5rem;
-  margin-left: 0.4rem; white-space: nowrap;
-}
-.status-pill {
-  font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0.1rem 0.5rem;
-  background: #fef3c7; color: #b45309; margin-left: 0.4rem;
-}
-.rem-actions { display: flex; gap: 0.35rem; flex: none; flex-wrap: wrap; }
-.rem-actions button {
-  border: 1px solid var(--line); background: #fff; border-radius: 6px;
-  font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer; color: var(--muted);
-}
-.rem-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
+.rem-main { flex: 1; min-width: 0; cursor: pointer; }
+.rem-detail { display: none; margin-top: 0.3rem; }
+.rem-row.expanded .rem-detail { display: block; }
+.rem-row.expanded .link-line2, .rem-row.expanded .link-line3 { display: none; }
+.rem-actions { display: flex; flex: none; }
 
 
 /* ---------- Shared components (used across views) ---------- */
@@ -546,6 +532,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <button id="add-reminder" class="primary">+ Add reminder</button>
   </div>
   <div id="reminder-timeline"></div>
+  <div id="rem-menu" class="popup-menu hidden" role="menu">
+    <button data-a="dismiss" role="menuitem" class="danger">Dismiss</button>
+    <button data-a="snooze" role="menuitem">Snooze</button>
+    <button data-a="edit" role="menuitem">Edit</button>
+  </div>
 </main>
 
 <main id="view-journal" class="view hidden">
@@ -836,7 +827,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 1:06 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 2:50 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1250,6 +1241,7 @@ document.addEventListener('click', (e) => {
   if (!menuEl.classList.contains('hidden') && !e.target.closest('.menu-wrap')) {
     menuEl.classList.add('hidden');
   closeLinkMenu();
+  closeRemMenu();
   }
 });
 document.getElementById('menu-invite').addEventListener('click', () => {
@@ -1558,17 +1550,48 @@ function remRow(r) {
     (new Date(r.remind_at) < sod ? ' is-overdue' : '') +
     (r.status === 'snoozed' ? ' is-snoozed' : '');
   const label = rruleLabel(r.recurrence);
+  const metaBits = [fmtTime(r.remind_at), label, r.status === 'snoozed' ? 'Snoozed' : '']
+    .filter(Boolean).join(' · ');
   el.innerHTML =
-    \`<div class="rem-time">\${escHtml(fmtTime(r.remind_at))}</div>\` +
-    \`<div class="rem-main"><h4>\${escHtml(r.title)}\` +
-    (label ? \`<span class="rec-label">\${escHtml(label)}</span>\` : '') +
-    (r.status === 'snoozed' ? '<span class="status-pill">Snoozed</span>' : '') +
-    \`</h4>\` + (r.detail ? \`<p>\${escHtml(r.detail)}</p>\` : '') + \`</div>\` +
-    \`<div class="rem-actions"><button data-a="dismiss">Dismiss</button>\` +
-    \`<button data-a="snooze">Snooze</button><button data-a="edit">Edit</button></div>\`;
-  el.querySelectorAll('button').forEach((b) =>
-    b.addEventListener('click', () => remAct(r.id, b.dataset.a)));
+    \`<div class="rem-main"><div class="link-title">\${escHtml(r.title)}</div>\` +
+    \`<div class="link-line2">\${escHtml(metaBits)}</div>\` +
+    (r.detail ? \`<div class="link-line3">\${escHtml(r.detail)}</div>\` : '') +
+    (r.detail ? \`<div class="rem-detail"><div class="link-notes-full">\${escHtml(r.detail)}</div></div>\` : '') +
+    \`</div>\` +
+    \`<div class="rem-actions"><button class="link-menu-btn" aria-label="Reminder actions" title="Actions">⋮</button></div>\`;
+  el.querySelector('.rem-main').addEventListener('click', () => {
+    if (!r.detail) return; // nothing more to show
+    el.classList.toggle('expanded');
+  });
+  el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleRemMenu(r.id, e.currentTarget);
+  });
   return el;
+}
+
+// One icon per reminder row opens a shared popup menu.
+let remMenuFor = null;
+function closeRemMenu() {
+  const m = document.getElementById('rem-menu');
+  if (m) m.classList.add('hidden');
+  remMenuFor = null;
+}
+function toggleRemMenu(id, btn) {
+  const menu = document.getElementById('rem-menu');
+  if (remMenuFor === id) { closeRemMenu(); return; }
+  remMenuFor = id;
+  menu.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { closeRemMenu(); remAct(id, b.dataset.a); };
+  });
+  menu.classList.remove('hidden');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.right - mw, window.innerWidth - mw - 8);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 8) y = Math.max(8, r.top - mh - 6);
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top = y + 'px';
 }
 
 async function remAct(id, a) {
@@ -1900,11 +1923,13 @@ function toggleLinkMenu(id, btn) {
 }
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('link-menu');
-  if (!menu || menu.classList.contains('hidden')) return;
-  if (e.target.closest('#link-menu') || e.target.closest('.link-menu-btn')) return;
-  closeLinkMenu();
+  if (menu && !menu.classList.contains('hidden') &&
+      !e.target.closest('#link-menu') && !e.target.closest('.link-menu-btn')) closeLinkMenu();
+  const rmenu = document.getElementById('rem-menu');
+  if (rmenu && !rmenu.classList.contains('hidden') &&
+      !e.target.closest('#rem-menu') && !e.target.closest('.link-menu-btn')) closeRemMenu();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLinkMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLinkMenu(); closeRemMenu(); } });
   return el;
 }
 
