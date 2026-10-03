@@ -732,11 +732,15 @@ function remRow(r) {
     (new Date(r.remind_at) < sod ? ' is-overdue' : '') +
     (r.status === 'snoozed' ? ' is-snoozed' : '');
   const label = rruleLabel(r.recurrence);
-  const metaBits = [fmtTime(r.remind_at), label, r.status === 'snoozed' ? 'Snoozed' : '']
+  const at = new Date(r.remind_at);
+  const dateStr = at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const timeStr = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const metaBits = [label, r.status === 'snoozed' ? 'Snoozed' : '']
     .filter(Boolean).join(' · ');
   el.innerHTML =
+    `<div class="rem-when"><span class="d">${escHtml(dateStr)}</span><span class="t">${escHtml(timeStr)}</span></div>` +
     `<div class="rem-main"><div class="link-title">${escHtml(r.title)}</div>` +
-    `<div class="link-line2">${escHtml(metaBits)}</div>` +
+    (metaBits ? `<div class="link-line2">${escHtml(metaBits)}</div>` : '') +
     (r.detail ? `<div class="link-line3">${escHtml(r.detail)}</div>` : '') +
     (r.detail ? `<div class="rem-detail"><div class="link-notes-full">${escHtml(r.detail)}</div></div>` : '') +
     `</div>` +
