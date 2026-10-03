@@ -45,6 +45,30 @@ The Google OAuth client's **authorized JavaScript origin** must be
 - To remove someone: delete their email from `ALLOWED_EMAILS`. Their cards
   stay in the database (scoped to their email) in case they are re-invited.
 
+## Connector API (journal / email automations)
+
+External tools create cards through `POST /api/ingest` — no browser session needed.
+
+**Auth:** per-connector API keys. Create and revoke them in the board under
+**Connectors** (header button). The key is shown once; only its SHA-256 hash
+is stored. Send it as `Authorization: Bearer mlt_...` (or `X-API-Key`).
+
+**Authz:** a key acts only as the user it was issued to, and can only list
+active cards (`GET /api/ingest`, for dedup) and create cards (`POST`).
+It cannot delete, restore, or see anyone else's cards. Revoking a key
+immediately disables it. Requests are rate-limited (120/min per key).
+
+```bash
+curl -X POST https://<your-vercel-domain>/api/ingest \
+  -H "Authorization: Bearer mlt_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"From my journal","details":"...","tag":"personal",
+       "priority":"normal","issue_type":"task","lane":"now"}'
+```
+Fields: `title` (required), `details`, `tag` (work|personal),
+`priority` (high|normal|low), `issue_type` (task|story|bug),
+`lane` (now|next|waiting|done), `due_date` (YYYY-MM-DD), `owner`.
+
 ## Local build
 
 ```sh

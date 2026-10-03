@@ -320,7 +320,77 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); }
+});
+
+// ---- Connectors: API key management ----
+function openKeys() {
+  document.getElementById('keys-backdrop').classList.remove('hidden');
+  document.getElementById('new-key').classList.add('hidden');
+  document.getElementById('ingest-docs').textContent =
+`# Create a card as you (replace KEY with your connector key)
+curl -X POST ${location.origin}/api/ingest \
+  -H "Authorization: Bearer KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"From my journal","details":"...","tag":"personal","priority":"normal"}'
+
+# Fields: title (required), details, tag (work|personal),
+# priority (high|normal|low), issue_type (task|story|bug),
+# lane (now|next|waiting|done), due_date (YYYY-MM-DD), owner.
+# GET /api/ingest lists your active cards (for dedup).`;
+  loadKeys();
+}
+function closeKeys() {
+  document.getElementById('keys-backdrop').classList.add('hidden');
+}
+
+async function loadKeys() {
+  const box = document.getElementById('keys-list');
+  box.innerHTML = '<p class="empty-note">Loading…</p>';
+  try {
+    const keys = await api('GET', '/api/keys');
+    box.innerHTML = '';
+    if (!keys.length) box.innerHTML = '<p class="empty-note">No connector keys yet.</p>';
+    keys.forEach((k) => {
+      const row = document.createElement('div');
+      row.className = 'key-row' + (k.revoked_at ? ' revoked' : '');
+      const when = k.created_at ? new Date(k.created_at).toLocaleDateString() : '';
+      const used = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : 'never';
+      row.innerHTML = `<div class="grow"><strong></strong><div class="sub"></div></div>`;
+      row.querySelector('strong').textContent = k.name + (k.revoked_at ? ' (revoked)' : '');
+      row.querySelector('.sub').textContent = `${k.key_prefix}… · created ${when} · last used ${used}`;
+      if (!k.revoked_at) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Revoke';
+        btn.addEventListener('click', async () => {
+          if (!confirm(`Revoke the "${k.name}" key? Connected tools using it will stop working.`)) return;
+          try { await api('DELETE', '/api/keys?id=' + encodeURIComponent(k.id)); loadKeys(); }
+          catch (e) { alert('Could not revoke the key. Please try again.'); }
+        });
+        row.appendChild(btn);
+      }
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Could not load keys.</p>';
+  }
+}
+
+document.getElementById('connectors-btn').addEventListener('click', openKeys);
+document.getElementById('keys-close').addEventListener('click', closeKeys);
+document.getElementById('keys-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'keys-backdrop') closeKeys();
+});
+document.getElementById('key-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('k-name');
+  try {
+    const created = await api('POST', '/api/keys', { name: input.value.trim() });
+    input.value = '';
+    document.getElementById('new-key-value').textContent = created.key;
+    document.getElementById('new-key').classList.remove('hidden');
+    loadKeys();
+  } catch (err) { alert('Could not create the key. Please try again.'); }
 });
 
 init();

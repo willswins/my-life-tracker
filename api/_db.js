@@ -37,4 +37,24 @@ async function sb(method, path, body) {
   return text ? JSON.parse(text) : null;
 }
 
-module.exports = { readBody, sb };
+module.exports = { readBody, sb, cleanCard };
+
+// Shared card field validation, used by the board API and the ingest API.
+const TAGS = ['work', 'personal'];
+const PRIORITIES = ['high', 'normal', 'low'];
+const LANES = ['now', 'next', 'waiting', 'done'];
+const ISSUE_TYPES = ['task', 'bug', 'story'];
+
+function cleanCard(card) {
+  const out = {};
+  if (typeof card.title === 'string' && card.title.trim()) out.title = card.title.trim().slice(0, 160);
+  if (typeof card.details === 'string') out.details = card.details.slice(0, 2000);
+  if (TAGS.includes(card.tag)) out.tag = card.tag;
+  if (PRIORITIES.includes(card.priority)) out.priority = card.priority;
+  if (LANES.includes(card.lane)) out.lane = card.lane;
+  if (ISSUE_TYPES.includes(card.issue_type)) out.issue_type = card.issue_type;
+  if (card.due_date === null || /^\d{4}-\d{2}-\d{2}$/.test(card.due_date || '')) out.due_date = card.due_date || null;
+  if (card.owner === null || typeof card.owner === 'string') out.owner = (card.owner || '').slice(0, 120) || null;
+  out.updated_at = new Date().toISOString();
+  return out;
+}

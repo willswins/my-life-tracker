@@ -19,6 +19,7 @@
     </div>
     <span id="user-email" title="Signed in">__USER_EMAIL__</span>
     <button id="add-card" class="primary">+ Add card</button>
+    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
     <a href="/api/logout" class="signout">Sign out</a>
   </div>
 </header>
@@ -95,6 +96,28 @@
       <button type="submit" class="primary">Save</button>
     </div>
   </form>
+</div>
+
+<div id="keys-backdrop" class="hidden">
+  <div class="modal">
+    <h3>Connectors</h3>
+    <p class="hint">API keys let outside tools — your journal, an email automation — add cards as you. A key acts only as you, and can only list and create cards. Nothing else.</p>
+    <div id="keys-list"></div>
+    <form id="key-form">
+      <input id="k-name" maxlength="80" placeholder="Connector name, e.g. Journal" autocomplete="off">
+      <button type="submit" class="primary">Create key</button>
+    </form>
+    <div id="new-key" class="hidden">
+      <p><strong>Copy this key now — it is never shown again.</strong></p>
+      <code id="new-key-value"></code>
+    </div>
+    <h4>Usage</h4>
+    <pre id="ingest-docs"></pre>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="keys-close" class="primary">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="detail-backdrop" class="hidden">

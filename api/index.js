@@ -155,6 +155,26 @@ button.danger-btn { color: #b91c1c; }
   padding: 0.5rem; font-size: 0.9rem; font-family: inherit;
 }
 .empty-note { color: var(--muted); font-size: 0.85rem; }
+#keys-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+.key-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--lane); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.85rem;
+}
+.key-row .grow { flex: 1; }
+.key-row .sub { font-size: 0.72rem; color: var(--muted); }
+.key-row.revoked { opacity: 0.55; }
+#key-form { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+#key-form input {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.5rem; font-size: 0.9rem; font-family: inherit;
+}
+#new-key { background: #fef3c7; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; }
+#new-key p { margin: 0 0 0.5rem; font-size: 0.85rem; }
+#new-key-value { word-break: break-all; font-size: 0.8rem; }
+pre#ingest-docs {
+  background: #111827; color: #e5e7eb; border-radius: 8px; padding: 0.75rem;
+  font-size: 0.75rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+}
 </style>
 </head>
 <body>
@@ -170,6 +190,7 @@ button.danger-btn { color: #b91c1c; }
     </div>
     <span id="user-email" title="Signed in">__USER_EMAIL__</span>
     <button id="add-card" class="primary">+ Add card</button>
+    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
     <a href="/api/logout" class="signout">Sign out</a>
   </div>
 </header>
@@ -246,6 +267,28 @@ button.danger-btn { color: #b91c1c; }
       <button type="submit" class="primary">Save</button>
     </div>
   </form>
+</div>
+
+<div id="keys-backdrop" class="hidden">
+  <div class="modal">
+    <h3>Connectors</h3>
+    <p class="hint">API keys let outside tools — your journal, an email automation — add cards as you. A key acts only as you, and can only list and create cards. Nothing else.</p>
+    <div id="keys-list"></div>
+    <form id="key-form">
+      <input id="k-name" maxlength="80" placeholder="Connector name, e.g. Journal" autocomplete="off">
+      <button type="submit" class="primary">Create key</button>
+    </form>
+    <div id="new-key" class="hidden">
+      <p><strong>Copy this key now — it is never shown again.</strong></p>
+      <code id="new-key-value"></code>
+    </div>
+    <h4>Usage</h4>
+    <pre id="ingest-docs"></pre>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="keys-close" class="primary">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="detail-backdrop" class="hidden">
@@ -593,7 +636,77 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); }
+});
+
+// ---- Connectors: API key management ----
+function openKeys() {
+  document.getElementById('keys-backdrop').classList.remove('hidden');
+  document.getElementById('new-key').classList.add('hidden');
+  document.getElementById('ingest-docs').textContent =
+\`# Create a card as you (replace KEY with your connector key)
+curl -X POST \${location.origin}/api/ingest \\
+  -H "Authorization: Bearer KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"From my journal","details":"...","tag":"personal","priority":"normal"}'
+
+# Fields: title (required), details, tag (work|personal),
+# priority (high|normal|low), issue_type (task|story|bug),
+# lane (now|next|waiting|done), due_date (YYYY-MM-DD), owner.
+# GET /api/ingest lists your active cards (for dedup).\`;
+  loadKeys();
+}
+function closeKeys() {
+  document.getElementById('keys-backdrop').classList.add('hidden');
+}
+
+async function loadKeys() {
+  const box = document.getElementById('keys-list');
+  box.innerHTML = '<p class="empty-note">Loading…</p>';
+  try {
+    const keys = await api('GET', '/api/keys');
+    box.innerHTML = '';
+    if (!keys.length) box.innerHTML = '<p class="empty-note">No connector keys yet.</p>';
+    keys.forEach((k) => {
+      const row = document.createElement('div');
+      row.className = 'key-row' + (k.revoked_at ? ' revoked' : '');
+      const when = k.created_at ? new Date(k.created_at).toLocaleDateString() : '';
+      const used = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : 'never';
+      row.innerHTML = \`<div class="grow"><strong></strong><div class="sub"></div></div>\`;
+      row.querySelector('strong').textContent = k.name + (k.revoked_at ? ' (revoked)' : '');
+      row.querySelector('.sub').textContent = \`\${k.key_prefix}… · created \${when} · last used \${used}\`;
+      if (!k.revoked_at) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Revoke';
+        btn.addEventListener('click', async () => {
+          if (!confirm(\`Revoke the "\${k.name}" key? Connected tools using it will stop working.\`)) return;
+          try { await api('DELETE', '/api/keys?id=' + encodeURIComponent(k.id)); loadKeys(); }
+          catch (e) { alert('Could not revoke the key. Please try again.'); }
+        });
+        row.appendChild(btn);
+      }
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Could not load keys.</p>';
+  }
+}
+
+document.getElementById('connectors-btn').addEventListener('click', openKeys);
+document.getElementById('keys-close').addEventListener('click', closeKeys);
+document.getElementById('keys-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'keys-backdrop') closeKeys();
+});
+document.getElementById('key-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('k-name');
+  try {
+    const created = await api('POST', '/api/keys', { name: input.value.trim() });
+    input.value = '';
+    document.getElementById('new-key-value').textContent = created.key;
+    document.getElementById('new-key').classList.remove('hidden');
+    loadKeys();
+  } catch (err) { alert('Could not create the key. Please try again.'); }
 });
 
 init();
