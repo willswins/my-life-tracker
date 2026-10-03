@@ -6,6 +6,8 @@ const HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DayBook</title>
+<link rel="icon" type="image/png" href="/site/icon.png">
+<link rel="apple-touch-icon" href="/site/icon.png">
 <style>:root {
   --work: #2563eb;
   --work-bg: #dbeafe;
@@ -393,6 +395,17 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 }
 #triage-fields .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
 #triage-source { font-size: 0.8rem; color: var(--muted); }
+
+/* ---------- app icon + about ---------- */
+#app-icon { width: 30px; height: 30px; border-radius: 7px; }
+.about-card { max-width: 440px; margin: 56px auto; text-align: center; padding: 0 24px; }
+.about-icon { width: 96px; height: 96px; border-radius: 22px; }
+.about-card h2 { margin: 16px 0 4px; }
+.about-desc { color: var(--muted); margin: 0 0 24px; }
+.about-meta { display: inline-block; text-align: left; }
+.about-meta div { display: flex; gap: 16px; margin: 8px 0; }
+.about-meta dt { font-weight: 600; min-width: 90px; }
+.about-meta dd { margin: 0; color: var(--muted); }
 </style>
 </head>
 <body data-view="tasks">
@@ -406,6 +419,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
         <button data-view="journal" class="view-link">Journal</button>
         <button data-view="links" class="view-link">Links <span class="badge" id="badge-links"></span></button>
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
+        <button data-view="about" class="view-link">About</button>
         <hr class="menu-sep">
         <button id="menu-invite">Invite</button>
         <button id="menu-connectors">Connectors</button>
@@ -413,7 +427,8 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <h1>DayBook</h1>
+    <img id="app-icon" src="/site/icon.png" alt="DayBook">
+    <h1 id="view-title">My Board</h1>
   </div>
   <div class="header-right">
     <input id="search" class="tasks-only" type="search" placeholder="Search cards…" aria-label="Search cards">
@@ -499,6 +514,18 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <button type="submit" class="primary">Capture</button>
   </form>
   <div id="inbox-list"></div>
+</main>
+
+<main id="view-about" class="view hidden">
+  <div class="about-card">
+    <img src="/site/icon.png" alt="DayBook icon" class="about-icon">
+    <h2>DayBook</h2>
+    <p class="about-desc">A private life-management system — tasks, reminders, journal, links, and inbox in one place.</p>
+    <dl class="about-meta">
+      <div><dt>Version</dt><dd id="about-version"></dd></div>
+      <div><dt>Build date</dt><dd id="about-build"></dd></div>
+    </dl>
+  </div>
 </main>
 
 <div id="modal-backdrop" class="hidden">
@@ -717,6 +744,8 @@ const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', do
 const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
+const APP_VERSION = '1.1.0';
+const BUILD_DATE = 'Oct 3, 2026, 10:06 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1235,13 +1264,22 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox'];
+const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'about'];
 const VIEW_IDS = {
   tasks: 'board',
   reminders: 'view-reminders',
   journal: 'view-journal',
   links: 'view-links',
   inbox: 'view-inbox',
+  about: 'view-about',
+};
+const VIEW_TITLES = {
+  tasks: 'My Board',
+  reminders: 'Reminders',
+  journal: 'Journal',
+  links: 'Links',
+  inbox: 'Inbox',
+  about: 'About',
 };
 let currentView = 'tasks';
 
@@ -1301,6 +1339,7 @@ async function switchView(name, push = true) {
   });
   document.querySelectorAll('#menu .view-link').forEach((b) =>
     b.classList.toggle('active', b.dataset.view === name));
+  document.getElementById('view-title').textContent = VIEW_TITLES[name] || 'DayBook';
   menuEl.classList.add('hidden');
   if (push && location.hash !== '#/' + name) location.hash = '#/' + name;
   try {
@@ -1309,6 +1348,7 @@ async function switchView(name, push = true) {
     else if (name === 'journal') await loadJournal();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
+    else if (name === 'about') renderAbout();
     else render();
   } catch (e) {
     console.error('view load failed:', e);
@@ -1323,6 +1363,12 @@ window.addEventListener('hashchange', () => {
 
 document.querySelectorAll('#menu .view-link').forEach((b) =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
+
+/* ---------- about ---------- */
+function renderAbout() {
+  document.getElementById('about-version').textContent = APP_VERSION;
+  document.getElementById('about-build').textContent = BUILD_DATE;
+}
 
 /* ---------- badges ---------- */
 function setBadge(id, n, hot) {
