@@ -503,6 +503,8 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   background-repeat: no-repeat; background-position: right 0.7rem center;
 }
 .popup-menu button.dd-current { background: var(--lane); font-weight: 600; }
+/* Shrink-to-fit dropdown button for short values (e.g. recurrence). Common class. */
+.dd-field.fit { width: auto; min-width: 7rem; display: inline-block; }
 
 /* Snooze picker */
 .snooze-picker { max-width: 320px; }
@@ -801,16 +803,14 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <label>Detail
       <input id="r-detail" maxlength="2000" placeholder="Context (optional)">
     </label>
-    <div class="row">
-      <label>Remind at
-        <input id="r-at" type="hidden">
-        <button type="button" id="r-at-btn" class="dd-field" data-dtdate="r-at" data-dtmode="datetime" data-dtempty="Pick date &amp; time">Pick date &amp; time</button>
-      </label>
-      <label>Recurrence
-        <input id="r-rrule" type="hidden">
-        <button type="button" id="r-rrule-btn" class="dd-field" data-dd="r-rrule">None</button>
-      </label>
-    </div>
+    <label>Remind at
+      <input id="r-at" type="hidden">
+      <button type="button" id="r-at-btn" class="dd-field" data-dtdate="r-at" data-dtmode="datetime" data-dtempty="Pick date &amp; time">Pick date &amp; time</button>
+    </label>
+    <label>Recurrence
+      <input id="r-rrule" type="hidden">
+      <button type="button" id="r-rrule-btn" class="dd-field fit" data-dd="r-rrule">None</button>
+    </label>
     <div class="row">
       <label>Tag
         <input type="hidden" id="r-tag">
@@ -922,7 +922,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 4:21 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 4:35 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2478,10 +2478,8 @@ function openTriage(item, to) {
     f.innerHTML =
       triageField('Title', \`<input id="t-title" required maxlength="160" value="\${escHtml(firstLine)}">\`) +
       triageField('Detail', \`<input id="t-detail" maxlength="2000">\`) +
-      \`<div class="row">\` +
       triageField('Remind at', \`<input type="hidden" id="t-at" value="\${toLocalInput(nh)}"><button type="button" class="dd-field" data-dtdate="t-at" data-dtmode="datetime">\${fmtDtButtonLabel(toLocalInput(nh), { dataset: { dtmode: "datetime" } })}</button>\`) +
-      triageField('Recurrence <span class="hint">(optional)</span>', \`<input type="hidden" id="t-rrule"><button type="button" class="dd-field" data-dd="t-rrule">None</button>\`) +
-      \`</div>\`;
+      triageField('Recurrence <span class="hint">(optional)</span>', \`<input type="hidden" id="t-rrule"><button type="button" class="dd-field fit" data-dd="t-rrule">None</button>\`) +
   } else if (to === 'journal') {
     f.innerHTML =
       triageField('Date', \`<input type="hidden" id="t-date" value="\${localDateStr(new Date())}"><button type="button" class="dd-field" data-dtdate="t-date">\${fmtDtButtonLabel(localDateStr(new Date()), { dataset: {} })}</button>\`) +
