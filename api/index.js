@@ -239,7 +239,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
   padding: 0.45rem 0.8rem; cursor: pointer; font-size: 0.85rem;
 }
-.view-actions { margin-top: 0.75rem; }
+.view-actions {
+  position: sticky; bottom: 0; margin-top: 0.75rem;
+  padding: 0.6rem 0 calc(0.6rem + env(safe-area-inset-bottom));
+  background: #fafafa;
+}
 
 /* Menu badges + hamburger dot */
 .badge {
@@ -800,7 +804,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 12:17 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 12:35 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
