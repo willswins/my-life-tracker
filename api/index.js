@@ -5,7 +5,7 @@ const HTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Daybook</title>
+<title>DayBook</title>
 <style>:root {
   --work: #2563eb;
   --work-bg: #dbeafe;
@@ -212,32 +212,219 @@ pre#ingest-docs {
   background: #111827; color: #e5e7eb; border-radius: 8px; padding: 0.75rem;
   font-size: 0.75rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
 }
+
+/* ---- Five-view extension: Tasks / Reminders / Journal / Links / Inbox ---- */
+
+/* Board-only header controls hide on the other views */
+body:not([data-view="tasks"]) .tasks-only { display: none !important; }
+
+.view { padding: 1rem 1.25rem 3rem; max-width: 900px; }
+.view-head {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.view-head h2 { margin: 0; font-size: 1.1rem; flex: 1; }
+.view-head input[type="search"], .view-head select, .view-head input[type="date"] {
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.7rem;
+  font-size: 0.85rem; font-family: inherit;
+}
+.view-head button:not(.primary) {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 0.45rem 0.8rem; cursor: pointer; font-size: 0.85rem;
+}
+.view-actions { margin-top: 0.75rem; }
+
+/* Menu badges + hamburger dot */
+.badge {
+  font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0.1rem 0.5rem;
+  background: var(--lane); color: var(--muted); margin-left: 0.35rem;
+}
+.badge.zero { opacity: 0.45; }
+.badge.hot { background: #fee2e2; color: #b91c1c; }
+.menu-sep { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; }
+.menu-dot {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 1.15rem; height: 1.15rem; border-radius: 999px;
+  background: #b91c1c; color: #fff; font-size: 0.68rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 0.25rem;
+}
+#menu-btn { position: relative; }
+.view-link.active { background: var(--lane); font-weight: 600; }
+
+/* Reminders timeline */
+.tl-group { margin-bottom: 1.25rem; }
+.tl-group > h3 {
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); margin: 0 0 0.5rem;
+}
+.rem-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;
+}
+.rem-row.is-overdue { border-left: 5px solid #b91c1c; }
+.rem-row.is-snoozed { opacity: 0.75; }
+.rem-time { font-size: 0.8rem; color: var(--muted); min-width: 5.5rem; flex: none; }
+.rem-main { flex: 1; min-width: 0; }
+.rem-main h4 { margin: 0 0 0.15rem; font-size: 0.95rem; }
+.rem-main p { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.rec-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--work);
+  background: var(--work-bg); border-radius: 999px; padding: 0.1rem 0.5rem;
+  margin-left: 0.4rem; white-space: nowrap;
+}
+.status-pill {
+  font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0.1rem 0.5rem;
+  background: #fef3c7; color: #b45309; margin-left: 0.4rem;
+}
+.rem-actions { display: flex; gap: 0.35rem; flex: none; flex-wrap: wrap; }
+.rem-actions button {
+  border: 1px solid var(--line); background: #fff; border-radius: 6px;
+  font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer; color: var(--muted);
+}
+.rem-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
+
+/* Journal */
+.journal-nav { display: flex; gap: 0.35rem; align-items: center; }
+.journal-nav button {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 0.45rem 0.7rem; cursor: pointer; font-size: 0.85rem;
+}
+.month-strip {
+  display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 1rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+.day-cell {
+  width: 2rem; height: 2rem; border-radius: 8px; border: 1px solid transparent;
+  background: none; cursor: pointer; font-size: 0.75rem; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: inherit; padding: 0;
+}
+.day-cell:hover { border-color: var(--line); }
+.day-cell.today { border-color: var(--work); color: var(--ink); font-weight: 700; }
+.day-cell.selected { background: var(--ink); color: #fff; }
+.day-cell .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--personal); margin-top: 1px; }
+.day-cell .dot.none { background: transparent; }
+.journal-auto {
+  background: var(--lane); border-radius: 10px; padding: 0.75rem 1rem;
+  font-size: 0.85rem; margin-bottom: 1rem; white-space: pre-wrap;
+}
+.view h3 { font-size: 0.9rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+.journal-toolbar { margin-bottom: 0.4rem; }
+.journal-toolbar button {
+  border: 1px solid var(--line); background: #fff; border-radius: 6px;
+  font-size: 0.78rem; padding: 0.3rem 0.7rem; cursor: pointer; color: var(--muted);
+}
+#j-body {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.75rem; font-size: 0.9rem; font-family: inherit; resize: vertical;
+}
+.journal-preview {
+  border: 1px solid var(--line); border-radius: 10px; padding: 0.75rem 1rem;
+  font-size: 0.9rem; background: #fff; min-height: 120px;
+}
+.journal-preview h3, .journal-preview h4 { color: var(--ink); margin: 0.5rem 0 0.25rem; }
+.journal-preview ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+
+/* Links */
+#links-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.link-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+.link-row.flash { outline: 2px solid var(--work); }
+.link-main { flex: 1; min-width: 0; }
+.link-main a { font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none; }
+.link-main a:hover { text-decoration: underline; }
+.link-host { font-size: 0.75rem; color: var(--muted); }
+.link-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+.link-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.link-tag {
+  font-size: 0.7rem; background: var(--lane); border-radius: 999px; padding: 0.1rem 0.5rem;
+}
+.link-actions { display: flex; gap: 0.35rem; flex: none; flex-wrap: wrap; }
+.link-actions button {
+  border: 1px solid var(--line); background: #fff; border-radius: 6px;
+  font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer; color: var(--muted);
+}
+.link-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
+.notice {
+  background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px;
+  padding: 0.6rem 0.9rem; font-size: 0.85rem; margin-bottom: 0.75rem;
+}
+
+/* Inbox */
+#inbox-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+#inbox-form input {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.55rem 0.8rem; font-size: 0.9rem; font-family: inherit;
+}
+#inbox-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.inbox-row {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+.inbox-row p { margin: 0 0 0.4rem; font-size: 0.9rem; white-space: pre-wrap; }
+.inbox-meta { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.5rem; }
+.src-pill {
+  font-size: 0.7rem; font-weight: 600; border-radius: 999px; padding: 0.1rem 0.5rem;
+  background: var(--lane); color: var(--muted); margin-right: 0.4rem;
+}
+.triage-btns { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.triage-btns button {
+  border: 1px solid var(--line); background: #fff; border-radius: 6px;
+  font-size: 0.78rem; padding: 0.3rem 0.6rem; cursor: pointer;
+}
+.triage-btns button:hover { border-color: var(--work); color: var(--work); }
+.triage-btns button.discard:hover { border-color: #fca5a5; color: #b91c1c; }
+.triage-dest { font-size: 0.8rem; color: var(--muted); }
+.triage-dest button {
+  border: 0; background: none; color: var(--work); cursor: pointer;
+  font-size: 0.8rem; padding: 0; text-decoration: underline; font-family: inherit;
+}
+
+/* Triage modal fields reuse .modal label styles */
+#triage-fields label { display: block; font-size: 0.85rem; margin-bottom: 0.7rem; }
+#triage-fields input, #triage-fields textarea, #triage-fields select {
+  display: block; width: 100%; margin-top: 0.3rem; padding: 0.5rem;
+  border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+}
+#triage-fields .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+#triage-source { font-size: 0.8rem; color: var(--muted); }
 </style>
 </head>
-<body>
+<body data-view="tasks">
 <header>
   <div class="header-left">
     <div class="menu-wrap">
-      <button id="menu-btn" aria-label="Menu">☰</button>
+      <button id="menu-btn" aria-label="Menu">☰<span id="menu-dot" class="menu-dot hidden"></span></button>
       <div id="menu" class="hidden">
+        <button data-view="tasks" class="view-link">Tasks <span class="badge" id="badge-tasks"></span></button>
+        <button data-view="reminders" class="view-link">Reminders <span class="badge" id="badge-reminders"></span></button>
+        <button data-view="journal" class="view-link">Journal</button>
+        <button data-view="links" class="view-link">Links <span class="badge" id="badge-links"></span></button>
+        <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
+        <hr class="menu-sep">
         <button id="menu-invite">Invite</button>
         <button id="menu-connectors">Connectors</button>
         <button id="menu-refresh">Refresh</button>
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <h1>Daybook</h1>
+    <h1>DayBook</h1>
   </div>
   <div class="header-right">
-    <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
-    <div class="filters" role="group" aria-label="Filter by tag">
+    <input id="search" class="tasks-only" type="search" placeholder="Search cards…" aria-label="Search cards">
+    <div class="filters tasks-only" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <button id="add-card" class="primary">+ Add card</button>
+    <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
+    <button id="add-card" class="primary tasks-only">+ Add card</button>
   </div>
 </header>
 <main id="board">
@@ -257,6 +444,61 @@ pre#ingest-docs {
     <h2>Done</h2>
     <div class="cards"></div>
   </section>
+</main>
+
+<main id="view-reminders" class="view hidden">
+  <div class="view-head">
+    <h2>Reminders</h2>
+    <button id="add-reminder" class="primary">+ Add reminder</button>
+  </div>
+  <div id="reminder-timeline"></div>
+</main>
+
+<main id="view-journal" class="view hidden">
+  <div class="view-head">
+    <h2>Journal</h2>
+    <div class="journal-nav">
+      <button id="j-prev" title="Previous day">←</button>
+      <input id="j-date" type="date" aria-label="Journal date">
+      <button id="j-next" title="Next day">→</button>
+      <button id="j-today">Today</button>
+    </div>
+  </div>
+  <div id="j-dots" class="month-strip"></div>
+  <h3>Auto summary</h3>
+  <div id="j-auto" class="journal-auto"><p class="empty-note">No summary yet.</p></div>
+  <h3>Notes</h3>
+  <div class="journal-toolbar">
+    <button id="j-preview-toggle">Preview</button>
+  </div>
+  <textarea id="j-body" rows="12" placeholder="What happened today…"></textarea>
+  <div id="j-preview" class="journal-preview hidden"></div>
+  <div class="view-actions">
+    <button id="j-save" class="primary">Save</button>
+  </div>
+</main>
+
+<main id="view-links" class="view hidden">
+  <div class="view-head">
+    <h2>Links</h2>
+    <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+    <select id="link-tag-filter" aria-label="Filter by tag"><option value="">All tags</option></select>
+    <button id="add-link" class="primary">+ Add link</button>
+  </div>
+  <div id="already-saved" class="notice hidden"></div>
+  <div id="links-list"></div>
+</main>
+
+<main id="view-inbox" class="view hidden">
+  <div class="view-head">
+    <h2>Inbox</h2>
+    <button id="inbox-toggle-triaged">Show triaged</button>
+  </div>
+  <form id="inbox-form">
+    <input id="inbox-text" placeholder="Capture anything — text, a link, a note…" autocomplete="off">
+    <button type="submit" class="primary">Capture</button>
+  </form>
+  <div id="inbox-list"></div>
 </main>
 
 <div id="modal-backdrop" class="hidden">
@@ -386,6 +628,85 @@ pre#ingest-docs {
   </div>
 </div>
 
+<div id="reminder-backdrop" class="hidden">
+  <form id="reminder-form" class="modal">
+    <h3 id="reminder-title">Add reminder</h3>
+    <label>Title
+      <input id="r-title" required maxlength="160" placeholder="Reminder title">
+    </label>
+    <label>Detail
+      <input id="r-detail" maxlength="2000" placeholder="Context (optional)">
+    </label>
+    <div class="row">
+      <label>Remind at
+        <input id="r-at" type="datetime-local" required>
+      </label>
+      <label>Recurrence <span class="hint">(optional)</span>
+        <input id="r-rrule" maxlength="120" placeholder="FREQ=WEEKLY;BYDAY=SA">
+      </label>
+    </div>
+    <div class="row">
+      <label>Tag
+        <select id="r-tag">
+          <option value="">None</option>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="r-status">
+          <option value="active">Active</option>
+          <option value="snoozed">Snoozed</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="reminder-cancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="link-backdrop" class="hidden">
+  <form id="link-form" class="modal">
+    <h3 id="link-title">Add link</h3>
+    <label>URL
+      <input id="l-url" required maxlength="2000" placeholder="https://…">
+    </label>
+    <label>Title
+      <input id="l-title" required maxlength="200" placeholder="What is this?">
+    </label>
+    <div class="row">
+      <label>Tags <span class="hint">(comma-separated)</span>
+        <input id="l-tags" maxlength="500" placeholder="school, forms">
+      </label>
+      <label>Source
+        <input id="l-source" maxlength="300" placeholder="Where it came from">
+      </label>
+    </div>
+    <label>Notes
+      <textarea id="l-notes" rows="3" maxlength="2000" placeholder="Why I saved this"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" id="link-cancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="triage-backdrop" class="hidden">
+  <form id="triage-form" class="modal">
+    <h3 id="triage-title">Triage to task</h3>
+    <p class="hint" id="triage-source"></p>
+    <div id="triage-fields"></div>
+    <div class="modal-actions">
+      <button type="button" id="triage-cancel">Cancel</button>
+      <button type="submit" class="primary">File it</button>
+    </div>
+  </form>
+</div>
+
 <script>/* Daybook — client logic. Cards live in Supabase Postgres and are
    loaded/saved through /api/cards. No board data is stored in the browser
    or in git. */
@@ -438,6 +759,8 @@ async function init() {
     return;
   }
   render();
+  const hm = location.hash.match(/^#\\/(\\w+)/);
+  await switchView(hm ? hm[1] : 'tasks', false);
 }
 
 function escHtml(s) {
@@ -727,7 +1050,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); closeReminderModal(); closeLinkModal(); closeTriage(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
 });
 
 // ---- In-app confirmation for destructive actions ----
@@ -818,7 +1141,7 @@ document.getElementById('menu-connectors').addEventListener('click', () => {
 });
 document.getElementById('menu-refresh').addEventListener('click', async () => {
   menuEl.classList.add('hidden');
-  try { await loadCards(); }
+  try { await loadCards(); await switchView(currentView, false); }
   catch (e) { alert('Could not refresh. Please try again.'); }
 });
 
@@ -905,6 +1228,723 @@ document.getElementById('key-form').addEventListener('submit', async (e) => {
 });
 
 init();
+
+/* ---- Five-view extension: Reminders / Journal / Links / Inbox ----
+   The board above stays 100% behavior-identical as the Tasks view.
+   Views are toggled via JS with hash routing (#/tasks, #/reminders, …)
+   so the browser back button works. */
+'use strict';
+
+const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox'];
+const VIEW_IDS = {
+  tasks: 'board',
+  reminders: 'view-reminders',
+  journal: 'view-journal',
+  links: 'view-links',
+  inbox: 'view-inbox',
+};
+let currentView = 'tasks';
+
+let reminders = [];
+let editingReminderId = null;
+
+let journalDate = null; // set below after helpers
+let journalPreview = false;
+
+let links = [];
+let allLinks = [];
+let linkSearch = '';
+let linkTag = '';
+let editingLinkId = null;
+let linkSearchTimer = null;
+
+let inboxItems = [];
+let inboxShowTriaged = false;
+let triageItem = null;
+let triageDest = 'task';
+
+/* ---------- small helpers ---------- */
+function pad2(n) { return String(n).padStart(2, '0'); }
+function localDateStr(d) {
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function addDaysLocal(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+function toLocalInput(d) {
+  return localDateStr(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+function fromLocalInput(v) {
+  const d = new Date(v);
+  return isNaN(d) ? null : d.toISOString();
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+function extractUrl(text) {
+  const m = String(text || '').match(/https?:\\/\\/[^\\s)>\\]]+/);
+  return m ? m[0] : '';
+}
+journalDate = localDateStr(new Date());
+
+/* ---------- view switching + hash routing ---------- */
+async function switchView(name, push = true) {
+  if (!VIEWS.includes(name)) name = 'tasks';
+  currentView = name;
+  document.body.dataset.view = name;
+  Object.entries(VIEW_IDS).forEach(([v, id]) => {
+    document.getElementById(id).classList.toggle('hidden', v !== name);
+  });
+  document.querySelectorAll('#menu .view-link').forEach((b) =>
+    b.classList.toggle('active', b.dataset.view === name));
+  menuEl.classList.add('hidden');
+  if (push && location.hash !== '#/' + name) location.hash = '#/' + name;
+  try {
+    await updateBadges();
+    if (name === 'reminders') renderReminders();
+    else if (name === 'journal') await loadJournal();
+    else if (name === 'links') await loadLinks();
+    else if (name === 'inbox') await loadInbox();
+    else render();
+  } catch (e) {
+    console.error('view load failed:', e);
+  }
+}
+
+window.addEventListener('hashchange', () => {
+  const m = location.hash.match(/^#\\/(\\w+)/);
+  const name = m ? m[1] : 'tasks';
+  if (name !== currentView) switchView(name, false);
+});
+
+document.querySelectorAll('#menu .view-link').forEach((b) =>
+  b.addEventListener('click', () => switchView(b.dataset.view)));
+
+/* ---------- badges ---------- */
+function setBadge(id, n, hot) {
+  const el = document.getElementById(id);
+  el.textContent = n;
+  el.classList.toggle('zero', n === 0);
+  el.classList.toggle('hot', !!hot && n > 0);
+}
+
+async function updateBadges() {
+  try {
+    const [rems, lks, ib] = await Promise.all([
+      api('GET', '/api/reminders'),
+      api('GET', '/api/links'),
+      api('GET', '/api/inbox?badge=1'),
+    ]);
+    reminders = rems;
+    allLinks = lks;
+    const nowMs = Date.now();
+    const due = rems.filter((r) =>
+      (r.status === 'active' || r.status === 'snoozed') && new Date(r.remind_at).getTime() <= nowMs
+    ).length;
+    const nowCount = cards.filter((c) => c.lane === 'now' && !c.deleted_at).length;
+    setBadge('badge-tasks', nowCount, false);
+    setBadge('badge-reminders', due, due > 0);
+    setBadge('badge-links', lks.length, false);
+    setBadge('badge-inbox', ib.count, ib.count > 0);
+    const dot = document.getElementById('menu-dot');
+    dot.textContent = ib.count > 99 ? '99+' : String(ib.count);
+    dot.classList.toggle('hidden', ib.count === 0);
+  } catch (e) { /* badges are non-fatal */ }
+}
+
+/* ---------- Reminders ---------- */
+function rruleLabel(rrule) {
+  if (!rrule) return '';
+  const p = {};
+  rrule.split(';').forEach((x) => {
+    const i = x.indexOf('=');
+    if (i > 0) p[x.slice(0, i).toUpperCase()] = x.slice(i + 1);
+  });
+  const freq = (p.FREQ || '').toUpperCase();
+  const interval = parseInt(p.INTERVAL || '1', 10) || 1;
+  const dn = { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' };
+  const days = (p.BYDAY || '').split(',').map((d) => dn[d]).filter(Boolean).join(', ');
+  const ev = (s) => (interval > 1 ? \`Every \${interval} \${s}s\` : s[0].toUpperCase() + s.slice(1));
+  if (freq === 'WEEKLY') return \`\${ev('week')}\${days ? ' · ' + days : ''}\`;
+  if (freq === 'DAILY') return ev('day');
+  if (freq === 'MONTHLY') return \`\${ev('month')}\${p.BYMONTHDAY ? ' · ' + p.BYMONTHDAY + 'th' : ''}\`;
+  if (freq === 'YEARLY') return ev('year');
+  return rrule;
+}
+
+function renderReminders() {
+  const box = document.getElementById('reminder-timeline');
+  const now = new Date();
+  const startToday = new Date(now);
+  startToday.setHours(0, 0, 0, 0);
+  const tmr = localDateStr(addDaysLocal(now, 1));
+  const weekStart = addDaysLocal(startToday, -((startToday.getDay() + 6) % 7));
+  const nextWeekStart = addDaysLocal(weekStart, 7);
+  const groups = { Overdue: [], Today: [], Tomorrow: [], 'This week': [], Later: [] };
+  reminders
+    .filter((r) => r.status === 'active' || r.status === 'snoozed')
+    .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
+    .forEach((r) => {
+      const at = new Date(r.remind_at);
+      const key = at < startToday ? 'Overdue'
+        : localDateStr(at) === localDateStr(now) ? 'Today'
+        : localDateStr(at) === tmr ? 'Tomorrow'
+        : at < nextWeekStart ? 'This week' : 'Later';
+      groups[key].push(r);
+    });
+  box.innerHTML = '';
+  let any = false;
+  Object.entries(groups).forEach(([name, list]) => {
+    if (!list.length) return;
+    any = true;
+    const g = document.createElement('div');
+    g.className = 'tl-group';
+    const h = document.createElement('h3');
+    h.textContent = name + ' (' + list.length + ')';
+    g.appendChild(h);
+    list.forEach((r) => g.appendChild(remRow(r)));
+    box.appendChild(g);
+  });
+  if (!any) box.innerHTML = '<p class="empty-note">No active reminders.</p>';
+}
+
+function remRow(r) {
+  const el = document.createElement('div');
+  const sod = new Date();
+  sod.setHours(0, 0, 0, 0);
+  el.className = 'rem-row' +
+    (new Date(r.remind_at) < sod ? ' is-overdue' : '') +
+    (r.status === 'snoozed' ? ' is-snoozed' : '');
+  const label = rruleLabel(r.recurrence);
+  el.innerHTML =
+    \`<div class="rem-time">\${escHtml(fmtTime(r.remind_at))}</div>\` +
+    \`<div class="rem-main"><h4>\${escHtml(r.title)}\` +
+    (label ? \`<span class="rec-label">\${escHtml(label)}</span>\` : '') +
+    (r.status === 'snoozed' ? '<span class="status-pill">Snoozed</span>' : '') +
+    \`</h4>\` + (r.detail ? \`<p>\${escHtml(r.detail)}</p>\` : '') + \`</div>\` +
+    \`<div class="rem-actions"><button data-a="dismiss">Dismiss</button>\` +
+    \`<button data-a="snooze">Snooze</button><button data-a="edit">Edit</button></div>\`;
+  el.querySelectorAll('button').forEach((b) =>
+    b.addEventListener('click', () => remAct(r.id, b.dataset.a)));
+  return el;
+}
+
+async function remAct(id, a) {
+  try {
+    if (a === 'edit') {
+      openReminderModal(reminders.find((x) => x.id === id));
+      return;
+    }
+    if (a === 'snooze') {
+      const mins = prompt('Snooze for how many minutes?', '30');
+      if (mins === null) return;
+      await api('POST', '/api/reminders?id=' + encodeURIComponent(id), {
+        action: 'snooze', minutes: parseInt(mins, 10) || 30,
+      });
+    } else if (a === 'dismiss') {
+      const yes = await confirmAction({
+        title: 'Dismiss this reminder?',
+        message: 'Recurring reminders move to their next occurrence.',
+        confirmLabel: 'Dismiss',
+      });
+      if (!yes) return;
+      await api('POST', '/api/reminders?id=' + encodeURIComponent(id), { action: 'dismiss' });
+    }
+    await updateBadges();
+    renderReminders();
+  } catch (e) {
+    alert('Could not update the reminder. Please try again.');
+  }
+}
+
+function openReminderModal(r) {
+  editingReminderId = r ? r.id : null;
+  document.getElementById('reminder-title').textContent = r ? 'Edit reminder' : 'Add reminder';
+  document.getElementById('r-title').value = r ? r.title : '';
+  document.getElementById('r-detail').value = r ? (r.detail || '') : '';
+  const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
+  d.setMinutes(0, 0, 0);
+  document.getElementById('r-at').value = toLocalInput(d);
+  document.getElementById('r-rrule').value = r ? (r.recurrence || '') : '';
+  document.getElementById('r-tag').value = r && r.tag ? r.tag : '';
+  document.getElementById('r-status').value = r ? r.status : 'active';
+  document.getElementById('reminder-backdrop').classList.remove('hidden');
+  document.getElementById('r-title').focus();
+}
+function closeReminderModal() {
+  document.getElementById('reminder-backdrop').classList.add('hidden');
+  editingReminderId = null;
+}
+document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
+document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
+document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'reminder-backdrop') closeReminderModal();
+});
+document.getElementById('reminder-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const at = fromLocalInput(document.getElementById('r-at').value);
+  if (!at) { alert('Pick a valid date and time.'); return; }
+  const data = {
+    title: document.getElementById('r-title').value.trim(),
+    detail: document.getElementById('r-detail').value.trim(),
+    remind_at: at,
+    recurrence: document.getElementById('r-rrule').value.trim() || null,
+    tag: document.getElementById('r-tag').value || null,
+    status: document.getElementById('r-status').value,
+  };
+  if (!data.title) return;
+  try {
+    if (editingReminderId) {
+      await api('PATCH', '/api/reminders?id=' + encodeURIComponent(editingReminderId), data);
+    } else {
+      await api('POST', '/api/reminders', data);
+    }
+    closeReminderModal();
+    await updateBadges();
+    renderReminders();
+  } catch (err) {
+    alert('Could not save the reminder. Please try again.');
+  }
+});
+
+/* ---------- Journal ---------- */
+async function loadJournal() {
+  const e = await api('GET', '/api/journal?date=' + journalDate);
+  document.getElementById('j-date').value = journalDate;
+  document.getElementById('j-body').value = e ? (e.body || '') : '';
+  journalPreview = false;
+  document.getElementById('j-preview').classList.add('hidden');
+  document.getElementById('j-body').classList.remove('hidden');
+  document.getElementById('j-preview-toggle').textContent = 'Preview';
+  const auto = document.getElementById('j-auto');
+  if (e && e.auto_summary) auto.textContent = e.auto_summary;
+  else auto.innerHTML = '<p class="empty-note">No summary yet.</p>';
+  await loadJournalDots();
+}
+
+async function loadJournalDots() {
+  const month = journalDate.slice(0, 7);
+  let dates = [];
+  try {
+    dates = await api('GET', '/api/journal?month=' + month);
+  } catch (e) { /* non-fatal */ }
+  const set = new Set(dates);
+  const [y, m] = month.split('-').map(Number);
+  const daysIn = new Date(y, m, 0).getDate();
+  const today = localDateStr(new Date());
+  const box = document.getElementById('j-dots');
+  box.innerHTML = '';
+  const label = document.createElement('span');
+  label.className = 'empty-note';
+  label.textContent = new Date(y, m - 1, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  box.appendChild(label);
+  for (let d = 1; d <= daysIn; d++) {
+    const ds = month + '-' + pad2(d);
+    const b = document.createElement('button');
+    b.className = 'day-cell' + (ds === today ? ' today' : '') + (ds === journalDate ? ' selected' : '');
+    b.innerHTML = \`<span>\${d}</span><span class="dot\${set.has(ds) ? '' : ' none'}"></span>\`;
+    b.addEventListener('click', () => { journalDate = ds; loadJournal(); });
+    box.appendChild(b);
+  }
+}
+
+// Tiny Markdown renderer (bold, italic, code, headings, lists). Good enough for v1.
+function md(src) {
+  let h = escHtml(src);
+  h = h.replace(/^### (.*)\$/gm, '<h4>\$1</h4>')
+    .replace(/^## (.*)\$/gm, '<h3>\$1</h3>')
+    .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>\$1</strong>')
+    .replace(/(^|[\\s(])\\*([^*\\n]+)\\*/g, '\$1<em>\$2</em>')
+    .replace(/\`([^\`]+)\`/g, '<code>\$1</code>')
+    .replace(/^- (.*)\$/gm, '<li>\$1</li>');
+  h = h.replace(/(<li>.*?<\\/li>(?:\\n)?)+/g, (m) => '<ul>' + m + '</ul>');
+  return h.replace(/\\n/g, '<br>');
+}
+
+function shiftJournalDate(n) {
+  journalDate = localDateStr(addDaysLocal(new Date(journalDate + 'T12:00:00'), n));
+  loadJournal();
+}
+document.getElementById('j-prev').addEventListener('click', () => shiftJournalDate(-1));
+document.getElementById('j-next').addEventListener('click', () => shiftJournalDate(1));
+document.getElementById('j-today').addEventListener('click', () => {
+  journalDate = localDateStr(new Date());
+  loadJournal();
+});
+document.getElementById('j-date').addEventListener('change', (e) => {
+  if (e.target.value) { journalDate = e.target.value; loadJournal(); }
+});
+document.getElementById('j-preview-toggle').addEventListener('click', () => {
+  journalPreview = !journalPreview;
+  document.getElementById('j-preview').classList.toggle('hidden', !journalPreview);
+  document.getElementById('j-body').classList.toggle('hidden', journalPreview);
+  if (journalPreview) {
+    document.getElementById('j-preview').innerHTML =
+      md(document.getElementById('j-body').value) || '<p class="empty-note">Nothing to preview.</p>';
+  }
+  document.getElementById('j-preview-toggle').textContent = journalPreview ? 'Edit' : 'Preview';
+});
+document.getElementById('j-save').addEventListener('click', async () => {
+  try {
+    await api('POST', '/api/journal', { date: journalDate, body: document.getElementById('j-body').value });
+    await loadJournalDots();
+  } catch (e) {
+    alert('Could not save the journal entry. Please try again.');
+  }
+});
+
+/* ---------- Links ---------- */
+async function loadLinks() {
+  const p = new URLSearchParams();
+  if (linkSearch) p.set('q', linkSearch);
+  if (linkTag) p.set('tag', linkTag);
+  const qs = p.toString();
+  links = await api('GET', '/api/links' + (qs ? '?' + qs : ''));
+  renderLinks();
+  refreshLinkTagFilter();
+}
+
+function refreshLinkTagFilter() {
+  const sel = document.getElementById('link-tag-filter');
+  const cur = linkTag;
+  const set = new Set();
+  allLinks.forEach((l) => (l.tags || '').split(',').forEach((t) => {
+    t = t.trim();
+    if (t) set.add(t);
+  }));
+  sel.innerHTML = '<option value="">All tags</option>';
+  [...set].sort().forEach((t) => {
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+}
+
+function renderLinks() {
+  const box = document.getElementById('links-list');
+  box.innerHTML = '';
+  if (!links.length) {
+    box.innerHTML = '<p class="empty-note">No links yet. Save one above, or triage captures from the Inbox.</p>';
+    return;
+  }
+  links.forEach((l) => box.appendChild(linkRow(l)));
+}
+
+function linkRow(l) {
+  const el = document.createElement('div');
+  el.className = 'link-row';
+  el.dataset.id = l.id;
+  let host = l.url;
+  try { host = new URL(l.url).host; } catch (e) { /* keep raw url */ }
+  const tags = (l.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  el.innerHTML =
+    \`<div class="link-main"><a href="\${escHtml(l.url)}" target="_blank" rel="noopener">\${escHtml(l.title)}</a>\` +
+    \`<div class="link-host">\${escHtml(host)}</div>\` +
+    (l.notes ? \`<div class="link-meta">\${escHtml(l.notes)}</div>\` : '') +
+    \`<div class="link-meta">\${l.source ? escHtml(l.source) + ' · ' : ''}\` +
+    \`\${l.captured_at ? new Date(l.captured_at).toLocaleDateString() : ''}</div>\` +
+    (tags.length ? \`<div class="link-tags">\${tags.map((t) => \`<span class="link-tag">\${escHtml(t)}</span>\`).join('')}</div>\` : '') +
+    \`</div>\` +
+    \`<div class="link-actions"><button data-a="open">Open</button>\` +
+    \`<button data-a="copy">Copy URL</button><button data-a="edit">Edit</button>\` +
+    \`<button data-a="delete">Delete</button></div>\`;
+  el.querySelectorAll('button').forEach((b) =>
+    b.addEventListener('click', () => linkAct(l.id, b.dataset.a)));
+  return el;
+}
+
+async function linkAct(id, a) {
+  const l = links.find((x) => x.id === id) || allLinks.find((x) => x.id === id);
+  if (!l) return;
+  try {
+    if (a === 'open') { window.open(l.url, '_blank', 'noopener'); return; }
+    if (a === 'copy') {
+      try {
+        await navigator.clipboard.writeText(l.url);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = l.url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      return;
+    }
+    if (a === 'edit') { openLinkModal(l); return; }
+    if (a === 'delete') {
+      const yes = await confirmAction({
+        title: 'Delete this link?',
+        message: \`"\${l.title}" will be removed from the shelf.\`,
+        confirmLabel: 'Delete',
+      });
+      if (!yes) return;
+      await api('DELETE', '/api/links?id=' + encodeURIComponent(id));
+      await updateBadges();
+      await loadLinks();
+    }
+  } catch (e) {
+    alert('Could not update the link. Please try again.');
+  }
+}
+
+function openLinkModal(l) {
+  editingLinkId = l ? l.id : null;
+  document.getElementById('link-title').textContent = l ? 'Edit link' : 'Add link';
+  document.getElementById('l-url').value = l ? l.url : '';
+  document.getElementById('l-title').value = l ? l.title : '';
+  document.getElementById('l-tags').value = l ? (l.tags || '') : '';
+  document.getElementById('l-source').value = l ? (l.source || '') : '';
+  document.getElementById('l-notes').value = l ? (l.notes || '') : '';
+  document.getElementById('link-backdrop').classList.remove('hidden');
+  document.getElementById('l-url').focus();
+}
+function closeLinkModal() {
+  document.getElementById('link-backdrop').classList.add('hidden');
+  editingLinkId = null;
+}
+document.getElementById('add-link').addEventListener('click', () => openLinkModal(null));
+document.getElementById('link-cancel').addEventListener('click', closeLinkModal);
+document.getElementById('link-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'link-backdrop') closeLinkModal();
+});
+document.getElementById('link-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {
+    url: document.getElementById('l-url').value.trim(),
+    title: document.getElementById('l-title').value.trim(),
+    tags: document.getElementById('l-tags').value.trim(),
+    source: document.getElementById('l-source').value.trim() || null,
+    notes: document.getElementById('l-notes').value.trim(),
+  };
+  if (!data.url || !data.title) return;
+  try {
+    const res = editingLinkId
+      ? await api('PATCH', '/api/links?id=' + encodeURIComponent(editingLinkId), data)
+      : await api('POST', '/api/links', data);
+    closeLinkModal();
+    const notice = document.getElementById('already-saved');
+    if (res && res.alreadySaved) {
+      notice.textContent = 'Already saved — showing the existing link instead of creating a duplicate.';
+      notice.classList.remove('hidden');
+    } else {
+      notice.classList.add('hidden');
+    }
+    await updateBadges();
+    await loadLinks();
+    if (res && res.alreadySaved) {
+      const row = document.querySelector(\`.link-row[data-id="\${res.id}"]\`);
+      if (row) {
+        row.classList.add('flash');
+        row.scrollIntoView({ block: 'center' });
+      }
+    }
+  } catch (err) {
+    alert('Could not save the link. Please try again.');
+  }
+});
+document.getElementById('link-search').addEventListener('input', (e) => {
+  clearTimeout(linkSearchTimer);
+  linkSearchTimer = setTimeout(() => {
+    linkSearch = e.target.value.trim();
+    loadLinks();
+  }, 300);
+});
+document.getElementById('link-tag-filter').addEventListener('change', (e) => {
+  linkTag = e.target.value;
+  loadLinks();
+});
+
+/* ---------- Inbox ---------- */
+async function loadInbox() {
+  inboxItems = await api('GET', '/api/inbox?triaged=' + (inboxShowTriaged ? 'all' : 'false'));
+  renderInbox();
+}
+
+function renderInbox() {
+  const box = document.getElementById('inbox-list');
+  document.getElementById('inbox-toggle-triaged').textContent =
+    inboxShowTriaged ? 'Hide triaged' : 'Show triaged';
+  box.innerHTML = '';
+  const list = inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged);
+  if (!list.length) {
+    box.innerHTML = \`<p class="empty-note">\${inboxShowTriaged ? 'Nothing here yet.' : 'Inbox zero. Capture something above.'}</p>\`;
+    return;
+  }
+  list.forEach((it) => box.appendChild(inboxRow(it)));
+}
+
+function inboxRow(it) {
+  const el = document.createElement('div');
+  el.className = 'inbox-row';
+  const when = it.created_at ? new Date(it.created_at).toLocaleString() : '';
+  const srcLabel = { manual: 'Manual', email: 'Email', chat: 'Chat' }[it.source] || it.source;
+  el.innerHTML = \`<p></p><div class="inbox-meta"><span class="src-pill">\${escHtml(srcLabel)}</span>\${escHtml(when)}</div>\`;
+  el.querySelector('p').textContent = it.text;
+  if (it.triaged) {
+    const d = document.createElement('div');
+    d.className = 'triage-dest';
+    const destLabel = { task: 'Task', reminder: 'Reminder', journal: 'Journal', link: 'Link' }[it.triaged_to_type] || it.triaged_to_type;
+    d.textContent = \`Filed as \${destLabel} · \`;
+    const btn = document.createElement('button');
+    btn.textContent = 'Open';
+    btn.addEventListener('click', () =>
+      switchView(it.triaged_to_type === 'task' ? 'tasks' : it.triaged_to_type));
+    d.appendChild(btn);
+    el.appendChild(d);
+  } else {
+    const bar = document.createElement('div');
+    bar.className = 'triage-btns';
+    [['task', 'To task'], ['reminder', 'To reminder'], ['journal', 'To journal'], ['link', 'To link']]
+      .forEach(([to, label]) => {
+        const b = document.createElement('button');
+        b.textContent = label;
+        b.addEventListener('click', () => openTriage(it, to));
+        bar.appendChild(b);
+      });
+    const del = document.createElement('button');
+    del.textContent = 'Discard';
+    del.className = 'discard';
+    del.addEventListener('click', () => discardInbox(it.id));
+    bar.appendChild(del);
+    el.appendChild(bar);
+  }
+  return el;
+}
+
+document.getElementById('inbox-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('inbox-text');
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    await api('POST', '/api/inbox', { text, source: 'manual' });
+    input.value = '';
+    await updateBadges();
+    await loadInbox();
+  } catch (err) {
+    alert('Could not capture. Please try again.');
+  }
+});
+document.getElementById('inbox-toggle-triaged').addEventListener('click', async () => {
+  inboxShowTriaged = !inboxShowTriaged;
+  await loadInbox();
+});
+async function discardInbox(id) {
+  const yes = await confirmAction({
+    title: 'Discard this capture?',
+    message: 'It will be removed from the Inbox.',
+    confirmLabel: 'Discard',
+  });
+  if (!yes) return;
+  try {
+    await api('DELETE', '/api/inbox?id=' + encodeURIComponent(id));
+    await updateBadges();
+    await loadInbox();
+  } catch (e) {
+    alert('Could not discard. Please try again.');
+  }
+}
+
+/* ---------- Triage modal ---------- */
+function triageField(label, html) {
+  return \`<label>\${label}\${html}</label>\`;
+}
+
+function openTriage(item, to) {
+  triageItem = item;
+  triageDest = to;
+  const destName = { task: 'task', reminder: 'reminder', journal: 'journal', link: 'link' }[to];
+  document.getElementById('triage-title').textContent = 'Triage to ' + destName;
+  document.getElementById('triage-source').textContent = 'From: ' + item.text.slice(0, 120);
+  const firstLine = item.text.split('\\n')[0].slice(0, 160);
+  const f = document.getElementById('triage-fields');
+  if (to === 'task') {
+    f.innerHTML =
+      triageField('Title', \`<input id="t-title" required maxlength="160" value="\${escHtml(firstLine)}">\`) +
+      triageField('Details', \`<textarea id="t-details" rows="3" maxlength="2000">\${escHtml(item.text)}</textarea>\`) +
+      \`<div class="row">\` +
+      triageField('Lane', \`<select id="t-lane"><option value="now">Now</option><option value="next" selected>Next</option><option value="waiting">Waiting on others</option><option value="done">Done</option></select>\`) +
+      triageField('Tag', \`<select id="t-tag"><option value="work">Work</option><option value="personal">Personal</option></select>\`) +
+      \`</div>\`;
+  } else if (to === 'reminder') {
+    const nh = new Date();
+    nh.setMinutes(0, 0, 0);
+    nh.setHours(nh.getHours() + 1);
+    f.innerHTML =
+      triageField('Title', \`<input id="t-title" required maxlength="160" value="\${escHtml(firstLine)}">\`) +
+      triageField('Detail', \`<input id="t-detail" maxlength="2000">\`) +
+      \`<div class="row">\` +
+      triageField('Remind at', \`<input id="t-at" type="datetime-local" required value="\${toLocalInput(nh)}">\`) +
+      triageField('Recurrence <span class="hint">(optional)</span>', \`<input id="t-rrule" maxlength="120" placeholder="FREQ=WEEKLY;BYDAY=SA">\`) +
+      \`</div>\`;
+  } else if (to === 'journal') {
+    f.innerHTML =
+      triageField('Date', \`<input id="t-date" type="date" required value="\${localDateStr(new Date())}">\`) +
+      triageField('Append to journal', \`<textarea id="t-text" rows="4">\${escHtml(item.text)}</textarea>\`);
+  } else {
+    const u = extractUrl(item.text);
+    f.innerHTML =
+      triageField('URL', \`<input id="t-url" required maxlength="2000" value="\${escHtml(u)}">\`) +
+      triageField('Title', \`<input id="t-title" required maxlength="200" value="\${escHtml(u ? firstLine : '')}">\`) +
+      \`<div class="row">\` +
+      triageField('Tags <span class="hint">(comma-separated)</span>', \`<input id="t-tags" maxlength="500" placeholder="school, forms">\`) +
+      triageField('Source', \`<input id="t-source" maxlength="300" value="Inbox">\`) +
+      \`</div>\` +
+      triageField('Notes', \`<textarea id="t-notes" rows="2" maxlength="2000"></textarea>\`);
+  }
+  document.getElementById('triage-backdrop').classList.remove('hidden');
+  const first = f.querySelector('input, textarea, select');
+  if (first) first.focus();
+}
+function closeTriage() {
+  document.getElementById('triage-backdrop').classList.add('hidden');
+  triageItem = null;
+}
+document.getElementById('triage-cancel').addEventListener('click', closeTriage);
+document.getElementById('triage-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'triage-backdrop') closeTriage();
+});
+document.getElementById('triage-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!triageItem) return;
+  const v = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  };
+  let data;
+  if (triageDest === 'task') {
+    data = { title: v('t-title'), details: v('t-details'), lane: v('t-lane'), tag: v('t-tag'), priority: 'normal' };
+    if (!data.title) return;
+  } else if (triageDest === 'reminder') {
+    const at = fromLocalInput(document.getElementById('t-at').value);
+    if (!at) { alert('Pick a valid date and time.'); return; }
+    data = { title: v('t-title'), detail: v('t-detail'), remind_at: at, recurrence: v('t-rrule') || null, tag: null };
+    if (!data.title) return;
+  } else if (triageDest === 'journal') {
+    const d = v('t-date');
+    if (!/^\\d{4}-\\d{2}-\\d{2}\$/.test(d)) { alert('Pick a valid date.'); return; }
+    data = { date: d, text: v('t-text') };
+  } else {
+    data = { url: v('t-url'), title: v('t-title'), tags: v('t-tags'), source: v('t-source'), notes: v('t-notes') };
+    if (!data.url) return;
+    if (!data.title) data.title = data.url;
+  }
+  try {
+    await api('POST', '/api/inbox?id=' + encodeURIComponent(triageItem.id), { to: triageDest, data });
+    closeTriage();
+    await updateBadges();
+    await loadInbox();
+  } catch (err) {
+    alert('Could not file this capture. Please try again.');
+  }
+});
 </script>
 </body>
 </html>
