@@ -364,12 +364,24 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .link-tag {
   font-size: 0.7rem; background: var(--lane); border-radius: 999px; padding: 0.1rem 0.5rem;
 }
-.link-actions { display: flex; gap: 0.35rem; flex: none; flex-wrap: wrap; }
-.link-actions button {
+.link-actions { display: flex; flex: none; }
+.link-menu-btn {
   border: 1px solid var(--line); background: #fff; border-radius: 6px;
-  font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer; color: var(--muted);
+  font-size: 1rem; line-height: 1; padding: 0.3rem 0.55rem; cursor: pointer; color: var(--muted);
 }
-.link-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
+.link-menu-btn:hover { color: var(--ink); border-color: #cbd5e1; }
+.popup-menu {
+  position: fixed; z-index: 1000; min-width: 150px;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 0.25rem;
+}
+.popup-menu.hidden { display: none; }
+.popup-menu button {
+  display: block; width: 100%; text-align: left; border: 0; background: none;
+  padding: 0.55rem 0.75rem; font-size: 0.85rem; border-radius: 6px; cursor: pointer; color: var(--ink);
+}
+.popup-menu button:hover { background: var(--lane); }
+.popup-menu button.danger { color: #b91c1c; }
 .notice {
   background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px;
   padding: 0.6rem 0.9rem; font-size: 0.85rem; margin-bottom: 0.75rem;
@@ -524,6 +536,12 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   </div>
   <div id="already-saved" class="notice hidden"></div>
   <div id="links-list"></div>
+  <div id="link-menu" class="popup-menu hidden" role="menu">
+    <button data-a="open" role="menuitem">Open</button>
+    <button data-a="copy" role="menuitem">Copy URL</button>
+    <button data-a="edit" role="menuitem">Edit</button>
+    <button data-a="delete" role="menuitem" class="danger">Delete</button>
+  </div>
 </main>
 
 <main id="view-inbox" class="view hidden">
@@ -767,7 +785,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 11:26 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 11:34 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1180,6 +1198,7 @@ document.getElementById('menu-btn').addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!menuEl.classList.contains('hidden') && !e.target.closest('.menu-wrap')) {
     menuEl.classList.add('hidden');
+  closeLinkMenu();
   }
 });
 document.getElementById('menu-invite').addEventListener('click', () => {
@@ -1721,15 +1740,42 @@ function linkRow(l) {
     \`<div class="link-sub">\${escHtml(metaBits)}</div>\` +
     (tags.length ? \`<div class="link-tags">\${tags.map((t) => \`<span class="link-tag">\${escHtml(t)}</span>\`).join('')}</div>\` : '') +
     \`</div></div>\` +
-    \`<div class="link-actions"><button data-a="open">Open</button>\` +
-    \`<button data-a="copy">Copy URL</button><button data-a="edit">Edit</button>\` +
-    \`<button data-a="delete">Delete</button></div>\`;
-  el.querySelector('.link-main').addEventListener('click', (e) => {
-    if (e.target.closest('a')) return; // let the title link navigate
-    el.classList.toggle('expanded');
+    \`<div class="link-actions"><button class="link-menu-btn" aria-label="Link actions" title="Actions">\\u22ee</button></div>\`;
+  el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLinkMenu(l.id, e.currentTarget);
   });
-  el.querySelectorAll('button').forEach((b) =>
-    b.addEventListener('click', () => linkAct(l.id, b.dataset.a)));
+
+// One icon per link row opens a shared popup menu.
+let linkMenuFor = null;
+function closeLinkMenu() {
+  const m = document.getElementById('link-menu');
+  if (m) m.classList.add('hidden');
+  linkMenuFor = null;
+}
+function toggleLinkMenu(id, btn) {
+  const menu = document.getElementById('link-menu');
+  if (linkMenuFor === id) { closeLinkMenu(); return; }
+  linkMenuFor = id;
+  menu.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { closeLinkMenu(); linkAct(id, b.dataset.a); };
+  });
+  menu.classList.remove('hidden');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.right - mw, window.innerWidth - mw - 8);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 8) y = Math.max(8, r.top - mh - 6);
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top = y + 'px';
+}
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('link-menu');
+  if (!menu || menu.classList.contains('hidden')) return;
+  if (e.target.closest('#link-menu') || e.target.closest('.link-menu-btn')) return;
+  closeLinkMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLinkMenu(); });
   return el;
 }
 
