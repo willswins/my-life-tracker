@@ -953,17 +953,23 @@ function linkRow(l) {
   let host = l.url;
   try { host = new URL(l.url).host; } catch (e) { /* keep raw url */ }
   const tags = (l.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const date = l.captured_at ? new Date(l.captured_at).toLocaleDateString() : '';
+  const metaBits = [host, l.source, date].filter(Boolean).join(' \u00b7 ');
   el.innerHTML =
-    `<div class="link-main"><a href="${escHtml(l.url)}" target="_blank" rel="noopener">${escHtml(l.title)}</a>` +
-    `<div class="link-host">${escHtml(host)}</div>` +
-    (l.notes ? `<div class="link-meta">${escHtml(l.notes)}</div>` : '') +
-    `<div class="link-meta">${l.source ? escHtml(l.source) + ' · ' : ''}` +
-    `${l.captured_at ? new Date(l.captured_at).toLocaleDateString() : ''}</div>` +
+    `<div class="link-main"><a class="link-title" href="${escHtml(l.url)}" target="_blank" rel="noopener">${escHtml(l.title)}</a>` +
+    `<div class="link-line2">${l.notes ? escHtml(l.notes) : escHtml(metaBits)}</div>` +
+    `<div class="link-detail">` +
+    (l.notes ? `<div class="link-notes-full">${escHtml(l.notes)}</div>` : '') +
+    `<div class="link-sub">${escHtml(metaBits)}</div>` +
     (tags.length ? `<div class="link-tags">${tags.map((t) => `<span class="link-tag">${escHtml(t)}</span>`).join('')}</div>` : '') +
-    `</div>` +
+    `</div></div>` +
     `<div class="link-actions"><button data-a="open">Open</button>` +
     `<button data-a="copy">Copy URL</button><button data-a="edit">Edit</button>` +
     `<button data-a="delete">Delete</button></div>`;
+  el.querySelector('.link-main').addEventListener('click', (e) => {
+    if (e.target.closest('a')) return; // let the title link navigate
+    el.classList.toggle('expanded');
+  });
   el.querySelectorAll('button').forEach((b) =>
     b.addEventListener('click', () => linkAct(l.id, b.dataset.a)));
   return el;

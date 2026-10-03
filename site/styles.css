@@ -335,8 +335,21 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .link-main { flex: 1; min-width: 0; }
 .link-main a { font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none; }
 .link-main a:hover { text-decoration: underline; }
-.link-host { font-size: 0.75rem; color: var(--muted); }
-.link-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+.link-main { flex: 1; min-width: 0; cursor: pointer; }
+.link-title {
+  display: block; font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.link-title:hover { text-decoration: underline; }
+.link-line2 {
+  font-size: 0.78rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.link-detail { display: none; margin-top: 0.3rem; }
+.link-row.expanded .link-detail { display: block; }
+.link-row.expanded .link-line2 { display: none; }
+.link-notes-full { font-size: 0.82rem; color: var(--ink); white-space: pre-wrap; margin-bottom: 0.25rem; }
+.link-sub { font-size: 0.75rem; color: var(--muted); }
 .link-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
 .link-tag {
   font-size: 0.7rem; background: var(--lane); border-radius: 999px; padding: 0.1rem 0.5rem;
