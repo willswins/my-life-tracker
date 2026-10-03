@@ -445,9 +445,8 @@ pre#ingest-docs {
 .about-meta dd { margin: 0; color: var(--muted); }
 
 /* Journal list screen */
-.filter-pills { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
-.filter-pill.active { background: #dbeafe; border-color: transparent; color: #1d4ed8; font-weight: 700; }
-#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 5rem; }
+#view-journal .filters { margin-bottom: 0.9rem; }
+#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 2rem; }
 .entry-card {
   display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
   width: 100%; cursor: pointer; font: inherit; color: inherit;
