@@ -41,7 +41,6 @@ header {
 }
 .header-left { display: flex; align-items: center; gap: 0.6rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
-.header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .search-add { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 240px; }
 .search-add input[type="search"] { flex: 1; min-width: 0; width: auto; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
@@ -94,14 +93,16 @@ button.primary {
 .signout:hover { text-decoration: underline; }
 
 #board {
+  padding: 1rem 1.25rem 3rem;
+}
+#lanes {
   display: grid;
   grid-template-columns: repeat(4, minmax(260px, 1fr));
   gap: 1rem;
-  padding: 1rem 1.25rem 3rem;
   align-items: start;
 }
-@media (max-width: 1100px) { #board { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { #board { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { #lanes { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { #lanes { grid-template-columns: 1fr; } }
 
 .lane { background: var(--lane); border-radius: 12px; padding: 0.75rem; min-height: 200px; }
 .lane h2 { font-size: 0.95rem; margin: 0.25rem 0.25rem 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
@@ -224,9 +225,6 @@ pre#ingest-docs {
 }
 
 /* ---- Five-view extension: Tasks / Reminders / Journal / Links / Inbox ---- */
-
-/* Board-only header controls hide on the other views */
-body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 .view { padding: 1rem 1.25rem 3rem; max-width: 900px; }
 .view-head {
@@ -561,21 +559,22 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <img id="app-icon" src="/icon.png" alt="DayBook">
     <h1 id="view-title">My Board</h1>
   </div>
-  <div class="header-right">
-    <div class="search-add tasks-only">
+</header>
+<main id="board">
+  <div class="view-head">
+    <div class="search-add">
       <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
       <button id="add-card" class="primary">+ Add card</button>
     </div>
-    <div class="filters tasks-only" role="group" aria-label="Filter by tag">
+    <div class="filters" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
   </div>
-</header>
-<main id="board">
+  <div id="lanes">
   <section class="lane" data-lane="now">
     <h2>Now</h2>
     <div class="cards"></div>
@@ -592,6 +591,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <h2>Done</h2>
     <div class="cards"></div>
   </section>
+  </div>
 </main>
 
 <main id="view-reminders" class="view hidden">
@@ -935,7 +935,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 4:56 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 5:05 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -973,7 +973,7 @@ async function init() {
   try {
     await loadCards();
   } catch (e) {
-    document.querySelector('#board').innerHTML =
+    document.querySelector('#lanes').innerHTML =
       '<p style="color:#b91c1c">Could not load cards. Please refresh.</p>';
     return;
   }
