@@ -4,7 +4,7 @@ const HTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — My Board</title>
+<title>Sign in — Daybook</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
   .box { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 2.5rem; text-align: center; max-width: 360px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
@@ -16,7 +16,7 @@ const HTML = `<!DOCTYPE html>
 </head>
 <body>
   <div class="box">
-    <h1>My Board</h1>
+    <h1>Daybook</h1>
     <div class="err" id="err" style="display:none"></div>
     <p>This board is private. Sign in with Google to continue.</p>
     <div id="btn-wrap"></div>

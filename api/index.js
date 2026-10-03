@@ -5,7 +5,7 @@ const HTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My Board</title>
+<title>Daybook</title>
 <style>:root {
   --work: #2563eb;
   --work-bg: #dbeafe;
@@ -226,7 +226,7 @@ pre#ingest-docs {
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <h1>My Board</h1>
+    <h1>Daybook</h1>
   </div>
   <div class="header-right">
     <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
@@ -386,7 +386,7 @@ pre#ingest-docs {
   </div>
 </div>
 
-<script>/* My Kanban Board — client logic. Cards live in Supabase Postgres and are
+<script>/* Daybook — client logic. Cards live in Supabase Postgres and are
    loaded/saved through /api/cards. No board data is stored in the browser
    or in git. */
 'use strict';

@@ -1,4 +1,4 @@
-/* My Kanban Board — client logic. Cards live in Supabase Postgres and are
+/* Daybook — client logic. Cards live in Supabase Postgres and are
    loaded/saved through /api/cards. No board data is stored in the browser
    or in git. */
 'use strict';
