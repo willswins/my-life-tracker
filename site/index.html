@@ -67,7 +67,10 @@
 
 <main id="view-reminders" class="view hidden">
   <div class="view-head">
-    <button id="add-reminder" class="primary">+ Add reminder</button>
+    <div class="search-add">
+      <input id="reminder-search" type="search" placeholder="Search reminders…" aria-label="Search reminders">
+      <button id="add-reminder" class="primary">+ Add reminder</button>
+    </div>
   </div>
   <div id="reminder-timeline"></div>
   <div id="rem-menu" class="popup-menu hidden" role="menu">
@@ -79,12 +82,17 @@
 
 <main id="view-journal" class="view hidden">
   <div id="j-list-screen">
+    <div class="view-head">
+      <div class="search-add">
+        <input id="journal-search" type="search" placeholder="Search entries…" aria-label="Search entries">
+        <button id="j-add" class="primary">+ New entry</button>
+      </div>
+    </div>
     <div class="filter-pills">
       <button class="pill filter-pill active" data-f="all">All</button>
       <button class="pill filter-pill" data-f="month">This Month</button>
     </div>
     <div id="j-entries"></div>
-    <button id="j-fab" class="fab" aria-label="New entry">+</button>
   </div>
   <div id="j-day-screen" class="hidden">
     <button id="j-back" class="quiet-btn">‹ All entries</button>
@@ -111,10 +119,12 @@
 
 <main id="view-links" class="view hidden">
   <div class="view-head">
-    <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+    <div class="search-add">
+      <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+      <button id="add-link" class="primary">+ Add link</button>
+    </div>
     <input type="hidden" id="link-tag-filter">
     <button type="button" class="dd-field dd-inline" data-dd="link-tag-filter" aria-label="Filter by tag">All tags</button>
-    <button id="add-link" class="primary">+ Add link</button>
   </div>
   <div id="already-saved" class="notice hidden"></div>
   <div id="links-list"></div>
@@ -128,6 +138,9 @@
 
 <main id="view-inbox" class="view hidden">
   <div class="view-head">
+    <div class="search-add">
+      <input id="inbox-search" type="search" placeholder="Search inbox…" aria-label="Search inbox">
+    </div>
     <button id="inbox-toggle-triaged">Show triaged</button>
   </div>
   <form id="inbox-form">
