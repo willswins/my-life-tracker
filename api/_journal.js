@@ -85,6 +85,11 @@ module.exports = async (req, res) => {
       });
       return send(201, inserted[0]);
     }
+    if (req.method === 'DELETE' && date) {
+      if (!DATE_RE.test(date)) return send(400, { ok: false, error: 'bad date' });
+      await sb('DELETE', `/rest/v1/journal_entries?${scope}&date=eq.${date}`);
+      return send(200, { ok: true });
+    }
     return send(405, { ok: false });
   } catch (e) {
     console.error('journal api failed:', e.message);
