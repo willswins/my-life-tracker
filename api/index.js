@@ -278,18 +278,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 }
 .rem-row.is-overdue { border-left: 5px solid #b91c1c; }
 .rem-row.is-snoozed { opacity: 0.75; }
-.rem-main { flex: 1; min-width: 0; cursor: pointer; }
+.rem-main { flex: 1; min-width: 0; }
 .rem-when { flex: 0 0 4.4rem; display: flex; flex-direction: column; }
 .rem-when .d { font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
 .rem-when .t { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-.rem-detail { display: none; margin-top: 0.3rem; }
-.rem-row.expanded .rem-detail { display: block; }
-.rem-row.expanded .link-line2, .rem-row.expanded .link-line3 { display: none; }
-.rem-row .link-line3 {
-  white-space: normal;
-  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+.rem-detail-full { font-size: 0.82rem; color: var(--ink); white-space: pre-wrap; margin-top: 0.15rem; }
 .rem-actions { display: flex; flex: none; }
 
 
@@ -844,7 +837,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 3:47 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 3:59 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1576,14 +1569,9 @@ function remRow(r) {
     \`<div class="rem-when"><span class="d">\${escHtml(dateStr)}</span><span class="t">\${escHtml(timeStr)}</span></div>\` +
     \`<div class="rem-main"><div class="link-title">\${escHtml(r.title)}</div>\` +
     (metaBits ? \`<div class="link-line2">\${escHtml(metaBits)}</div>\` : '') +
-    (r.detail ? \`<div class="link-line3">\${escHtml(r.detail)}</div>\` : '') +
-    (r.detail ? \`<div class="rem-detail"><div class="link-notes-full">\${escHtml(r.detail)}</div></div>\` : '') +
+    (r.detail ? \`<div class="rem-detail-full">\${escHtml(r.detail)}</div>\` : '') +
     \`</div>\` +
     \`<div class="rem-actions"><button class="link-menu-btn" aria-label="Reminder actions" title="Actions">⋮</button></div>\`;
-  el.querySelector('.rem-main').addEventListener('click', () => {
-    if (!r.detail) return; // nothing more to show
-    el.classList.toggle('expanded');
-  });
   el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     toggleRemMenu(r.id, e.currentTarget);
