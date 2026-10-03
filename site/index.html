@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DayBook</title>
-<link rel="icon" type="image/png" href="/api/index?icon">
-<link rel="apple-touch-icon" href="/api/index?icon">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
 <!--STYLES-->
 </head>
 <body data-view="tasks">
@@ -29,7 +29,7 @@
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <img id="app-icon" src="/api/index?icon" alt="DayBook">
+    <img id="app-icon" src="/icon.png" alt="DayBook">
     <h1 id="view-title">My Board</h1>
   </div>
   <div class="header-right">
@@ -138,7 +138,7 @@
 
 <main id="view-about" class="view hidden">
   <div class="about-card">
-    <img src="/api/index?icon" alt="DayBook icon" class="about-icon">
+    <img src="/icon.png" alt="DayBook icon" class="about-icon">
     <h2>DayBook</h2>
     <p class="about-desc">A private life-management system — tasks, reminders, journal, links, and inbox in one place.</p>
     <dl class="about-meta">
@@ -288,8 +288,14 @@
       <label>Remind at
         <input id="r-at" type="datetime-local" required>
       </label>
-      <label>Recurrence <span class="hint">(optional)</span>
-        <input id="r-rrule" maxlength="120" placeholder="FREQ=WEEKLY;BYDAY=SA">
+      <label>Recurrence
+        <select id="r-rrule">
+          <option value="">None</option>
+          <option value="FREQ=DAILY">Daily</option>
+          <option value="FREQ=WEEKLY">Weekly</option>
+          <option value="FREQ=MONTHLY">Monthly</option>
+          <option value="FREQ=YEARLY">Yearly</option>
+        </select>
       </label>
     </div>
     <div class="row">
@@ -309,8 +315,8 @@
       </label>
     </div>
     <div class="modal-actions">
-      <button type="button" id="reminder-cancel">Cancel</button>
       <button type="submit" class="primary">Save</button>
+      <button type="button" id="reminder-cancel">Cancel</button>
     </div>
   </form>
 </div>

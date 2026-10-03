@@ -816,7 +816,21 @@ function openReminderModal(r) {
   const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
   d.setMinutes(0, 0, 0);
   document.getElementById('r-at').value = toLocalInput(d);
-  document.getElementById('r-rrule').value = r ? (r.recurrence || '') : '';
+  const rruleSel = document.getElementById('r-rrule');
+  rruleSel.innerHTML =
+    '<option value="">None</option>' +
+    '<option value="FREQ=DAILY">Daily</option>' +
+    '<option value="FREQ=WEEKLY">Weekly</option>' +
+    '<option value="FREQ=MONTHLY">Monthly</option>' +
+    '<option value="FREQ=YEARLY">Yearly</option>';
+  const rv = r ? (r.recurrence || '') : '';
+  if (rv && ![...rruleSel.options].some((o) => o.value === rv)) {
+    const o = document.createElement('option');
+    o.value = rv;
+    o.textContent = (rruleLabel(rv) || 'Custom') + ' (custom)';
+    rruleSel.appendChild(o);
+  }
+  rruleSel.value = rv;
   document.getElementById('r-tag').value = r && r.tag ? r.tag : '';
   document.getElementById('r-status').value = r ? r.status : 'active';
   document.getElementById('reminder-backdrop').classList.remove('hidden');

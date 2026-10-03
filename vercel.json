@@ -1,1 +1,1 @@
-{"rewrites":[{"destination":"/api/index","source":"/"},{"destination":"/api/login","source":"/login"}]}
+{"buildCommand": "mkdir -p public && base64 -d site/icon.b64.txt > public/icon.png"}
