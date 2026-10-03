@@ -610,7 +610,7 @@ async function switchView(name, push = true) {
   try {
     await updateBadges();
     if (name === 'reminders') renderReminders();
-    else if (name === 'journal') await loadJournal();
+    else if (name === 'journal') await showJournalList();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
     else if (name === 'about') renderAbout();
@@ -823,6 +823,77 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 });
 
 /* ---------- Journal ---------- */
+let journalFilter = 'all';
+let journalEntries = [];
+
+function fmtEntryDate(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  return {
+    date: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    weekday: d.toLocaleDateString(undefined, { weekday: 'short' }),
+  };
+}
+
+async function loadJournalList() {
+  const box = document.getElementById('j-entries');
+  box.innerHTML = '<p class="empty-note">Loading entries…</p>';
+  try {
+    journalEntries = await api('GET', '/api/daybook/journal?list=100');
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Could not load entries.</p>';
+    return;
+  }
+  renderJournalList();
+}
+
+function renderJournalList() {
+  const box = document.getElementById('j-entries');
+  const thisMonth = localDateStr(new Date()).slice(0, 7);
+  const items = journalFilter === 'month'
+    ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
+    : journalEntries;
+  if (!items.length) {
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + to write your first.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  items.forEach((e) => {
+    const f = fmtEntryDate(e.date);
+    const b = document.createElement('button');
+    b.className = 'soft-card entry-card';
+    b.innerHTML = `<span class="entry-date"><span class="d">${escHtml(f.date)}</span><br><span class="w">${escHtml(f.weekday)}</span></span>` +
+      `<span class="entry-preview">${escHtml(e.preview || '—')}</span>`;
+    b.addEventListener('click', () => openJournalDay(e.date));
+    box.appendChild(b);
+  });
+}
+
+function openJournalDay(date) {
+  journalDate = date;
+  document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-day-screen').classList.remove('hidden');
+  loadJournal();
+}
+
+function showJournalList() {
+  document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-list-screen').classList.remove('hidden');
+  loadJournalList();
+}
+
+document.querySelectorAll('.filter-pill').forEach((p) => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach((x) => x.classList.remove('active'));
+    p.classList.add('active');
+    journalFilter = p.dataset.f;
+    renderJournalList();
+  });
+});
+document.getElementById('j-fab').addEventListener('click', () => {
+  openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('j-back').addEventListener('click', showJournalList);
+
 async function loadJournal() {
   const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
   document.getElementById('j-date-label').textContent =

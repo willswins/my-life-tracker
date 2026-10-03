@@ -47,6 +47,22 @@ module.exports = async (req, res) => {
       );
       return send(200, rows.map((r) => r.date));
     }
+    if (req.method === 'GET' && url.searchParams.get('list') !== null) {
+      let n = parseInt(url.searchParams.get('list') || '60', 10);
+      if (!Number.isFinite(n) || n < 1) n = 60;
+      n = Math.min(n, 200);
+      const rows = await sb(
+        'GET',
+        `/rest/v1/journal_entries?${scope}&select=date,body&order=date.desc&limit=${n}`
+      );
+      return send(
+        200,
+        rows.map((r) => ({
+          date: r.date,
+          preview: (r.body || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+        }))
+      );
+    }
     if (req.method === 'POST') {
       const body = await readBody(req);
       const d = body.date;

@@ -451,3 +451,24 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .about-meta div { display: flex; gap: 16px; margin: 8px 0; }
 .about-meta dt { font-weight: 600; min-width: 90px; }
 .about-meta dd { margin: 0; color: var(--muted); }
+
+/* Journal list screen */
+.filter-pills { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+.filter-pill.active { background: #dbeafe; border-color: transparent; color: #1d4ed8; font-weight: 700; }
+#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 5rem; }
+.entry-card {
+  display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
+  width: 100%; cursor: pointer; font: inherit; color: inherit;
+}
+.entry-date { flex: 0 0 4.2rem; }
+.entry-date .d { font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
+.entry-date .w { font-size: 0.8rem; color: var(--muted); }
+.entry-preview { flex: 1; color: var(--muted); font-size: 0.92rem; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fab {
+  position: fixed; right: 1.25rem; bottom: 1.5rem; width: 3.5rem; height: 3.5rem;
+  border-radius: 50%; border: none; background: var(--work); color: #fff;
+  font-size: 1.8rem; line-height: 1; cursor: pointer; z-index: 30;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+}
+#j-back { margin-bottom: 0.6rem; }

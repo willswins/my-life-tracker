@@ -73,6 +73,16 @@
 </main>
 
 <main id="view-journal" class="view hidden">
+  <div id="j-list-screen">
+    <div class="filter-pills">
+      <button class="pill filter-pill active" data-f="all">All</button>
+      <button class="pill filter-pill" data-f="month">This Month</button>
+    </div>
+    <div id="j-entries"></div>
+    <button id="j-fab" class="fab" aria-label="New entry">+</button>
+  </div>
+  <div id="j-day-screen" class="hidden">
+    <button id="j-back" class="quiet-btn">‹ All entries</button>
   <div class="date-nav">
     <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
     <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
@@ -90,6 +100,7 @@
   <div id="j-preview" class="journal-preview hidden"></div>
   <div class="view-actions">
     <button id="j-save" class="primary">Save</button>
+  </div>
   </div>
 </main>
 
