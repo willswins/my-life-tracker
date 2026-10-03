@@ -345,8 +345,21 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .link-main { flex: 1; min-width: 0; }
 .link-main a { font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none; }
 .link-main a:hover { text-decoration: underline; }
-.link-host { font-size: 0.75rem; color: var(--muted); }
-.link-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+.link-main { flex: 1; min-width: 0; cursor: pointer; }
+.link-title {
+  display: block; font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.link-title:hover { text-decoration: underline; }
+.link-line2 {
+  font-size: 0.78rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.link-detail { display: none; margin-top: 0.3rem; }
+.link-row.expanded .link-detail { display: block; }
+.link-row.expanded .link-line2 { display: none; }
+.link-notes-full { font-size: 0.82rem; color: var(--ink); white-space: pre-wrap; margin-bottom: 0.25rem; }
+.link-sub { font-size: 0.75rem; color: var(--muted); }
 .link-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
 .link-tag {
   font-size: 0.7rem; background: var(--lane); border-radius: 999px; padding: 0.1rem 0.5rem;
@@ -754,7 +767,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 11:17 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 11:26 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1698,17 +1711,23 @@ function linkRow(l) {
   let host = l.url;
   try { host = new URL(l.url).host; } catch (e) { /* keep raw url */ }
   const tags = (l.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const date = l.captured_at ? new Date(l.captured_at).toLocaleDateString() : '';
+  const metaBits = [host, l.source, date].filter(Boolean).join(' \\u00b7 ');
   el.innerHTML =
-    \`<div class="link-main"><a href="\${escHtml(l.url)}" target="_blank" rel="noopener">\${escHtml(l.title)}</a>\` +
-    \`<div class="link-host">\${escHtml(host)}</div>\` +
-    (l.notes ? \`<div class="link-meta">\${escHtml(l.notes)}</div>\` : '') +
-    \`<div class="link-meta">\${l.source ? escHtml(l.source) + ' · ' : ''}\` +
-    \`\${l.captured_at ? new Date(l.captured_at).toLocaleDateString() : ''}</div>\` +
+    \`<div class="link-main"><a class="link-title" href="\${escHtml(l.url)}" target="_blank" rel="noopener">\${escHtml(l.title)}</a>\` +
+    \`<div class="link-line2">\${l.notes ? escHtml(l.notes) : escHtml(metaBits)}</div>\` +
+    \`<div class="link-detail">\` +
+    (l.notes ? \`<div class="link-notes-full">\${escHtml(l.notes)}</div>\` : '') +
+    \`<div class="link-sub">\${escHtml(metaBits)}</div>\` +
     (tags.length ? \`<div class="link-tags">\${tags.map((t) => \`<span class="link-tag">\${escHtml(t)}</span>\`).join('')}</div>\` : '') +
-    \`</div>\` +
+    \`</div></div>\` +
     \`<div class="link-actions"><button data-a="open">Open</button>\` +
     \`<button data-a="copy">Copy URL</button><button data-a="edit">Edit</button>\` +
     \`<button data-a="delete">Delete</button></div>\`;
+  el.querySelector('.link-main').addEventListener('click', (e) => {
+    if (e.target.closest('a')) return; // let the title link navigate
+    el.classList.toggle('expanded');
+  });
   el.querySelectorAll('button').forEach((b) =>
     b.addEventListener('click', () => linkAct(l.id, b.dataset.a)));
   return el;
