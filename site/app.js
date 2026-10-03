@@ -958,13 +958,18 @@ function linkRow(l) {
   const metaBits = [host, l.source, date].filter(Boolean).join(' \u00b7 ');
   el.innerHTML =
     `<div class="link-main"><a class="link-title" href="${escHtml(l.url)}" target="_blank" rel="noopener">${escHtml(l.title)}</a>` +
-    `<div class="link-line2">${l.notes ? escHtml(l.notes) : escHtml(metaBits)}</div>` +
+    `<div class="link-line2">${escHtml(metaBits)}</div>` +
+    (l.notes ? `<div class="link-line3">${escHtml(l.notes)}</div>` : '') +
     `<div class="link-detail">` +
     (l.notes ? `<div class="link-notes-full">${escHtml(l.notes)}</div>` : '') +
-    `<div class="link-sub">${escHtml(metaBits)}</div>` +
     (tags.length ? `<div class="link-tags">${tags.map((t) => `<span class="link-tag">${escHtml(t)}</span>`).join('')}</div>` : '') +
     `</div></div>` +
     `<div class="link-actions"><button class="link-menu-btn" aria-label="Link actions" title="Actions">\u22ee</button></div>`;
+  el.querySelector('.link-main').addEventListener('click', (e) => {
+    if (e.target.closest('a')) return; // let the title link navigate
+    if (!l.notes && !tags.length) return; // nothing more to show
+    el.classList.toggle('expanded');
+  });
   el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     toggleLinkMenu(l.id, e.currentTarget);

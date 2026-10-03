@@ -345,9 +345,13 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   font-size: 0.78rem; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.link-line3 {
+  font-size: 0.82rem; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .link-detail { display: none; margin-top: 0.3rem; }
 .link-row.expanded .link-detail { display: block; }
-.link-row.expanded .link-line2 { display: none; }
+.link-row.expanded .link-line2, .link-row.expanded .link-line3 { display: none; }
 .link-notes-full { font-size: 0.82rem; color: var(--ink); white-space: pre-wrap; margin-bottom: 0.25rem; }
 .link-sub { font-size: 0.75rem; color: var(--muted); }
 .link-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
