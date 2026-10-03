@@ -39,7 +39,33 @@ header h1 { font-size: 1.25rem; margin: 0; }
 .filters button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .filters button[data-filter="work"].active { color: var(--work); }
 .filters button[data-filter="personal"].active { color: var(--personal); }
-#user-email { font-size: 0.8rem; color: var(--muted); }
+#view-toggle, #menu-btn {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 0.45rem 0.65rem; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.menu-wrap { position: relative; }
+#menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 170px; padding: 0.25rem;
+  display: flex; flex-direction: column;
+}
+#menu button, #menu a {
+  text-align: left; background: none; border: none; padding: 0.6rem 0.8rem;
+  border-radius: 6px; cursor: pointer; font-size: 0.9rem; color: inherit;
+  text-decoration: none; font-family: inherit;
+}
+#menu button:hover, #menu a:hover { background: var(--lane); }
+#invites-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+#invite-form { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+#invite-form input {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.5rem; font-size: 0.9rem; font-family: inherit;
+}
+/* Compact view: titles only */
+body.compact .card { padding: 0.5rem 0.7rem; }
+body.compact .card .details, body.compact .card .meta { display: none; }
+body.compact .card h3 { font-size: 0.88rem; margin: 0.15rem 0 0.35rem; }
 #search {
   border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.7rem;
   font-size: 0.85rem; width: 180px; font-family: inherit;

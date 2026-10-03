@@ -3,6 +3,7 @@
 // No client secret needed: the ID token signature is verified directly.
 const crypto = require('crypto');
 const { createSession } = require('./_session');
+const { isAllowed } = require('./_authz');
 
 let certsCache = null;
 let certsExpiresAt = 0;
@@ -52,12 +53,8 @@ module.exports = async (req, res) => {
     if (payload.aud !== (process.env.GOOGLE_CLIENT_ID || '')) throw new Error('bad_aud');
     if (typeof payload.exp !== 'number' || payload.exp < now) throw new Error('expired');
 
-    const allowed = (process.env.ALLOWED_EMAILS || '')
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
     const email = (payload.email || '').toLowerCase();
-    if (!payload.email_verified || !email || !allowed.includes(email)) {
+    if (!payload.email_verified || !email || !(await isAllowed(email))) {
       res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify({ ok: false, error: 'not_allowed' }));
       return;

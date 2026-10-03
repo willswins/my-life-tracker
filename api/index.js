@@ -47,7 +47,33 @@ header h1 { font-size: 1.25rem; margin: 0; }
 .filters button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .filters button[data-filter="work"].active { color: var(--work); }
 .filters button[data-filter="personal"].active { color: var(--personal); }
-#user-email { font-size: 0.8rem; color: var(--muted); }
+#view-toggle, #menu-btn {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 0.45rem 0.65rem; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.menu-wrap { position: relative; }
+#menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 170px; padding: 0.25rem;
+  display: flex; flex-direction: column;
+}
+#menu button, #menu a {
+  text-align: left; background: none; border: none; padding: 0.6rem 0.8rem;
+  border-radius: 6px; cursor: pointer; font-size: 0.9rem; color: inherit;
+  text-decoration: none; font-family: inherit;
+}
+#menu button:hover, #menu a:hover { background: var(--lane); }
+#invites-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+#invite-form { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+#invite-form input {
+  flex: 1; border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.5rem; font-size: 0.9rem; font-family: inherit;
+}
+/* Compact view: titles only */
+body.compact .card { padding: 0.5rem 0.7rem; }
+body.compact .card .details, body.compact .card .meta { display: none; }
+body.compact .card h3 { font-size: 0.88rem; margin: 0.15rem 0 0.35rem; }
 #search {
   border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.7rem;
   font-size: 0.85rem; width: 180px; font-family: inherit;
@@ -191,10 +217,16 @@ pre#ingest-docs {
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <span id="user-email" title="Signed in">__USER_EMAIL__</span>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <button id="add-card" class="primary">+ Add card</button>
-    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
-    <a href="/api/logout" class="signout">Sign out</a>
+    <div class="menu-wrap">
+      <button id="menu-btn" aria-label="Menu">☰</button>
+      <div id="menu" class="hidden">
+        <button id="menu-invite">Invite</button>
+        <button id="menu-connectors">Connectors</button>
+        <a href="/api/logout" id="menu-logout">Logout</a>
+      </div>
+    </div>
   </div>
 </header>
 <main id="board">
@@ -272,6 +304,22 @@ pre#ingest-docs {
   </form>
 </div>
 
+<div id="invite-backdrop" class="hidden">
+  <div class="modal">
+    <h3>Invite</h3>
+    <p class="hint">Invited people sign in with their own Google account and get their own board. Only admins can invite.</p>
+    <div id="invites-list"></div>
+    <form id="invite-form">
+      <input id="i-email" type="email" placeholder="Their Gmail address" autocomplete="off">
+      <button type="submit" class="primary">Invite</button>
+    </form>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="invite-close" class="primary">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-backdrop" class="hidden">
   <div class="modal confirm">
     <h3 id="confirm-title"></h3>
@@ -346,6 +394,8 @@ let searchText = '';
 let editingId = null;
 let detailId = null;
 let showDeleted = false;
+let isAdmin = false;
+let compactView = false;
 
 async function api(method, path, body) {
   const r = await fetch(path, {
@@ -366,6 +416,11 @@ async function loadCards() {
 }
 
 async function init() {
+  try {
+    const me = await api('GET', '/api/me');
+    isAdmin = !!me.admin;
+    if (!isAdmin) document.getElementById('menu-invite').style.display = 'none';
+  } catch (e) { /* non-fatal */ }
   try {
     await loadCards();
   } catch (e) {
@@ -663,7 +718,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   } catch (err) { alert('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); }
+  if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); }
 });
 
 // ---- In-app confirmation for destructive actions ----
@@ -745,7 +800,91 @@ async function loadKeys() {
   }
 }
 
-document.getElementById('connectors-btn').addEventListener('click', openKeys);
+const menuEl = document.getElementById('menu');
+document.getElementById('menu-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  menuEl.classList.toggle('hidden');
+});
+document.addEventListener('click', (e) => {
+  if (!menuEl.classList.contains('hidden') && !e.target.closest('.menu-wrap')) {
+    menuEl.classList.add('hidden');
+  }
+});
+document.getElementById('menu-connectors').addEventListener('click', () => {
+  menuEl.classList.add('hidden');
+  openKeys();
+});
+document.getElementById('menu-invite').addEventListener('click', () => {
+  menuEl.classList.add('hidden');
+  openInvite();
+});
+
+// ---- Compact / detailed view toggle ----
+document.getElementById('view-toggle').addEventListener('click', (e) => {
+  compactView = !compactView;
+  document.body.classList.toggle('compact', compactView);
+  e.target.textContent = compactView ? '\\u25a6' : '\\u2261';
+  e.target.title = compactView ? 'Switch to detailed view' : 'Switch to compact view';
+});
+
+// ---- Invite management (admin) ----
+function openInvite() {
+  document.getElementById('invite-backdrop').classList.remove('hidden');
+  loadInvites();
+}
+function closeInvite() {
+  document.getElementById('invite-backdrop').classList.add('hidden');
+}
+async function loadInvites() {
+  const box = document.getElementById('invites-list');
+  box.innerHTML = '<p class="empty-note">Loading…</p>';
+  try {
+    const users = await api('GET', '/api/invites');
+    box.innerHTML = '';
+    if (!users.length) box.innerHTML = '<p class="empty-note">Nobody invited yet.</p>';
+    users.forEach((u) => {
+      const row = document.createElement('div');
+      row.className = 'key-row';
+      const when = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
+      row.innerHTML = \`<div class="grow"><strong></strong><div class="sub"></div></div>\`;
+      row.querySelector('strong').textContent = u.email + (u.role === 'admin' ? ' (admin)' : '');
+      row.querySelector('.sub').textContent = \`invited \${when}\` + (u.invited_by ? \` by \${u.invited_by}\` : '');
+      if (u.role !== 'admin') {
+        const btn = document.createElement('button');
+        btn.textContent = 'Remove';
+        btn.addEventListener('click', async () => {
+          const yes = await confirmAction({
+            title: 'Remove this person?',
+            message: \`\${u.email} will lose access to the board immediately. Their cards stay saved in case they are re-invited.\`,
+            confirmLabel: 'Remove',
+          });
+          if (!yes) return;
+          try { await api('DELETE', '/api/invites?email=' + encodeURIComponent(u.email)); loadInvites(); }
+          catch (e) { alert('Could not remove. Please try again.'); }
+        });
+        row.appendChild(btn);
+      }
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Could not load invites.</p>';
+  }
+}
+document.getElementById('invite-close').addEventListener('click', closeInvite);
+document.getElementById('invite-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'invite-backdrop') closeInvite();
+});
+document.getElementById('invite-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('i-email');
+  const email = input.value.trim();
+  if (!email) return;
+  try {
+    await api('POST', '/api/invites', { email });
+    input.value = '';
+    loadInvites();
+  } catch (err) { alert('Could not invite. Check the email address and try again.'); }
+});
 document.getElementById('keys-close').addEventListener('click', closeKeys);
 document.getElementById('keys-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'keys-backdrop') closeKeys();

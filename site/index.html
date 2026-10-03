@@ -17,10 +17,16 @@
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <span id="user-email" title="Signed in">__USER_EMAIL__</span>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <button id="add-card" class="primary">+ Add card</button>
-    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
-    <a href="/api/logout" class="signout">Sign out</a>
+    <div class="menu-wrap">
+      <button id="menu-btn" aria-label="Menu">☰</button>
+      <div id="menu" class="hidden">
+        <button id="menu-invite">Invite</button>
+        <button id="menu-connectors">Connectors</button>
+        <a href="/api/logout" id="menu-logout">Logout</a>
+      </div>
+    </div>
   </div>
 </header>
 <main id="board">
@@ -96,6 +102,22 @@
       <button type="submit" class="primary">Save</button>
     </div>
   </form>
+</div>
+
+<div id="invite-backdrop" class="hidden">
+  <div class="modal">
+    <h3>Invite</h3>
+    <p class="hint">Invited people sign in with their own Google account and get their own board. Only admins can invite.</p>
+    <div id="invites-list"></div>
+    <form id="invite-form">
+      <input id="i-email" type="email" placeholder="Their Gmail address" autocomplete="off">
+      <button type="submit" class="primary">Invite</button>
+    </form>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="invite-close" class="primary">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="confirm-backdrop" class="hidden">
