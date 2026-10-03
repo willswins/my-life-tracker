@@ -461,11 +461,19 @@ pre#ingest-docs {
   display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
   width: 100%; cursor: pointer; font: inherit; color: inherit;
 }
-.entry-date { flex: 0 0 4.2rem; }
+.entry-date { flex: 0 0 4.2rem; border-right: 1px solid var(--line); padding-right: 0.9rem; }
 .entry-date .d { font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
 .entry-date .w { font-size: 0.8rem; color: var(--muted); }
 .entry-preview { flex: 1; color: var(--muted); font-size: 0.92rem; line-height: 1.45;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.entry-chev { flex: none; color: var(--muted); font-size: 1.2rem; align-self: center; }
+.pill.danger { color: #b91c1c; }
+/* Journal detail screen */
+.detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
+.detail-actions { display: flex; gap: 0.5rem; }
+.detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
+.detail-date .w { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.4rem; }
+.detail-body { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.65; margin-top: 0.75rem; }
 .fab {
   position: fixed; right: 1.25rem; bottom: 1.5rem; width: 3.5rem; height: 3.5rem;
   border-radius: 50%; border: none; background: var(--work); color: #fff;
@@ -621,6 +629,19 @@ pre#ingest-docs {
       <button data-f="month">This Month</button>
     </div>
     <div id="j-entries"></div>
+  </div>
+  <div id="j-detail-screen" class="hidden">
+    <div class="detail-top">
+      <button id="j-detail-back" class="quiet-btn">‹ All entries</button>
+      <div class="detail-actions">
+        <button id="j-detail-edit" class="pill pill-sm">Edit</button>
+        <button id="j-detail-delete" class="pill pill-sm danger">Delete</button>
+      </div>
+    </div>
+    <div class="soft-card">
+      <div id="j-detail-date" class="detail-date"></div>
+      <div id="j-detail-body" class="detail-body"></div>
+    </div>
   </div>
   <div id="j-day-screen" class="hidden">
     <button id="j-back" class="quiet-btn">‹ All entries</button>
@@ -934,7 +955,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 5:16 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 6:24 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2068,21 +2089,43 @@ function renderJournalList() {
     const b = document.createElement('button');
     b.className = 'soft-card entry-card';
     b.innerHTML = \`<span class="entry-date"><span class="d">\${escHtml(f.date)}</span><br><span class="w">\${escHtml(f.weekday)}</span></span>\` +
-      \`<span class="entry-preview">\${escHtml(e.preview || '—')}</span>\`;
-    b.addEventListener('click', () => openJournalDay(e.date));
+      \`<span class="entry-preview">\${escHtml(e.preview || '—')}</span>\` +
+      \`<span class="entry-chev">›</span>\`;
+    b.addEventListener('click', () => openJournalDetail(e.date));
     box.appendChild(b);
   });
+}
+
+let journalDetailDate = null;
+
+async function openJournalDetail(date) {
+  journalDetailDate = date;
+  const f = fmtEntryDate(date);
+  document.getElementById('j-detail-date').innerHTML =
+    escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
+  document.getElementById('j-detail-body').textContent = 'Loading…';
+  document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.remove('hidden');
+  try {
+    const e = await api('GET', '/api/daybook/journal?date=' + date);
+    document.getElementById('j-detail-body').textContent = (e && e.body) || '—';
+  } catch (err) {
+    document.getElementById('j-detail-body').textContent = 'Could not load entry.';
+  }
 }
 
 function openJournalDay(date) {
   journalDate = date;
   document.getElementById('j-list-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-day-screen').classList.remove('hidden');
   loadJournal();
 }
 
 function showJournalList() {
   document.getElementById('j-day-screen').classList.add('hidden');
+  document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-list-screen').classList.remove('hidden');
   loadJournalList();
 }
@@ -2097,6 +2140,26 @@ document.querySelectorAll('#view-journal .filters button').forEach((p) => {
 });
 document.getElementById('j-add').addEventListener('click', () => {
   openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('j-detail-back').addEventListener('click', showJournalList);
+document.getElementById('j-detail-edit').addEventListener('click', () => {
+  if (journalDetailDate) openJournalDay(journalDetailDate);
+});
+document.getElementById('j-detail-delete').addEventListener('click', async () => {
+  if (!journalDetailDate) return;
+  const yes = await confirmAction({
+    title: 'Delete this entry?',
+    message: 'The journal entry for this day will be permanently removed.',
+    okText: 'Delete',
+  });
+  if (!yes) return;
+  try {
+    await api('DELETE', '/api/daybook/journal?date=' + journalDetailDate);
+    toast('Entry deleted.');
+    showJournalList();
+  } catch (err) {
+    toast('Could not delete the entry. Please try again.');
+  }
 });
 document.getElementById('journal-search').addEventListener('input', (e) => {
   clearTimeout(journalSearchTimer);
