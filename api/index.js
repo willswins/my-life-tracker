@@ -43,7 +43,7 @@ header {
 header h1 { font-size: 1.25rem; margin: 0; }
 .header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .search-add { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 240px; }
-.search-add #search { flex: 1; min-width: 0; width: auto; }
+.search-add input[type="search"] { flex: 1; min-width: 0; width: auto; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
 .filters button {
   border: 0; background: transparent; border-radius: 999px;
@@ -596,7 +596,10 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-reminders" class="view hidden">
   <div class="view-head">
-    <button id="add-reminder" class="primary">+ Add reminder</button>
+    <div class="search-add">
+      <input id="reminder-search" type="search" placeholder="Search reminders…" aria-label="Search reminders">
+      <button id="add-reminder" class="primary">+ Add reminder</button>
+    </div>
   </div>
   <div id="reminder-timeline"></div>
   <div id="rem-menu" class="popup-menu hidden" role="menu">
@@ -608,12 +611,17 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-journal" class="view hidden">
   <div id="j-list-screen">
+    <div class="view-head">
+      <div class="search-add">
+        <input id="journal-search" type="search" placeholder="Search entries…" aria-label="Search entries">
+        <button id="j-add" class="primary">+ New entry</button>
+      </div>
+    </div>
     <div class="filter-pills">
       <button class="pill filter-pill active" data-f="all">All</button>
       <button class="pill filter-pill" data-f="month">This Month</button>
     </div>
     <div id="j-entries"></div>
-    <button id="j-fab" class="fab" aria-label="New entry">+</button>
   </div>
   <div id="j-day-screen" class="hidden">
     <button id="j-back" class="quiet-btn">‹ All entries</button>
@@ -640,10 +648,12 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-links" class="view hidden">
   <div class="view-head">
-    <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+    <div class="search-add">
+      <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+      <button id="add-link" class="primary">+ Add link</button>
+    </div>
     <input type="hidden" id="link-tag-filter">
     <button type="button" class="dd-field dd-inline" data-dd="link-tag-filter" aria-label="Filter by tag">All tags</button>
-    <button id="add-link" class="primary">+ Add link</button>
   </div>
   <div id="already-saved" class="notice hidden"></div>
   <div id="links-list"></div>
@@ -657,6 +667,9 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-inbox" class="view hidden">
   <div class="view-head">
+    <div class="search-add">
+      <input id="inbox-search" type="search" placeholder="Search inbox…" aria-label="Search inbox">
+    </div>
     <button id="inbox-toggle-triaged">Show triaged</button>
   </div>
   <form id="inbox-form">
@@ -922,7 +935,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 4:48 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 4:56 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1464,6 +1477,8 @@ let currentView = 'tasks';
 
 let reminders = [];
 let editingReminderId = null;
+let reminderSearch = '';
+let reminderSearchTimer = null;
 
 let journalDate = null; // set below after helpers
 let journalPreview = false;
@@ -1477,6 +1492,8 @@ let linkSearchTimer = null;
 
 let inboxItems = [];
 let inboxShowTriaged = false;
+let inboxSearch = '';
+let inboxSearchTimer = null;
 let triageItem = null;
 let triageDest = 'task';
 
@@ -1610,8 +1627,10 @@ function renderReminders() {
   const weekStart = addDaysLocal(startToday, -((startToday.getDay() + 6) % 7));
   const nextWeekStart = addDaysLocal(weekStart, 7);
   const groups = { Overdue: [], Today: [], Tomorrow: [], 'This week': [], Later: [] };
+  const q = reminderSearch.trim().toLowerCase();
   reminders
     .filter((r) => r.status === 'active' || r.status === 'snoozed')
+    .filter((r) => !q || ((r.title || '') + ' ' + (r.detail || '')).toLowerCase().includes(q))
     .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
     .forEach((r) => {
       const at = new Date(r.remind_at);
@@ -1969,6 +1988,13 @@ function toast(msg) {
 }
 
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
+document.getElementById('reminder-search').addEventListener('input', (e) => {
+  clearTimeout(reminderSearchTimer);
+  reminderSearchTimer = setTimeout(() => {
+    reminderSearch = e.target.value;
+    renderReminders();
+  }, 300);
+});
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'reminder-backdrop') closeReminderModal();
@@ -2003,6 +2029,8 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 /* ---------- Journal ---------- */
 let journalFilter = 'all';
 let journalEntries = [];
+let journalSearch = '';
+let journalSearchTimer = null;
 
 function fmtEntryDate(ds) {
   const d = new Date(ds + 'T12:00:00');
@@ -2027,11 +2055,12 @@ async function loadJournalList() {
 function renderJournalList() {
   const box = document.getElementById('j-entries');
   const thisMonth = localDateStr(new Date()).slice(0, 7);
-  const items = journalFilter === 'month'
+  const q = journalSearch.trim().toLowerCase();
+  const items = (journalFilter === 'month'
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
-    : journalEntries;
+    : journalEntries).filter((e) => !q || (e.preview || '').toLowerCase().includes(q));
   if (!items.length) {
-    box.innerHTML = '<p class="empty-note">No entries yet. Tap + to write your first.</p>';
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + New entry to write your first.</p>';
     return;
   }
   box.innerHTML = '';
@@ -2067,8 +2096,15 @@ document.querySelectorAll('.filter-pill').forEach((p) => {
     renderJournalList();
   });
 });
-document.getElementById('j-fab').addEventListener('click', () => {
+document.getElementById('j-add').addEventListener('click', () => {
   openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('journal-search').addEventListener('input', (e) => {
+  clearTimeout(journalSearchTimer);
+  journalSearchTimer = setTimeout(() => {
+    journalSearch = e.target.value;
+    renderJournalList();
+  }, 300);
 });
 document.getElementById('j-back').addEventListener('click', showJournalList);
 
@@ -2370,7 +2406,9 @@ function renderInbox() {
   document.getElementById('inbox-toggle-triaged').textContent =
     inboxShowTriaged ? 'Hide triaged' : 'Show triaged';
   box.innerHTML = '';
-  const list = inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged);
+  const q = inboxSearch.trim().toLowerCase();
+  const list = (inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged))
+    .filter((i) => !q || (i.text || '').toLowerCase().includes(q));
   if (!list.length) {
     box.innerHTML = \`<p class="empty-note">\${inboxShowTriaged ? 'Nothing here yet.' : 'Inbox zero. Capture something above.'}</p>\`;
     return;
@@ -2433,6 +2471,13 @@ document.getElementById('inbox-form').addEventListener('submit', async (e) => {
 document.getElementById('inbox-toggle-triaged').addEventListener('click', async () => {
   inboxShowTriaged = !inboxShowTriaged;
   await loadInbox();
+});
+document.getElementById('inbox-search').addEventListener('input', (e) => {
+  clearTimeout(inboxSearchTimer);
+  inboxSearchTimer = setTimeout(() => {
+    inboxSearch = e.target.value;
+    renderInbox();
+  }, 300);
 });
 async function discardInbox(id) {
   const yes = await confirmAction({
