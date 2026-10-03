@@ -291,12 +291,42 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 }
 .rem-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
 
-/* Journal */
-.journal-nav { display: flex; gap: 0.35rem; align-items: center; }
-.journal-nav button {
-  border: 1px solid var(--line); background: #fff; border-radius: 8px;
-  padding: 0.45rem 0.7rem; cursor: pointer; font-size: 0.85rem;
+
+/* ---------- Shared components (used across views) ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--lane); border: 0; border-radius: 999px;
+  padding: 0.55rem 1.1rem; font-size: 0.92rem; font-weight: 600; color: var(--ink);
+  cursor: pointer; font-family: inherit;
 }
+.pill:hover { filter: brightness(0.96); }
+.pill-sm { padding: 0.35rem 0.85rem; font-size: 0.8rem; font-weight: 500; }
+.pill-chev { font-size: 0.7rem; color: var(--muted); }
+.quiet-btn {
+  border: 0; background: none; color: var(--muted); font-size: 0.85rem;
+  cursor: pointer; padding: 0.45rem 0.5rem; font-family: inherit;
+}
+.quiet-btn:hover { color: var(--ink); }
+.chev-btn {
+  border: 0; background: none; color: var(--muted); font-size: 1.3rem; line-height: 1;
+  cursor: pointer; padding: 0.35rem 0.55rem; font-family: inherit;
+}
+.chev-btn:hover { color: var(--ink); }
+.date-nav { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 1rem; }
+.section-label { font-size: 0.95rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--ink); }
+.section-head { display: flex; align-items: center; justify-content: space-between; }
+.section-head .section-label { margin: 1.25rem 0 0.5rem; }
+.soft-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 1rem 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.notes-area {
+  width: 100%; min-height: 340px; border: 1px solid var(--line); border-radius: 14px;
+  padding: 0.9rem 1rem; font-size: 0.95rem; font-family: inherit; resize: vertical;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+
+/* Journal */
 .month-strip {
   display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 1rem;
   background: var(--card); border: 1px solid var(--line); border-radius: 10px;
@@ -313,20 +343,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .day-cell.selected { background: var(--ink); color: #fff; }
 .day-cell .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--personal); margin-top: 1px; }
 .day-cell .dot.none { background: transparent; }
-.journal-auto {
-  background: var(--lane); border-radius: 10px; padding: 0.75rem 1rem;
-  font-size: 0.85rem; margin-bottom: 1rem; white-space: pre-wrap;
-}
 .view h3 { font-size: 0.9rem; margin: 1rem 0 0.5rem; color: var(--muted); }
-.journal-toolbar { margin-bottom: 0.4rem; }
-.journal-toolbar button {
-  border: 1px solid var(--line); background: #fff; border-radius: 6px;
-  font-size: 0.78rem; padding: 0.3rem 0.7rem; cursor: pointer; color: var(--muted);
-}
-#j-body {
-  width: 100%; border: 1px solid var(--line); border-radius: 10px;
-  padding: 0.75rem; font-size: 0.9rem; font-family: inherit; resize: vertical;
-}
 .journal-preview {
   border: 1px solid var(--line); border-radius: 10px; padding: 0.75rem 1rem;
   font-size: 0.9rem; background: #fff; min-height: 120px;
@@ -507,22 +524,20 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 </main>
 
 <main id="view-journal" class="view hidden">
-  <div class="view-head">
-    <div class="journal-nav">
-      <button id="j-prev" title="Previous day">←</button>
-      <input id="j-date" type="date" aria-label="Journal date">
-      <button id="j-next" title="Next day">→</button>
-      <button id="j-today">Today</button>
-    </div>
+  <div class="date-nav">
+    <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
+    <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
+    <button id="j-next" class="chev-btn" title="Next day" aria-label="Next day">›</button>
+    <button id="j-today" class="quiet-btn">Today</button>
   </div>
-  <div id="j-dots" class="month-strip"></div>
-  <h3>Auto summary</h3>
-  <div id="j-auto" class="journal-auto"><p class="empty-note">No summary yet.</p></div>
-  <h3>Notes</h3>
-  <div class="journal-toolbar">
-    <button id="j-preview-toggle">Preview</button>
+  <div id="j-dots" class="month-strip hidden"></div>
+  <div class="section-label">Auto summary</div>
+  <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
+  <div class="section-head">
+    <div class="section-label">Notes</div>
+    <button id="j-preview-toggle" class="pill pill-sm">Preview</button>
   </div>
-  <textarea id="j-body" rows="12" placeholder="What happened today…"></textarea>
+  <textarea id="j-body" class="notes-area" placeholder="What happened today…"></textarea>
   <div id="j-preview" class="journal-preview hidden"></div>
   <div class="view-actions">
     <button id="j-save" class="primary">Save</button>
@@ -785,7 +800,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 11:42 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 12:17 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1601,7 +1616,8 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 /* ---------- Journal ---------- */
 async function loadJournal() {
   const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
-  document.getElementById('j-date').value = journalDate;
+  document.getElementById('j-date-label').textContent =
+    new Date(journalDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   document.getElementById('j-body').value = e ? (e.body || '') : '';
   journalPreview = false;
   document.getElementById('j-preview').classList.add('hidden');
@@ -1634,7 +1650,8 @@ async function loadJournalDots() {
     const b = document.createElement('button');
     b.className = 'day-cell' + (ds === today ? ' today' : '') + (ds === journalDate ? ' selected' : '');
     b.innerHTML = \`<span>\${d}</span><span class="dot\${set.has(ds) ? '' : ' none'}"></span>\`;
-    b.addEventListener('click', () => { journalDate = ds; loadJournal(); });
+    b.addEventListener('click', () => { journalDate = ds; loadJournal();
+      document.getElementById('j-dots').classList.add('hidden'); });
     box.appendChild(b);
   }
 }
@@ -1662,8 +1679,8 @@ document.getElementById('j-today').addEventListener('click', () => {
   journalDate = localDateStr(new Date());
   loadJournal();
 });
-document.getElementById('j-date').addEventListener('change', (e) => {
-  if (e.target.value) { journalDate = e.target.value; loadJournal(); }
+document.getElementById('j-date-pill').addEventListener('click', () => {
+  document.getElementById('j-dots').classList.toggle('hidden');
 });
 document.getElementById('j-preview-toggle').addEventListener('click', () => {
   journalPreview = !journalPreview;
