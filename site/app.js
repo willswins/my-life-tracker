@@ -47,7 +47,7 @@ async function init() {
   try {
     await loadCards();
   } catch (e) {
-    document.querySelector('#board').innerHTML =
+    document.querySelector('#lanes').innerHTML =
       '<p style="color:#b91c1c">Could not load cards. Please refresh.</p>';
     return;
   }
