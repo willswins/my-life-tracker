@@ -3,33 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Daybook</title>
+<title>DayBook</title>
 <!--STYLES-->
 </head>
-<body>
+<body data-view="tasks">
 <header>
   <div class="header-left">
     <div class="menu-wrap">
-      <button id="menu-btn" aria-label="Menu">☰</button>
+      <button id="menu-btn" aria-label="Menu">☰<span id="menu-dot" class="menu-dot hidden"></span></button>
       <div id="menu" class="hidden">
+        <button data-view="tasks" class="view-link">Tasks <span class="badge" id="badge-tasks"></span></button>
+        <button data-view="reminders" class="view-link">Reminders <span class="badge" id="badge-reminders"></span></button>
+        <button data-view="journal" class="view-link">Journal</button>
+        <button data-view="links" class="view-link">Links <span class="badge" id="badge-links"></span></button>
+        <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
+        <hr class="menu-sep">
         <button id="menu-invite">Invite</button>
         <button id="menu-connectors">Connectors</button>
         <button id="menu-refresh">Refresh</button>
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <h1>Daybook</h1>
+    <h1>DayBook</h1>
   </div>
   <div class="header-right">
-    <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
-    <div class="filters" role="group" aria-label="Filter by tag">
+    <input id="search" class="tasks-only" type="search" placeholder="Search cards…" aria-label="Search cards">
+    <div class="filters tasks-only" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <button id="add-card" class="primary">+ Add card</button>
+    <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
+    <button id="add-card" class="primary tasks-only">+ Add card</button>
   </div>
 </header>
 <main id="board">
@@ -49,6 +55,61 @@
     <h2>Done</h2>
     <div class="cards"></div>
   </section>
+</main>
+
+<main id="view-reminders" class="view hidden">
+  <div class="view-head">
+    <h2>Reminders</h2>
+    <button id="add-reminder" class="primary">+ Add reminder</button>
+  </div>
+  <div id="reminder-timeline"></div>
+</main>
+
+<main id="view-journal" class="view hidden">
+  <div class="view-head">
+    <h2>Journal</h2>
+    <div class="journal-nav">
+      <button id="j-prev" title="Previous day">←</button>
+      <input id="j-date" type="date" aria-label="Journal date">
+      <button id="j-next" title="Next day">→</button>
+      <button id="j-today">Today</button>
+    </div>
+  </div>
+  <div id="j-dots" class="month-strip"></div>
+  <h3>Auto summary</h3>
+  <div id="j-auto" class="journal-auto"><p class="empty-note">No summary yet.</p></div>
+  <h3>Notes</h3>
+  <div class="journal-toolbar">
+    <button id="j-preview-toggle">Preview</button>
+  </div>
+  <textarea id="j-body" rows="12" placeholder="What happened today…"></textarea>
+  <div id="j-preview" class="journal-preview hidden"></div>
+  <div class="view-actions">
+    <button id="j-save" class="primary">Save</button>
+  </div>
+</main>
+
+<main id="view-links" class="view hidden">
+  <div class="view-head">
+    <h2>Links</h2>
+    <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
+    <select id="link-tag-filter" aria-label="Filter by tag"><option value="">All tags</option></select>
+    <button id="add-link" class="primary">+ Add link</button>
+  </div>
+  <div id="already-saved" class="notice hidden"></div>
+  <div id="links-list"></div>
+</main>
+
+<main id="view-inbox" class="view hidden">
+  <div class="view-head">
+    <h2>Inbox</h2>
+    <button id="inbox-toggle-triaged">Show triaged</button>
+  </div>
+  <form id="inbox-form">
+    <input id="inbox-text" placeholder="Capture anything — text, a link, a note…" autocomplete="off">
+    <button type="submit" class="primary">Capture</button>
+  </form>
+  <div id="inbox-list"></div>
 </main>
 
 <div id="modal-backdrop" class="hidden">
@@ -176,6 +237,85 @@
       <button type="button" id="d-close" class="primary">Close</button>
     </div>
   </div>
+</div>
+
+<div id="reminder-backdrop" class="hidden">
+  <form id="reminder-form" class="modal">
+    <h3 id="reminder-title">Add reminder</h3>
+    <label>Title
+      <input id="r-title" required maxlength="160" placeholder="Reminder title">
+    </label>
+    <label>Detail
+      <input id="r-detail" maxlength="2000" placeholder="Context (optional)">
+    </label>
+    <div class="row">
+      <label>Remind at
+        <input id="r-at" type="datetime-local" required>
+      </label>
+      <label>Recurrence <span class="hint">(optional)</span>
+        <input id="r-rrule" maxlength="120" placeholder="FREQ=WEEKLY;BYDAY=SA">
+      </label>
+    </div>
+    <div class="row">
+      <label>Tag
+        <select id="r-tag">
+          <option value="">None</option>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="r-status">
+          <option value="active">Active</option>
+          <option value="snoozed">Snoozed</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="reminder-cancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="link-backdrop" class="hidden">
+  <form id="link-form" class="modal">
+    <h3 id="link-title">Add link</h3>
+    <label>URL
+      <input id="l-url" required maxlength="2000" placeholder="https://…">
+    </label>
+    <label>Title
+      <input id="l-title" required maxlength="200" placeholder="What is this?">
+    </label>
+    <div class="row">
+      <label>Tags <span class="hint">(comma-separated)</span>
+        <input id="l-tags" maxlength="500" placeholder="school, forms">
+      </label>
+      <label>Source
+        <input id="l-source" maxlength="300" placeholder="Where it came from">
+      </label>
+    </div>
+    <label>Notes
+      <textarea id="l-notes" rows="3" maxlength="2000" placeholder="Why I saved this"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" id="link-cancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="triage-backdrop" class="hidden">
+  <form id="triage-form" class="modal">
+    <h3 id="triage-title">Triage to task</h3>
+    <p class="hint" id="triage-source"></p>
+    <div id="triage-fields"></div>
+    <div class="modal-actions">
+      <button type="button" id="triage-cancel">Cancel</button>
+      <button type="submit" class="primary">File it</button>
+    </div>
+  </form>
 </div>
 
 <!--APP-->
