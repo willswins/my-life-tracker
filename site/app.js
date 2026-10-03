@@ -422,6 +422,7 @@ document.getElementById('menu-btn').addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!menuEl.classList.contains('hidden') && !e.target.closest('.menu-wrap')) {
     menuEl.classList.add('hidden');
+  closeLinkMenu();
   }
 });
 document.getElementById('menu-invite').addEventListener('click', () => {
@@ -963,15 +964,42 @@ function linkRow(l) {
     `<div class="link-sub">${escHtml(metaBits)}</div>` +
     (tags.length ? `<div class="link-tags">${tags.map((t) => `<span class="link-tag">${escHtml(t)}</span>`).join('')}</div>` : '') +
     `</div></div>` +
-    `<div class="link-actions"><button data-a="open">Open</button>` +
-    `<button data-a="copy">Copy URL</button><button data-a="edit">Edit</button>` +
-    `<button data-a="delete">Delete</button></div>`;
-  el.querySelector('.link-main').addEventListener('click', (e) => {
-    if (e.target.closest('a')) return; // let the title link navigate
-    el.classList.toggle('expanded');
+    `<div class="link-actions"><button class="link-menu-btn" aria-label="Link actions" title="Actions">\u22ee</button></div>`;
+  el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLinkMenu(l.id, e.currentTarget);
   });
-  el.querySelectorAll('button').forEach((b) =>
-    b.addEventListener('click', () => linkAct(l.id, b.dataset.a)));
+
+// One icon per link row opens a shared popup menu.
+let linkMenuFor = null;
+function closeLinkMenu() {
+  const m = document.getElementById('link-menu');
+  if (m) m.classList.add('hidden');
+  linkMenuFor = null;
+}
+function toggleLinkMenu(id, btn) {
+  const menu = document.getElementById('link-menu');
+  if (linkMenuFor === id) { closeLinkMenu(); return; }
+  linkMenuFor = id;
+  menu.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { closeLinkMenu(); linkAct(id, b.dataset.a); };
+  });
+  menu.classList.remove('hidden');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.right - mw, window.innerWidth - mw - 8);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 8) y = Math.max(8, r.top - mh - 6);
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top = y + 'px';
+}
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('link-menu');
+  if (!menu || menu.classList.contains('hidden')) return;
+  if (e.target.closest('#link-menu') || e.target.closest('.link-menu-btn')) return;
+  closeLinkMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLinkMenu(); });
   return el;
 }
 

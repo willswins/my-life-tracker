@@ -354,12 +354,24 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .link-tag {
   font-size: 0.7rem; background: var(--lane); border-radius: 999px; padding: 0.1rem 0.5rem;
 }
-.link-actions { display: flex; gap: 0.35rem; flex: none; flex-wrap: wrap; }
-.link-actions button {
+.link-actions { display: flex; flex: none; }
+.link-menu-btn {
   border: 1px solid var(--line); background: #fff; border-radius: 6px;
-  font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer; color: var(--muted);
+  font-size: 1rem; line-height: 1; padding: 0.3rem 0.55rem; cursor: pointer; color: var(--muted);
 }
-.link-actions button:hover { color: var(--ink); border-color: #cbd5e1; }
+.link-menu-btn:hover { color: var(--ink); border-color: #cbd5e1; }
+.popup-menu {
+  position: fixed; z-index: 1000; min-width: 150px;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 0.25rem;
+}
+.popup-menu.hidden { display: none; }
+.popup-menu button {
+  display: block; width: 100%; text-align: left; border: 0; background: none;
+  padding: 0.55rem 0.75rem; font-size: 0.85rem; border-radius: 6px; cursor: pointer; color: var(--ink);
+}
+.popup-menu button:hover { background: var(--lane); }
+.popup-menu button.danger { color: #b91c1c; }
 .notice {
   background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px;
   padding: 0.6rem 0.9rem; font-size: 0.85rem; margin-bottom: 0.75rem;
