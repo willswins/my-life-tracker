@@ -455,9 +455,8 @@ pre#ingest-docs {
 .about-meta dd { margin: 0; color: var(--muted); }
 
 /* Journal list screen */
-.filter-pills { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
-.filter-pill.active { background: #dbeafe; border-color: transparent; color: #1d4ed8; font-weight: 700; }
-#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 5rem; }
+#view-journal .filters { margin-bottom: 0.9rem; }
+#j-entries { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 2rem; }
 .entry-card {
   display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
   width: 100%; cursor: pointer; font: inherit; color: inherit;
@@ -617,9 +616,9 @@ pre#ingest-docs {
         <button id="j-add" class="primary">+ Add</button>
       </div>
     </div>
-    <div class="filter-pills">
-      <button class="pill filter-pill active" data-f="all">All</button>
-      <button class="pill filter-pill" data-f="month">This Month</button>
+    <div class="filters" role="group" aria-label="Filter entries">
+      <button data-f="all" class="active">All</button>
+      <button data-f="month">This Month</button>
     </div>
     <div id="j-entries"></div>
   </div>
@@ -935,7 +934,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 5:10 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 5:16 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2060,7 +2059,7 @@ function renderJournalList() {
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
     : journalEntries).filter((e) => !q || (e.preview || '').toLowerCase().includes(q));
   if (!items.length) {
-    box.innerHTML = '<p class="empty-note">No entries yet. Tap + New entry to write your first.</p>';
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + Add to write your first.</p>';
     return;
   }
   box.innerHTML = '';
@@ -2088,9 +2087,9 @@ function showJournalList() {
   loadJournalList();
 }
 
-document.querySelectorAll('.filter-pill').forEach((p) => {
+document.querySelectorAll('#view-journal .filters button').forEach((p) => {
   p.addEventListener('click', () => {
-    document.querySelectorAll('.filter-pill').forEach((x) => x.classList.remove('active'));
+    document.querySelectorAll('#view-journal .filters button').forEach((x) => x.classList.remove('active'));
     p.classList.add('active');
     journalFilter = p.dataset.f;
     renderJournalList();
