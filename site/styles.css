@@ -175,7 +175,7 @@ button.primary {
 .modal-actions { align-items: center; }
 #reminder-form .modal-actions { flex-direction: column; align-items: stretch; }
 #reminder-form .modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
-#r-at { max-width: 210px; }
+
 button.danger-btn { color: #b91c1c; }
 .modal.detail { max-width: 560px; }
 .modal.detail h4 { margin: 1rem 0 0.5rem; font-size: 0.9rem; }
@@ -462,3 +462,24 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
 }
 #j-back { margin-bottom: 0.6rem; }
+
+/* Custom date/time picker */
+#dt-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 60;
+}
+#dt-backdrop.hidden { display: none; }
+.dt-picker { max-width: 340px; }
+.dt-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.dt-month { font-weight: 700; font-size: 0.95rem; }
+.dt-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 0.9rem; }
+.dt-grid .dow { font-size: 0.7rem; color: var(--muted); text-align: center; padding: 0.2rem 0; }
+.dt-grid .day-cell { width: 100%; height: auto; aspect-ratio: 1; font-size: 0.82rem; }
+.dt-grid .blank { visibility: hidden; }
+.dt-time { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.dt-time select { flex: 1; }
+.dt-field {
+  display: block; width: 100%; max-width: 230px; margin-top: 0.3rem; padding: 0.5rem;
+  border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+  background: #fff; color: var(--ink); text-align: left; cursor: pointer;
+}

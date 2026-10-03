@@ -811,6 +811,7 @@ function openReminderModal(r) {
   const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
   d.setMinutes(0, 0, 0);
   document.getElementById('r-at').value = toLocalInput(d);
+  updateDtField();
   const rruleSel = document.getElementById('r-rrule');
   rruleSel.innerHTML =
     '<option value="">None</option>' +
@@ -835,6 +836,114 @@ function closeReminderModal() {
   document.getElementById('reminder-backdrop').classList.add('hidden');
   editingReminderId = null;
 }
+
+/* ---------- Custom date/time picker (replaces native datetime-local) ---------- */
+let dtState = null; // { y, m (0-11), d, hh (24h), mm }
+
+function fmtDtLabel(v) {
+  if (!v) return 'Pick date & time';
+  const d = new Date(v);
+  if (isNaN(d)) return 'Pick date & time';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function updateDtField() {
+  document.getElementById('r-at-btn').textContent = fmtDtLabel(document.getElementById('r-at').value);
+}
+function openDtPicker() {
+  const v = document.getElementById('r-at').value;
+  let d = v ? new Date(v) : new Date(Date.now() + 3600000);
+  if (isNaN(d)) d = new Date(Date.now() + 3600000);
+  const q0 = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - d.getMinutes()) < Math.abs(a - d.getMinutes()) ? b : a);
+  dtState = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate(), hh: d.getHours(), mm: q0 };
+  const hr = document.getElementById('dt-hour');
+  hr.innerHTML = '';
+  for (let h = 1; h <= 12; h++) {
+    const o = document.createElement('option');
+    o.value = h; o.textContent = h;
+    hr.appendChild(o);
+  }
+  const mn = document.getElementById('dt-min');
+  mn.innerHTML = '';
+  ['00', '15', '30', '45'].forEach((m) => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    mn.appendChild(o);
+  });
+  syncDtTimeSelects();
+  renderDtGrid();
+  document.getElementById('dt-backdrop').classList.remove('hidden');
+}
+function syncDtTimeSelects() {
+  const h12 = dtState.hh % 12 || 12;
+  document.getElementById('dt-hour').value = h12;
+  const q = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - dtState.mm) < Math.abs(a - dtState.mm) ? b : a);
+  document.getElementById('dt-min').value = String(q).padStart(2, '0');
+  document.getElementById('dt-ampm').value = dtState.hh < 12 ? 'AM' : 'PM';
+}
+function renderDtGrid() {
+  const label = document.getElementById('dt-month-label');
+  label.textContent = new Date(dtState.y, dtState.m, 1)
+    .toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  const grid = document.getElementById('dt-grid');
+  grid.innerHTML = '';
+  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((w) => {
+    const s = document.createElement('span');
+    s.className = 'dow'; s.textContent = w;
+    grid.appendChild(s);
+  });
+  const first = new Date(dtState.y, dtState.m, 1).getDay();
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  const today = localDateStr(new Date());
+  for (let i = 0; i < first; i++) {
+    const b = document.createElement('span');
+    b.className = 'blank';
+    grid.appendChild(b);
+  }
+  for (let day = 1; day <= daysIn; day++) {
+    const ds = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(day);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'day-cell' +
+      (ds === today ? ' today' : '') +
+      (day === dtState.d ? ' selected' : '');
+    b.textContent = day;
+    b.addEventListener('click', () => { dtState.d = day; renderDtGrid(); });
+    grid.appendChild(b);
+  }
+}
+function closeDtPicker() {
+  document.getElementById('dt-backdrop').classList.add('hidden');
+  dtState = null;
+}
+function commitDtPicker() {
+  const h12 = parseInt(document.getElementById('dt-hour').value, 10);
+  const mm = parseInt(document.getElementById('dt-min').value, 10);
+  const ap = document.getElementById('dt-ampm').value;
+  const hh = (h12 % 12) + (ap === 'PM' ? 12 : 0);
+  const v = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(dtState.d) +
+    'T' + pad2(hh) + ':' + pad2(mm);
+  document.getElementById('r-at').value = v;
+  updateDtField();
+  closeDtPicker();
+}
+document.getElementById('r-at-btn').addEventListener('click', openDtPicker);
+document.getElementById('dt-prev').addEventListener('click', () => {
+  dtState.m--; if (dtState.m < 0) { dtState.m = 11; dtState.y--; }
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  if (dtState.d > daysIn) dtState.d = daysIn;
+  renderDtGrid();
+});
+document.getElementById('dt-next').addEventListener('click', () => {
+  dtState.m++; if (dtState.m > 11) { dtState.m = 0; dtState.y++; }
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  if (dtState.d > daysIn) dtState.d = daysIn;
+  renderDtGrid();
+});
+document.getElementById('dt-done').addEventListener('click', commitDtPicker);
+document.getElementById('dt-cancel').addEventListener('click', closeDtPicker);
+document.getElementById('dt-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'dt-backdrop') closeDtPicker();
+});
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
@@ -1124,7 +1233,12 @@ document.addEventListener('click', (e) => {
   if (rmenu && !rmenu.classList.contains('hidden') &&
       !e.target.closest('#rem-menu') && !e.target.closest('.link-menu-btn')) closeRemMenu();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLinkMenu(); closeRemMenu(); } });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dt = document.getElementById('dt-backdrop');
+  if (dt && !dt.classList.contains('hidden')) { closeDtPicker(); return; }
+  closeLinkMenu(); closeRemMenu();
+});
   return el;
 }
 

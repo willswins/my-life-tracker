@@ -286,7 +286,8 @@
     </label>
     <div class="row">
       <label>Remind at
-        <input id="r-at" type="datetime-local" required>
+        <input id="r-at" type="hidden">
+        <button type="button" id="r-at-btn" class="dt-field">Pick date &amp; time</button>
       </label>
       <label>Recurrence
         <select id="r-rrule">
@@ -319,6 +320,29 @@
       <button type="button" id="reminder-cancel">Cancel</button>
     </div>
   </form>
+</div>
+
+<div id="dt-backdrop" class="hidden">
+  <div class="modal dt-picker">
+    <div class="dt-head">
+      <button type="button" id="dt-prev" class="chev-btn" aria-label="Previous month">&#8249;</button>
+      <div id="dt-month-label" class="dt-month"></div>
+      <button type="button" id="dt-next" class="chev-btn" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="dt-grid" id="dt-grid"></div>
+    <div class="dt-time">
+      <select id="dt-hour" aria-label="Hour"></select>
+      <select id="dt-min" aria-label="Minute"></select>
+      <select id="dt-ampm" aria-label="AM or PM">
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="dt-done" class="primary">Done</button>
+      <button type="button" id="dt-cancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div id="link-backdrop" class="hidden">
