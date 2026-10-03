@@ -8,6 +8,8 @@ const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', do
 const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\u2713', story: '\u25ae', bug: '\u25cf' };
+const APP_VERSION = '1.1.0';
+const BUILD_DATE = '__BUILD_DATE__'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -526,13 +528,22 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox'];
+const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'about'];
 const VIEW_IDS = {
   tasks: 'board',
   reminders: 'view-reminders',
   journal: 'view-journal',
   links: 'view-links',
   inbox: 'view-inbox',
+  about: 'view-about',
+};
+const VIEW_TITLES = {
+  tasks: 'My Board',
+  reminders: 'Reminders',
+  journal: 'Journal',
+  links: 'Links',
+  inbox: 'Inbox',
+  about: 'About',
 };
 let currentView = 'tasks';
 
@@ -592,6 +603,7 @@ async function switchView(name, push = true) {
   });
   document.querySelectorAll('#menu .view-link').forEach((b) =>
     b.classList.toggle('active', b.dataset.view === name));
+  document.getElementById('view-title').textContent = VIEW_TITLES[name] || 'DayBook';
   menuEl.classList.add('hidden');
   if (push && location.hash !== '#/' + name) location.hash = '#/' + name;
   try {
@@ -600,6 +612,7 @@ async function switchView(name, push = true) {
     else if (name === 'journal') await loadJournal();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
+    else if (name === 'about') renderAbout();
     else render();
   } catch (e) {
     console.error('view load failed:', e);
@@ -614,6 +627,12 @@ window.addEventListener('hashchange', () => {
 
 document.querySelectorAll('#menu .view-link').forEach((b) =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
+
+/* ---------- about ---------- */
+function renderAbout() {
+  document.getElementById('about-version').textContent = APP_VERSION;
+  document.getElementById('about-build').textContent = BUILD_DATE;
+}
 
 /* ---------- badges ---------- */
 function setBadge(id, n, hot) {
