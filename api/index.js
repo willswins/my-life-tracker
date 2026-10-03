@@ -501,7 +501,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-reminders" class="view hidden">
   <div class="view-head">
-    <h2>Reminders</h2>
     <button id="add-reminder" class="primary">+ Add reminder</button>
   </div>
   <div id="reminder-timeline"></div>
@@ -509,7 +508,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-journal" class="view hidden">
   <div class="view-head">
-    <h2>Journal</h2>
     <div class="journal-nav">
       <button id="j-prev" title="Previous day">←</button>
       <input id="j-date" type="date" aria-label="Journal date">
@@ -533,7 +531,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-links" class="view hidden">
   <div class="view-head">
-    <h2>Links</h2>
     <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
     <select id="link-tag-filter" aria-label="Filter by tag"><option value="">All tags</option></select>
     <button id="add-link" class="primary">+ Add link</button>
@@ -550,7 +547,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-inbox" class="view hidden">
   <div class="view-head">
-    <h2>Inbox</h2>
     <button id="inbox-toggle-triaged">Show triaged</button>
   </div>
   <form id="inbox-form">
@@ -789,7 +785,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 11:40 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 11:42 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
