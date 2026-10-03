@@ -73,22 +73,20 @@
 </main>
 
 <main id="view-journal" class="view hidden">
-  <div class="view-head">
-    <div class="journal-nav">
-      <button id="j-prev" title="Previous day">←</button>
-      <input id="j-date" type="date" aria-label="Journal date">
-      <button id="j-next" title="Next day">→</button>
-      <button id="j-today">Today</button>
-    </div>
+  <div class="date-nav">
+    <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
+    <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
+    <button id="j-next" class="chev-btn" title="Next day" aria-label="Next day">›</button>
+    <button id="j-today" class="quiet-btn">Today</button>
   </div>
-  <div id="j-dots" class="month-strip"></div>
-  <h3>Auto summary</h3>
-  <div id="j-auto" class="journal-auto"><p class="empty-note">No summary yet.</p></div>
-  <h3>Notes</h3>
-  <div class="journal-toolbar">
-    <button id="j-preview-toggle">Preview</button>
+  <div id="j-dots" class="month-strip hidden"></div>
+  <div class="section-label">Auto summary</div>
+  <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
+  <div class="section-head">
+    <div class="section-label">Notes</div>
+    <button id="j-preview-toggle" class="pill pill-sm">Preview</button>
   </div>
-  <textarea id="j-body" rows="12" placeholder="What happened today…"></textarea>
+  <textarea id="j-body" class="notes-area" placeholder="What happened today…"></textarea>
   <div id="j-preview" class="journal-preview hidden"></div>
   <div class="view-actions">
     <button id="j-save" class="primary">Save</button>

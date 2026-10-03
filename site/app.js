@@ -825,7 +825,8 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 /* ---------- Journal ---------- */
 async function loadJournal() {
   const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
-  document.getElementById('j-date').value = journalDate;
+  document.getElementById('j-date-label').textContent =
+    new Date(journalDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   document.getElementById('j-body').value = e ? (e.body || '') : '';
   journalPreview = false;
   document.getElementById('j-preview').classList.add('hidden');
@@ -858,7 +859,8 @@ async function loadJournalDots() {
     const b = document.createElement('button');
     b.className = 'day-cell' + (ds === today ? ' today' : '') + (ds === journalDate ? ' selected' : '');
     b.innerHTML = `<span>${d}</span><span class="dot${set.has(ds) ? '' : ' none'}"></span>`;
-    b.addEventListener('click', () => { journalDate = ds; loadJournal(); });
+    b.addEventListener('click', () => { journalDate = ds; loadJournal();
+      document.getElementById('j-dots').classList.add('hidden'); });
     box.appendChild(b);
   }
 }
@@ -886,8 +888,8 @@ document.getElementById('j-today').addEventListener('click', () => {
   journalDate = localDateStr(new Date());
   loadJournal();
 });
-document.getElementById('j-date').addEventListener('change', (e) => {
-  if (e.target.value) { journalDate = e.target.value; loadJournal(); }
+document.getElementById('j-date-pill').addEventListener('click', () => {
+  document.getElementById('j-dots').classList.toggle('hidden');
 });
 document.getElementById('j-preview-toggle').addEventListener('click', () => {
   journalPreview = !journalPreview;
