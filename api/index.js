@@ -67,6 +67,10 @@ header h1 { font-size: 1.25rem; margin: 0; }
   text-decoration: none; font-family: inherit;
 }
 #menu button:hover, #menu a:hover { background: var(--lane); }
+.menu-appname {
+  padding: 0.55rem 0.8rem; font-weight: 700; font-size: 0.95rem;
+  border-bottom: 1px solid var(--line); margin-bottom: 0.25rem; cursor: default;
+}
 #invites-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
 #invite-form { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
 #invite-form input {
@@ -414,6 +418,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <div class="menu-wrap">
       <button id="menu-btn" aria-label="Menu">☰<span id="menu-dot" class="menu-dot hidden"></span></button>
       <div id="menu" class="hidden">
+        <div class="menu-appname">DayBook</div>
         <button data-view="tasks" class="view-link">Tasks <span class="badge" id="badge-tasks"></span></button>
         <button data-view="reminders" class="view-link">Reminders <span class="badge" id="badge-reminders"></span></button>
         <button data-view="journal" class="view-link">Journal</button>
@@ -745,7 +750,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:06 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 10:36 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
