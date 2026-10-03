@@ -96,7 +96,7 @@ function render() {
         const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(c.id), { lane: laneEl.dataset.lane });
         Object.assign(c, updated);
         render();
-      } catch (err) { alert('Could not move the card. Please try again.'); }
+      } catch (err) { toast('Could not move the card. Please try again.'); }
     };
   });
 }
@@ -159,7 +159,7 @@ async function act(id, action) {
       render();
     }
   } catch (e) {
-    alert('Could not save that change. Please try again.');
+    toast('Could not save that change. Please try again.');
   }
 }
 
@@ -168,11 +168,11 @@ function openModal(c) {
   document.getElementById('modal-title').textContent = c ? 'Edit card' : 'Add card';
   document.getElementById('f-title').value = c ? c.title : '';
   document.getElementById('f-details').value = c ? (c.details || '') : '';
-  document.getElementById('f-tag').value = c ? c.tag : 'work';
-  document.getElementById('f-issue-type').value = c ? (c.issue_type || 'task') : 'task';
-  document.getElementById('f-priority').value = c ? c.priority : 'normal';
-  document.getElementById('f-lane').value = c ? c.lane : 'now';
-  document.getElementById('f-due').value = c && c.due_date ? c.due_date : '';
+  setDropdown('f-tag', c ? c.tag : 'work');
+  setDropdown('f-issue-type', c ? (c.issue_type || 'task') : 'task');
+  setDropdown('f-priority', c ? c.priority : 'normal');
+  setDropdown('f-lane', c ? c.lane : 'now');
+  setDueDate(c && c.due_date ? c.due_date : '');
   document.getElementById('f-owner').value = c && c.owner ? c.owner : '';
   document.getElementById('modal-backdrop').classList.remove('hidden');
   document.getElementById('f-title').focus();
@@ -212,7 +212,7 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
     }
     render(); closeModal();
   } catch (e) {
-    alert('Could not save the card. Please try again.');
+    toast('Could not save the card. Please try again.');
   }
 });
 document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
@@ -220,7 +220,7 @@ document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
 document.getElementById('trash-toggle').addEventListener('click', async (e) => {
   showDeleted = !showDeleted;
   e.target.classList.toggle('active', showDeleted);
-  try { await loadCards(); render(); } catch (err) { alert('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
+  try { await loadCards(); render(); } catch (err) { toast('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
 });
 document.getElementById('search').addEventListener('input', (e) => {
   searchText = e.target.value;
@@ -303,7 +303,7 @@ document.getElementById('d-delete').addEventListener('click', async () => {
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
-  } catch (e) { alert('Could not delete the card. Please try again.'); }
+  } catch (e) { toast('Could not delete the card. Please try again.'); }
 });
 document.getElementById('d-restore').addEventListener('click', async () => {
   const c = cards.find((x) => x.id === detailId);
@@ -313,7 +313,7 @@ document.getElementById('d-restore').addEventListener('click', async () => {
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
-  } catch (e) { alert('Could not restore the card. Please try again.'); }
+  } catch (e) { toast('Could not restore the card. Please try again.'); }
 });
 document.getElementById('d-purge').addEventListener('click', async () => {
   const c = cards.find((x) => x.id === detailId);
@@ -329,7 +329,7 @@ document.getElementById('d-purge').addEventListener('click', async () => {
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
-  } catch (e) { alert('Could not delete the card. Please try again.'); }
+  } catch (e) { toast('Could not delete the card. Please try again.'); }
 });
 document.getElementById('comment-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -340,7 +340,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
     await api('POST', '/api/comments', { card_id: detailId, body: text });
     input.value = '';
     openDetail(detailId);
-  } catch (err) { alert('Could not post the comment. Please try again.'); }
+  } catch (err) { toast('Could not post the comment. Please try again.'); }
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); closeReminderModal(); closeLinkModal(); closeTriage(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
@@ -403,7 +403,7 @@ async function loadKeys() {
           });
           if (!yes) return;
           try { await api('DELETE', '/api/keys?id=' + encodeURIComponent(k.id)); loadKeys(); }
-          catch (e) { alert('Could not revoke the key. Please try again.'); }
+          catch (e) { toast('Could not revoke the key. Please try again.'); }
         });
         row.appendChild(btn);
       }
@@ -437,7 +437,7 @@ document.getElementById('menu-connectors').addEventListener('click', () => {
 document.getElementById('menu-refresh').addEventListener('click', async () => {
   menuEl.classList.add('hidden');
   try { await loadCards(); await switchView(currentView, false); }
-  catch (e) { alert('Could not refresh. Please try again.'); }
+  catch (e) { toast('Could not refresh. Please try again.'); }
 });
 
 // ---- Compact / detailed view toggle ----
@@ -481,7 +481,7 @@ async function loadInvites() {
           });
           if (!yes) return;
           try { await api('DELETE', '/api/invites?email=' + encodeURIComponent(u.email)); loadInvites(); }
-          catch (e) { alert('Could not remove. Please try again.'); }
+          catch (e) { toast('Could not remove. Please try again.'); }
         });
         row.appendChild(btn);
       }
@@ -504,7 +504,7 @@ document.getElementById('invite-form').addEventListener('submit', async (e) => {
     await api('POST', '/api/invites', { email });
     input.value = '';
     loadInvites();
-  } catch (err) { alert('Could not invite. Check the email address and try again.'); }
+  } catch (err) { toast('Could not invite. Check the email address and try again.'); }
 });
 document.getElementById('keys-close').addEventListener('click', closeKeys);
 document.getElementById('keys-backdrop').addEventListener('click', (e) => {
@@ -519,7 +519,7 @@ document.getElementById('key-form').addEventListener('submit', async (e) => {
     document.getElementById('new-key-value').textContent = created.key;
     document.getElementById('new-key').classList.remove('hidden');
     loadKeys();
-  } catch (err) { alert('Could not create the key. Please try again.'); }
+  } catch (err) { toast('Could not create the key. Please try again.'); }
 });
 
 init();
@@ -782,10 +782,10 @@ async function remAct(id, a) {
       return;
     }
     if (a === 'snooze') {
-      const mins = prompt('Snooze for how many minutes?', '30');
+      const mins = await askSnooze();
       if (mins === null) return;
       await api('POST', '/api/daybook/reminders?id=' + encodeURIComponent(id), {
-        action: 'snooze', minutes: parseInt(mins, 10) || 30,
+        action: 'snooze', minutes: mins,
       });
     } else if (a === 'dismiss') {
       const yes = await confirmAction({
@@ -799,7 +799,7 @@ async function remAct(id, a) {
     await updateBadges();
     renderReminders();
   } catch (e) {
-    alert('Could not update the reminder. Please try again.');
+    toast('Could not update the reminder. Please try again.');
   }
 }
 
@@ -811,12 +811,11 @@ function openReminderModal(r) {
   const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
   d.setMinutes(0, 0, 0);
   document.getElementById('r-at').value = toLocalInput(d);
-  updateDtField();
+  document.querySelector('[data-dtdate="r-at"]').textContent = fmtDtButtonLabel(toLocalInput(d), document.querySelector('[data-dtdate="r-at"]'));
   const rv = r ? (r.recurrence || '') : '';
-  document.getElementById('r-rrule').value = rv;
-  document.getElementById('r-rrule-btn').textContent = rruleLabel(rv) || 'None';
-  document.getElementById('r-tag').value = r && r.tag ? r.tag : '';
-  document.getElementById('r-status').value = r ? r.status : 'active';
+  setDropdown('r-rrule', rv);
+  setDropdown('r-tag', r && r.tag ? r.tag : '');
+  setDropdown('r-status', r ? r.status : 'active');
   document.getElementById('reminder-backdrop').classList.remove('hidden');
   document.getElementById('r-title').focus();
 }
@@ -826,48 +825,35 @@ function closeReminderModal() {
   closeDropdown();
 }
 
-/* ---------- Custom date/time picker (replaces native datetime-local) ---------- */
+/* ---------- Custom date/time picker (replaces native datetime-local/date) ---------- */
 let dtState = null; // { y, m (0-11), d, hh (24h), mm }
+let dtCtx = null;   // { mode: 'datetime'|'date', onDone }
 
-function fmtDtLabel(v) {
-  if (!v) return 'Pick date & time';
-  const d = new Date(v);
-  if (isNaN(d)) return 'Pick date & time';
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+function fmtDtButtonLabel(v, btn) {
+  const isDT = btn.dataset.dtmode === 'datetime';
+  if (!v) return btn.dataset.dtempty || (isDT ? 'Pick date & time' : 'No date');
+  const d = new Date(v + (isDT ? '' : 'T12:00:00'));
+  if (isNaN(d)) return btn.dataset.dtempty || 'No date';
+  return d.toLocaleString(undefined, isDT
+    ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
 }
-function updateDtField() {
-  document.getElementById('r-at-btn').textContent = fmtDtLabel(document.getElementById('r-at').value);
-}
-function openDtPicker() {
-  const v = document.getElementById('r-at').value;
-  let d = v ? new Date(v) : new Date(Date.now() + 3600000);
-  if (isNaN(d)) d = new Date(Date.now() + 3600000);
+function openDtPicker(opts) {
+  closeDropdown();
+  dtCtx = opts;
+  const v = opts.initial || '';
+  let d;
+  if (opts.mode === 'date') d = /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + 'T12:00:00') : new Date();
+  else d = v ? new Date(v) : new Date(Date.now() + 3600000);
+  if (isNaN(d)) d = new Date();
   const q0 = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - d.getMinutes()) < Math.abs(a - d.getMinutes()) ? b : a);
   dtState = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate(), hh: d.getHours(), mm: q0 };
-  const hr = document.getElementById('dt-hour');
-  hr.innerHTML = '';
-  for (let h = 1; h <= 12; h++) {
-    const o = document.createElement('option');
-    o.value = h; o.textContent = h;
-    hr.appendChild(o);
-  }
-  const mn = document.getElementById('dt-min');
-  mn.innerHTML = '';
-  ['00', '15', '30', '45'].forEach((m) => {
-    const o = document.createElement('option');
-    o.value = m; o.textContent = m;
-    mn.appendChild(o);
-  });
-  syncDtTimeSelects();
+  document.querySelector('#dt-backdrop .modal').classList.toggle('date-only', opts.mode === 'date');
+  setDropdown('dt-hour', String(dtState.hh % 12 || 12));
+  setDropdown('dt-min', String(dtState.mm).padStart(2, '0'));
+  setDropdown('dt-ampm', dtState.hh < 12 ? 'AM' : 'PM');
   renderDtGrid();
   document.getElementById('dt-backdrop').classList.remove('hidden');
-}
-function syncDtTimeSelects() {
-  const h12 = dtState.hh % 12 || 12;
-  document.getElementById('dt-hour').value = h12;
-  const q = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - dtState.mm) < Math.abs(a - dtState.mm) ? b : a);
-  document.getElementById('dt-min').value = String(q).padStart(2, '0');
-  document.getElementById('dt-ampm').value = dtState.hh < 12 ? 'AM' : 'PM';
 }
 function renderDtGrid() {
   const label = document.getElementById('dt-month-label');
@@ -902,20 +888,23 @@ function renderDtGrid() {
 }
 function closeDtPicker() {
   document.getElementById('dt-backdrop').classList.add('hidden');
-  dtState = null;
+  dtState = null; dtCtx = null;
 }
 function commitDtPicker() {
-  const h12 = parseInt(document.getElementById('dt-hour').value, 10);
-  const mm = parseInt(document.getElementById('dt-min').value, 10);
-  const ap = document.getElementById('dt-ampm').value;
-  const hh = (h12 % 12) + (ap === 'PM' ? 12 : 0);
-  const v = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(dtState.d) +
-    'T' + pad2(hh) + ':' + pad2(mm);
-  document.getElementById('r-at').value = v;
-  updateDtField();
+  let v;
+  if (dtCtx.mode === 'date') {
+    v = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(dtState.d);
+  } else {
+    const h12 = parseInt(document.getElementById('dt-hour').value, 10);
+    const mm = parseInt(document.getElementById('dt-min').value, 10);
+    const ap = document.getElementById('dt-ampm').value;
+    const hh = (h12 % 12) + (ap === 'PM' ? 12 : 0);
+    v = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(dtState.d) + 'T' + pad2(hh) + ':' + pad2(mm);
+  }
+  const cb = dtCtx.onDone;
   closeDtPicker();
+  if (cb) cb(v);
 }
-document.getElementById('r-at-btn').addEventListener('click', openDtPicker);
 document.getElementById('dt-prev').addEventListener('click', () => {
   dtState.m--; if (dtState.m < 0) { dtState.m = 11; dtState.y--; }
   const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
@@ -930,14 +919,61 @@ document.getElementById('dt-next').addEventListener('click', () => {
 });
 document.getElementById('dt-done').addEventListener('click', commitDtPicker);
 document.getElementById('dt-cancel').addEventListener('click', closeDtPicker);
+document.getElementById('dt-clear').addEventListener('click', () => {
+  const cb = dtCtx.onDone;
+  closeDtPicker();
+  if (cb) cb('');
+});
 document.getElementById('dt-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'dt-backdrop') closeDtPicker();
 });
 
-/* ---------- Reusable custom dropdown (replaces native select) ---------- */
+/* ---------- Custom dropdown (replaces native select) ---------- */
+const DD_DEFS = {
+  'f-tag': () => [['work', 'Work'], ['personal', 'Personal']],
+  'f-issue-type': () => [['task', 'Task'], ['story', 'Story'], ['bug', 'Bug']],
+  'f-priority': () => [['high', 'Big rock'], ['normal', 'Medium'], ['low', 'Small']],
+  'f-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
+  'r-tag': () => [['', 'None'], ['work', 'Work'], ['personal', 'Personal']],
+  'r-status': () => [['active', 'Active'], ['snoozed', 'Snoozed'], ['dismissed', 'Dismissed']],
+  'r-rrule': () => rruleItems(),
+  't-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
+  't-tag': () => [['work', 'Work'], ['personal', 'Personal']],
+  't-rrule': () => rruleItems(),
+  'link-tag-filter': () => [['', 'All tags']].concat(linkTagItems().map((x) => [x, x])),
+  'dt-hour': () => Array.from({ length: 12 }, (_, i) => [String(i + 1), String(i + 1)]),
+  'dt-min': () => [['00', '00'], ['15', '15'], ['30', '30'], ['45', '45']],
+  'dt-ampm': () => [['AM', 'AM'], ['PM', 'PM']],
+};
+function linkTagItems() {
+  const set = new Set();
+  (allLinks || []).forEach((l) => (l.tags || '').split(',').forEach((x) => {
+    x = x.trim(); if (x) set.add(x);
+  }));
+  return [...set].sort();
+}
+function ddLabel(id, value) {
+  const hit = (DD_DEFS[id] ? DD_DEFS[id]() : []).find(([iv]) => iv === value);
+  return hit ? hit[1] : value;
+}
+function setDropdown(id, value) {
+  const hid = document.getElementById(id);
+  if (hid) hid.value = value;
+  const btn = document.querySelector('[data-dd="' + id + '"]');
+  if (btn) btn.textContent = ddLabel(id, value);
+}
+function setDueDate(v) {
+  document.getElementById('f-due').value = v || '';
+  const btn = document.querySelector('[data-dtdate="f-due"]');
+  if (btn) btn.textContent = fmtDtButtonLabel(v || '', btn);
+}
+function rruleItems() {
+  return [['', 'None'], ['FREQ=DAILY', 'Daily'], ['FREQ=WEEKLY', 'Weekly'],
+    ['FREQ=MONTHLY', 'Monthly'], ['FREQ=YEARLY', 'Yearly']];
+}
 function closeDropdown() {
   const m = document.getElementById('dd-menu');
-  if (m) m.classList.add('hidden');
+  if (m) { m.classList.add('hidden'); m.dataset.for = ''; }
 }
 function openDropdown(btn, items, current, onPick) {
   const menu = document.getElementById('dd-menu');
@@ -961,24 +997,64 @@ function openDropdown(btn, items, current, onPick) {
   menu.style.top = y + 'px';
   menu.style.minWidth = Math.max(150, r.width) + 'px';
 }
-function rruleItems() {
-  return [['', 'None'], ['FREQ=DAILY', 'Daily'], ['FREQ=WEEKLY', 'Weekly'],
-    ['FREQ=MONTHLY', 'Monthly'], ['FREQ=YEARLY', 'Yearly']];
-}
-document.getElementById('r-rrule-btn').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const cur = document.getElementById('r-rrule').value;
-  const items = rruleItems();
-  if (cur && !items.some(([v]) => v === cur)) {
-    items.push([cur, (rruleLabel(cur) || 'Custom') + ' (custom)']);
-  }
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.dd-field');
+  if (!btn || !btn.dataset.dd || !DD_DEFS[btn.dataset.dd]) return;
+  const id = btn.dataset.dd;
   const menu = document.getElementById('dd-menu');
-  if (!menu.classList.contains('hidden')) { closeDropdown(); return; }
-  openDropdown(e.currentTarget, items, cur, (v, label) => {
-    document.getElementById('r-rrule').value = v;
-    document.getElementById('r-rrule-btn').textContent = label;
+  if (!menu.classList.contains('hidden') && menu.dataset.for === id) { closeDropdown(); return; }
+  const cur = document.getElementById(id).value;
+  let items = DD_DEFS[id]();
+  if ((id === 'r-rrule' || id === 't-rrule') && cur && !items.some(([iv]) => iv === cur)) {
+    items = items.concat([[cur, (rruleLabel(cur) || 'Custom') + ' (custom)']]);
+  }
+  menu.dataset.for = id;
+  openDropdown(btn, items, cur, (val) => {
+    if (id === 'link-tag-filter') { linkTag = val; loadLinks(); return; }
+    setDropdown(id, val);
   });
 });
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-dtdate]');
+  if (!btn) return;
+  const id = btn.dataset.dtdate;
+  const isDT = btn.dataset.dtmode === 'datetime';
+  openDtPicker({
+    mode: isDT ? 'datetime' : 'date',
+    initial: document.getElementById(id).value,
+    onDone: (v) => {
+      document.getElementById(id).value = v;
+      btn.textContent = fmtDtButtonLabel(v, btn);
+    },
+  });
+});
+
+/* ---------- Snooze picker (replaces native prompt) ---------- */
+function askSnooze() {
+  return new Promise((resolve) => {
+    const bd = document.getElementById('snooze-backdrop');
+    bd.classList.remove('hidden');
+    const done = (v) => {
+      bd.classList.add('hidden');
+      bd.querySelectorAll('[data-m]').forEach((b) => { b.onclick = null; });
+      document.getElementById('snooze-cancel').onclick = null;
+      resolve(v);
+    };
+    bd.querySelectorAll('[data-m]').forEach((b) => { b.onclick = () => done(parseInt(b.dataset.m, 10)); });
+    document.getElementById('snooze-cancel').onclick = () => done(null);
+  });
+}
+
+/* ---------- Toast (replaces native alert) ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
@@ -987,7 +1063,7 @@ document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
 document.getElementById('reminder-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const at = fromLocalInput(document.getElementById('r-at').value);
-  if (!at) { alert('Pick a valid date and time.'); return; }
+  if (!at) { toast('Pick a valid date and time.'); return; }
   const data = {
     title: document.getElementById('r-title').value.trim(),
     detail: document.getElementById('r-detail').value.trim(),
@@ -1007,7 +1083,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
     await updateBadges();
     renderReminders();
   } catch (err) {
-    alert('Could not save the reminder. Please try again.');
+    toast('Could not save the reminder. Please try again.');
   }
 });
 
@@ -1166,7 +1242,7 @@ document.getElementById('j-save').addEventListener('click', async () => {
     await api('POST', '/api/daybook/journal', { date: journalDate, body: document.getElementById('j-body').value });
     await loadJournalDots();
   } catch (e) {
-    alert('Could not save the journal entry. Please try again.');
+    toast('Could not save the journal entry. Please try again.');
   }
 });
 
@@ -1182,21 +1258,8 @@ async function loadLinks() {
 }
 
 function refreshLinkTagFilter() {
-  const sel = document.getElementById('link-tag-filter');
-  const cur = linkTag;
-  const set = new Set();
-  allLinks.forEach((l) => (l.tags || '').split(',').forEach((t) => {
-    t = t.trim();
-    if (t) set.add(t);
-  }));
-  sel.innerHTML = '<option value="">All tags</option>';
-  [...set].sort().forEach((t) => {
-    const o = document.createElement('option');
-    o.value = t;
-    o.textContent = t;
-    sel.appendChild(o);
-  });
-  sel.value = cur;
+  if (linkTag && !linkTagItems().includes(linkTag)) linkTag = '';
+  setDropdown('link-tag-filter', linkTag);
 }
 
 function renderLinks() {
@@ -1273,6 +1336,8 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  const sn = document.getElementById('snooze-backdrop');
+  if (sn && !sn.classList.contains('hidden')) { document.getElementById('snooze-cancel').click(); return; }
   const ddm = document.getElementById('dd-menu');
   if (ddm && !ddm.classList.contains('hidden')) { closeDropdown(); return; }
   const dt = document.getElementById('dt-backdrop');
@@ -1313,7 +1378,7 @@ async function linkAct(id, a) {
       await loadLinks();
     }
   } catch (e) {
-    alert('Could not update the link. Please try again.');
+    toast('Could not update the link. Please try again.');
   }
 }
 
@@ -1369,7 +1434,7 @@ document.getElementById('link-form').addEventListener('submit', async (e) => {
       }
     }
   } catch (err) {
-    alert('Could not save the link. Please try again.');
+    toast('Could not save the link. Please try again.');
   }
 });
 document.getElementById('link-search').addEventListener('input', (e) => {
@@ -1379,10 +1444,7 @@ document.getElementById('link-search').addEventListener('input', (e) => {
     loadLinks();
   }, 300);
 });
-document.getElementById('link-tag-filter').addEventListener('change', (e) => {
-  linkTag = e.target.value;
-  loadLinks();
-});
+
 
 /* ---------- Inbox ---------- */
 async function loadInbox() {
@@ -1452,7 +1514,7 @@ document.getElementById('inbox-form').addEventListener('submit', async (e) => {
     await updateBadges();
     await loadInbox();
   } catch (err) {
-    alert('Could not capture. Please try again.');
+    toast('Could not capture. Please try again.');
   }
 });
 document.getElementById('inbox-toggle-triaged').addEventListener('click', async () => {
@@ -1471,7 +1533,7 @@ async function discardInbox(id) {
     await updateBadges();
     await loadInbox();
   } catch (e) {
-    alert('Could not discard. Please try again.');
+    toast('Could not discard. Please try again.');
   }
 }
 
@@ -1493,8 +1555,8 @@ function openTriage(item, to) {
       triageField('Title', `<input id="t-title" required maxlength="160" value="${escHtml(firstLine)}">`) +
       triageField('Details', `<textarea id="t-details" rows="3" maxlength="2000">${escHtml(item.text)}</textarea>`) +
       `<div class="row">` +
-      triageField('Lane', `<select id="t-lane"><option value="now">Now</option><option value="next" selected>Next</option><option value="waiting">Waiting on others</option><option value="done">Done</option></select>`) +
-      triageField('Tag', `<select id="t-tag"><option value="work">Work</option><option value="personal">Personal</option></select>`) +
+      triageField('Lane', `<input type="hidden" id="t-lane" value="next"><button type="button" class="dd-field" data-dd="t-lane">Next</button>`) +
+      triageField('Tag', `<input type="hidden" id="t-tag" value="work"><button type="button" class="dd-field" data-dd="t-tag">Work</button>`) +
       `</div>`;
   } else if (to === 'reminder') {
     const nh = new Date();
@@ -1504,12 +1566,12 @@ function openTriage(item, to) {
       triageField('Title', `<input id="t-title" required maxlength="160" value="${escHtml(firstLine)}">`) +
       triageField('Detail', `<input id="t-detail" maxlength="2000">`) +
       `<div class="row">` +
-      triageField('Remind at', `<input id="t-at" type="datetime-local" required value="${toLocalInput(nh)}">`) +
-      triageField('Recurrence <span class="hint">(optional)</span>', `<input id="t-rrule" maxlength="120" placeholder="FREQ=WEEKLY;BYDAY=SA">`) +
+      triageField('Remind at', `<input type="hidden" id="t-at" value="${toLocalInput(nh)}"><button type="button" class="dd-field" data-dtdate="t-at" data-dtmode="datetime">${fmtDtButtonLabel(toLocalInput(nh), { dataset: { dtmode: "datetime" } })}</button>`) +
+      triageField('Recurrence <span class="hint">(optional)</span>', `<input type="hidden" id="t-rrule"><button type="button" class="dd-field" data-dd="t-rrule">None</button>`) +
       `</div>`;
   } else if (to === 'journal') {
     f.innerHTML =
-      triageField('Date', `<input id="t-date" type="date" required value="${localDateStr(new Date())}">`) +
+      triageField('Date', `<input type="hidden" id="t-date" value="${localDateStr(new Date())}"><button type="button" class="dd-field" data-dtdate="t-date">${fmtDtButtonLabel(localDateStr(new Date()), { dataset: {} })}</button>`) +
       triageField('Append to journal', `<textarea id="t-text" rows="4">${escHtml(item.text)}</textarea>`);
   } else {
     const u = extractUrl(item.text);
@@ -1547,12 +1609,12 @@ document.getElementById('triage-form').addEventListener('submit', async (e) => {
     if (!data.title) return;
   } else if (triageDest === 'reminder') {
     const at = fromLocalInput(document.getElementById('t-at').value);
-    if (!at) { alert('Pick a valid date and time.'); return; }
+    if (!at) { toast('Pick a valid date and time.'); return; }
     data = { title: v('t-title'), detail: v('t-detail'), remind_at: at, recurrence: v('t-rrule') || null, tag: null };
     if (!data.title) return;
   } else if (triageDest === 'journal') {
     const d = v('t-date');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { alert('Pick a valid date.'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast('Pick a valid date.'); return; }
     data = { date: d, text: v('t-text') };
   } else {
     data = { url: v('t-url'), title: v('t-title'), tags: v('t-tags'), source: v('t-source'), notes: v('t-notes') };
@@ -1565,6 +1627,6 @@ document.getElementById('triage-form').addEventListener('submit', async (e) => {
     await updateBadges();
     await loadInbox();
   } catch (err) {
-    alert('Could not file this capture. Please try again.');
+    toast('Could not file this capture. Please try again.');
   }
 });

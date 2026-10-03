@@ -224,9 +224,13 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   margin-bottom: 1rem;
 }
 .view-head h2 { margin: 0; font-size: 1.1rem; flex: 1; }
-.view-head input[type="search"], .view-head select, .view-head input[type="date"] {
+.view-head input[type="search"] {
   border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.7rem;
   font-size: 0.85rem; font-family: inherit;
+}
+.dd-field.dd-inline {
+  display: inline-block; width: auto; margin-top: 0; padding: 0.45rem 2rem 0.45rem 0.7rem;
+  font-size: 0.85rem;
 }
 .view-head button:not(.primary) {
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
@@ -478,11 +482,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 .dt-grid .blank { visibility: hidden; }
 .dt-time { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
 .dt-time select { flex: 1; }
-.dt-field {
-  display: block; width: 100%; max-width: 230px; margin-top: 0.3rem; padding: 0.5rem;
-  border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; font-family: inherit;
-  background: #fff; color: var(--ink); text-align: left; cursor: pointer;
-}
 
 /* Custom dropdown */
 #dd-menu { z-index: 65; }
@@ -494,3 +493,33 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   background-repeat: no-repeat; background-position: right 0.7rem center;
 }
 .popup-menu button.dd-current { background: var(--lane); font-weight: 600; }
+
+/* Snooze picker */
+.snooze-picker { max-width: 320px; }
+.snooze-opts { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
+.snooze-opts button {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 0.6rem; font-size: 0.9rem; font-family: inherit; cursor: pointer; color: var(--ink);
+}
+.snooze-opts button:hover { background: var(--lane); }
+#snooze-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 65;
+}
+#snooze-backdrop.hidden { display: none; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: 2rem; transform: translateX(-50%);
+  background: var(--ink); color: #fff; border-radius: 999px;
+  padding: 0.7rem 1.2rem; font-size: 0.85rem; z-index: 90;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 90vw; text-align: center;
+}
+.toast.hidden { display: none; }
+
+/* Date-only mode for the dt picker */
+.dt-picker .dt-clear { display: none; }
+.dt-picker.date-only .dt-time { display: none; }
+.dt-picker.date-only .dt-clear { display: block; }
+.dt-picker .modal-actions { flex-direction: column; align-items: stretch; }
+.dt-picker .modal-actions button { width: 100%; padding: 0.7rem; }
