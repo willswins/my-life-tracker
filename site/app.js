@@ -1565,10 +1565,8 @@ function openTriage(item, to) {
     f.innerHTML =
       triageField('Title', `<input id="t-title" required maxlength="160" value="${escHtml(firstLine)}">`) +
       triageField('Detail', `<input id="t-detail" maxlength="2000">`) +
-      `<div class="row">` +
       triageField('Remind at', `<input type="hidden" id="t-at" value="${toLocalInput(nh)}"><button type="button" class="dd-field" data-dtdate="t-at" data-dtmode="datetime">${fmtDtButtonLabel(toLocalInput(nh), { dataset: { dtmode: "datetime" } })}</button>`) +
-      triageField('Recurrence <span class="hint">(optional)</span>', `<input type="hidden" id="t-rrule"><button type="button" class="dd-field" data-dd="t-rrule">None</button>`) +
-      `</div>`;
+      triageField('Recurrence <span class="hint">(optional)</span>', `<input type="hidden" id="t-rrule"><button type="button" class="dd-field fit" data-dd="t-rrule">None</button>`) +
   } else if (to === 'journal') {
     f.innerHTML =
       triageField('Date', `<input type="hidden" id="t-date" value="${localDateStr(new Date())}"><button type="button" class="dd-field" data-dtdate="t-date">${fmtDtButtonLabel(localDateStr(new Date()), { dataset: {} })}</button>`) +
