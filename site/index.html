@@ -32,21 +32,22 @@
     <img id="app-icon" src="/icon.png" alt="DayBook">
     <h1 id="view-title">My Board</h1>
   </div>
-  <div class="header-right">
-    <div class="search-add tasks-only">
+</header>
+<main id="board">
+  <div class="view-head">
+    <div class="search-add">
       <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
       <button id="add-card" class="primary">+ Add card</button>
     </div>
-    <div class="filters tasks-only" role="group" aria-label="Filter by tag">
+    <div class="filters" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
   </div>
-</header>
-<main id="board">
+  <div id="lanes">
   <section class="lane" data-lane="now">
     <h2>Now</h2>
     <div class="cards"></div>
@@ -63,6 +64,7 @@
     <h2>Done</h2>
     <div class="cards"></div>
   </section>
+  </div>
 </main>
 
 <main id="view-reminders" class="view hidden">
