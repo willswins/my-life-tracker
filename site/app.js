@@ -551,6 +551,8 @@ let currentView = 'tasks';
 
 let reminders = [];
 let editingReminderId = null;
+let reminderSearch = '';
+let reminderSearchTimer = null;
 
 let journalDate = null; // set below after helpers
 let journalPreview = false;
@@ -564,6 +566,8 @@ let linkSearchTimer = null;
 
 let inboxItems = [];
 let inboxShowTriaged = false;
+let inboxSearch = '';
+let inboxSearchTimer = null;
 let triageItem = null;
 let triageDest = 'task';
 
@@ -697,8 +701,10 @@ function renderReminders() {
   const weekStart = addDaysLocal(startToday, -((startToday.getDay() + 6) % 7));
   const nextWeekStart = addDaysLocal(weekStart, 7);
   const groups = { Overdue: [], Today: [], Tomorrow: [], 'This week': [], Later: [] };
+  const q = reminderSearch.trim().toLowerCase();
   reminders
     .filter((r) => r.status === 'active' || r.status === 'snoozed')
+    .filter((r) => !q || ((r.title || '') + ' ' + (r.detail || '')).toLowerCase().includes(q))
     .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
     .forEach((r) => {
       const at = new Date(r.remind_at);
@@ -1056,6 +1062,13 @@ function toast(msg) {
 }
 
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
+document.getElementById('reminder-search').addEventListener('input', (e) => {
+  clearTimeout(reminderSearchTimer);
+  reminderSearchTimer = setTimeout(() => {
+    reminderSearch = e.target.value;
+    renderReminders();
+  }, 300);
+});
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'reminder-backdrop') closeReminderModal();
@@ -1090,6 +1103,8 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 /* ---------- Journal ---------- */
 let journalFilter = 'all';
 let journalEntries = [];
+let journalSearch = '';
+let journalSearchTimer = null;
 
 function fmtEntryDate(ds) {
   const d = new Date(ds + 'T12:00:00');
@@ -1114,11 +1129,12 @@ async function loadJournalList() {
 function renderJournalList() {
   const box = document.getElementById('j-entries');
   const thisMonth = localDateStr(new Date()).slice(0, 7);
-  const items = journalFilter === 'month'
+  const q = journalSearch.trim().toLowerCase();
+  const items = (journalFilter === 'month'
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
-    : journalEntries;
+    : journalEntries).filter((e) => !q || (e.preview || '').toLowerCase().includes(q));
   if (!items.length) {
-    box.innerHTML = '<p class="empty-note">No entries yet. Tap + to write your first.</p>';
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + New entry to write your first.</p>';
     return;
   }
   box.innerHTML = '';
@@ -1154,8 +1170,15 @@ document.querySelectorAll('.filter-pill').forEach((p) => {
     renderJournalList();
   });
 });
-document.getElementById('j-fab').addEventListener('click', () => {
+document.getElementById('j-add').addEventListener('click', () => {
   openJournalDay(localDateStr(new Date()));
+});
+document.getElementById('journal-search').addEventListener('input', (e) => {
+  clearTimeout(journalSearchTimer);
+  journalSearchTimer = setTimeout(() => {
+    journalSearch = e.target.value;
+    renderJournalList();
+  }, 300);
 });
 document.getElementById('j-back').addEventListener('click', showJournalList);
 
@@ -1457,7 +1480,9 @@ function renderInbox() {
   document.getElementById('inbox-toggle-triaged').textContent =
     inboxShowTriaged ? 'Hide triaged' : 'Show triaged';
   box.innerHTML = '';
-  const list = inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged);
+  const q = inboxSearch.trim().toLowerCase();
+  const list = (inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged))
+    .filter((i) => !q || (i.text || '').toLowerCase().includes(q));
   if (!list.length) {
     box.innerHTML = `<p class="empty-note">${inboxShowTriaged ? 'Nothing here yet.' : 'Inbox zero. Capture something above.'}</p>`;
     return;
@@ -1520,6 +1545,13 @@ document.getElementById('inbox-form').addEventListener('submit', async (e) => {
 document.getElementById('inbox-toggle-triaged').addEventListener('click', async () => {
   inboxShowTriaged = !inboxShowTriaged;
   await loadInbox();
+});
+document.getElementById('inbox-search').addEventListener('input', (e) => {
+  clearTimeout(inboxSearchTimer);
+  inboxSearchTimer = setTimeout(() => {
+    inboxSearch = e.target.value;
+    renderInbox();
+  }, 300);
 });
 async function discardInbox(id) {
   const yes = await confirmAction({
