@@ -493,6 +493,8 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   background-repeat: no-repeat; background-position: right 0.7rem center;
 }
 .popup-menu button.dd-current { background: var(--lane); font-weight: 600; }
+/* Shrink-to-fit dropdown button for short values (e.g. recurrence). Common class. */
+.dd-field.fit { width: auto; min-width: 7rem; display: inline-block; }
 
 /* Snooze picker */
 .snooze-picker { max-width: 320px; }
