@@ -280,7 +280,13 @@ document.getElementById('d-edit').addEventListener('click', () => {
 });
 document.getElementById('d-delete').addEventListener('click', async () => {
   const c = cards.find((x) => x.id === detailId);
-  if (!c || !confirm(`Delete "${c.title}"?`)) return;
+  if (!c) return;
+  const yes = await confirmAction({
+    title: 'Delete this card?',
+    message: `"${c.title}" will move to Deleted. You can restore it anytime from the Deleted filter.`,
+    confirmLabel: 'Delete',
+  });
+  if (!yes) return;
   try {
     await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id));
     cards = cards.filter((x) => x.id !== c.id);
@@ -300,7 +306,13 @@ document.getElementById('d-restore').addEventListener('click', async () => {
 });
 document.getElementById('d-purge').addEventListener('click', async () => {
   const c = cards.find((x) => x.id === detailId);
-  if (!c || !confirm(`Permanently delete "${c.title}"? This cannot be undone.`)) return;
+  if (!c) return;
+  const yes = await confirmAction({
+    title: 'Delete forever?',
+    message: `"${c.title}" will be permanently removed. This cannot be undone.`,
+    confirmLabel: 'Delete forever',
+  });
+  if (!yes) return;
   try {
     await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id) + '&hard=true');
     cards = cards.filter((x) => x.id !== c.id);
@@ -322,6 +334,27 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); }
 });
+
+// ---- In-app confirmation for destructive actions ----
+function confirmAction({ title, message, confirmLabel }) {
+  return new Promise((resolve) => {
+    const bd = document.getElementById('confirm-backdrop');
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('confirm-ok').textContent = confirmLabel || 'Delete';
+    bd.classList.remove('hidden');
+    const done = (v) => {
+      bd.classList.add('hidden');
+      document.getElementById('confirm-ok').onclick = null;
+      document.getElementById('confirm-cancel').onclick = null;
+      bd.onclick = null;
+      resolve(v);
+    };
+    document.getElementById('confirm-ok').onclick = () => done(true);
+    document.getElementById('confirm-cancel').onclick = () => done(false);
+    bd.onclick = (e) => { if (e.target.id === 'confirm-backdrop') done(false); };
+  });
+}
 
 // ---- Connectors: API key management ----
 function openKeys() {
@@ -363,7 +396,12 @@ async function loadKeys() {
         const btn = document.createElement('button');
         btn.textContent = 'Revoke';
         btn.addEventListener('click', async () => {
-          if (!confirm(`Revoke the "${k.name}" key? Connected tools using it will stop working.`)) return;
+          const yes = await confirmAction({
+            title: 'Revoke this key?',
+            message: `The "${k.name}" connector will stop working immediately.`,
+            confirmLabel: 'Revoke key',
+          });
+          if (!yes) return;
           try { await api('DELETE', '/api/keys?id=' + encodeURIComponent(k.id)); loadKeys(); }
           catch (e) { alert('Could not revoke the key. Please try again.'); }
         });

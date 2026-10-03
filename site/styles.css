@@ -146,6 +146,9 @@ button.danger-btn { color: #b91c1c; }
   flex: 1; border: 1px solid var(--line); border-radius: 8px;
   padding: 0.5rem; font-size: 0.9rem; font-family: inherit;
 }
+.modal.confirm { max-width: 380px; }
+.modal.confirm p { color: var(--muted); font-size: 0.9rem; }
+#confirm-ok { font-weight: 600; }
 .empty-note { color: var(--muted); font-size: 0.85rem; }
 #keys-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
 .key-row {
