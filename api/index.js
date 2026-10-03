@@ -564,7 +564,7 @@ pre#ingest-docs {
   <div class="view-head">
     <div class="search-add">
       <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
-      <button id="add-card" class="primary">+ Add card</button>
+      <button id="add-card" class="primary">+ Add</button>
     </div>
     <div class="filters" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
@@ -598,7 +598,7 @@ pre#ingest-docs {
   <div class="view-head">
     <div class="search-add">
       <input id="reminder-search" type="search" placeholder="Search reminders…" aria-label="Search reminders">
-      <button id="add-reminder" class="primary">+ Add reminder</button>
+      <button id="add-reminder" class="primary">+ Add</button>
     </div>
   </div>
   <div id="reminder-timeline"></div>
@@ -614,7 +614,7 @@ pre#ingest-docs {
     <div class="view-head">
       <div class="search-add">
         <input id="journal-search" type="search" placeholder="Search entries…" aria-label="Search entries">
-        <button id="j-add" class="primary">+ New entry</button>
+        <button id="j-add" class="primary">+ Add</button>
       </div>
     </div>
     <div class="filter-pills">
@@ -650,7 +650,7 @@ pre#ingest-docs {
   <div class="view-head">
     <div class="search-add">
       <input id="link-search" type="search" placeholder="Search links…" aria-label="Search links">
-      <button id="add-link" class="primary">+ Add link</button>
+      <button id="add-link" class="primary">+ Add</button>
     </div>
     <input type="hidden" id="link-tag-filter">
     <button type="button" class="dd-field dd-inline" data-dd="link-tag-filter" aria-label="Filter by tag">All tags</button>
@@ -674,7 +674,7 @@ pre#ingest-docs {
   </div>
   <form id="inbox-form">
     <input id="inbox-text" placeholder="Capture anything — text, a link, a note…" autocomplete="off">
-    <button type="submit" class="primary">Capture</button>
+    <button type="submit" class="primary">+ Add</button>
   </form>
   <div id="inbox-list"></div>
 </main>
@@ -935,7 +935,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 5:05 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 5:10 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
