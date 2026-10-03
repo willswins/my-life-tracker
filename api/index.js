@@ -37,6 +37,7 @@ header {
   top: 0;
   z-index: 10;
 }
+.header-left { display: flex; align-items: center; gap: 0.6rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
 .header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
@@ -53,7 +54,7 @@ header h1 { font-size: 1.25rem; margin: 0; }
 }
 .menu-wrap { position: relative; }
 #menu {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 60;
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 170px; padding: 0.25rem;
   display: flex; flex-direction: column;
@@ -149,6 +150,7 @@ button.primary {
   display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
 }
 #modal-backdrop.hidden { display: none; }
+.hidden { display: none !important; }
 .modal {
   background: #fff; border-radius: 14px; padding: 1.25rem;
   width: 100%; max-width: 480px; max-height: 90vh; overflow: auto;
@@ -208,7 +210,16 @@ pre#ingest-docs {
 </head>
 <body>
 <header>
-  <h1>My Kanban Board</h1>
+  <div class="header-left">
+    <div class="menu-wrap">
+      <button id="menu-btn" aria-label="Menu">☰</button>
+      <div id="menu" class="hidden">
+        <button id="menu-invite">Invite</button>
+        <a href="/api/logout" id="menu-logout">Logout</a>
+      </div>
+    </div>
+    <h1>My Kanban Board</h1>
+  </div>
   <div class="header-right">
     <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
     <div class="filters" role="group" aria-label="Filter by tag">
@@ -219,14 +230,7 @@ pre#ingest-docs {
     </div>
     <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <button id="add-card" class="primary">+ Add card</button>
-    <div class="menu-wrap">
-      <button id="menu-btn" aria-label="Menu">☰</button>
-      <div id="menu" class="hidden">
-        <button id="menu-invite">Invite</button>
-        <button id="menu-connectors">Connectors</button>
-        <a href="/api/logout" id="menu-logout">Logout</a>
-      </div>
-    </div>
+    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
   </div>
 </header>
 <main id="board">
@@ -810,14 +814,11 @@ document.addEventListener('click', (e) => {
     menuEl.classList.add('hidden');
   }
 });
-document.getElementById('menu-connectors').addEventListener('click', () => {
-  menuEl.classList.add('hidden');
-  openKeys();
-});
 document.getElementById('menu-invite').addEventListener('click', () => {
   menuEl.classList.add('hidden');
   openInvite();
 });
+document.getElementById('connectors-btn').addEventListener('click', openKeys);
 
 // ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {

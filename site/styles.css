@@ -29,6 +29,7 @@ header {
   top: 0;
   z-index: 10;
 }
+.header-left { display: flex; align-items: center; gap: 0.6rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
 .header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
@@ -45,7 +46,7 @@ header h1 { font-size: 1.25rem; margin: 0; }
 }
 .menu-wrap { position: relative; }
 #menu {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 60;
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 170px; padding: 0.25rem;
   display: flex; flex-direction: column;
@@ -141,6 +142,7 @@ button.primary {
   display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
 }
 #modal-backdrop.hidden { display: none; }
+.hidden { display: none !important; }
 .modal {
   background: #fff; border-radius: 14px; padding: 1.25rem;
   width: 100%; max-width: 480px; max-height: 90vh; overflow: auto;

@@ -8,7 +8,16 @@
 </head>
 <body>
 <header>
-  <h1>My Kanban Board</h1>
+  <div class="header-left">
+    <div class="menu-wrap">
+      <button id="menu-btn" aria-label="Menu">☰</button>
+      <div id="menu" class="hidden">
+        <button id="menu-invite">Invite</button>
+        <a href="/api/logout" id="menu-logout">Logout</a>
+      </div>
+    </div>
+    <h1>My Kanban Board</h1>
+  </div>
   <div class="header-right">
     <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
     <div class="filters" role="group" aria-label="Filter by tag">
@@ -19,14 +28,7 @@
     </div>
     <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <button id="add-card" class="primary">+ Add card</button>
-    <div class="menu-wrap">
-      <button id="menu-btn" aria-label="Menu">☰</button>
-      <div id="menu" class="hidden">
-        <button id="menu-invite">Invite</button>
-        <button id="menu-connectors">Connectors</button>
-        <a href="/api/logout" id="menu-logout">Logout</a>
-      </div>
-    </div>
+    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
   </div>
 </header>
 <main id="board">

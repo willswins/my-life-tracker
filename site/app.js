@@ -431,14 +431,11 @@ document.addEventListener('click', (e) => {
     menuEl.classList.add('hidden');
   }
 });
-document.getElementById('menu-connectors').addEventListener('click', () => {
-  menuEl.classList.add('hidden');
-  openKeys();
-});
 document.getElementById('menu-invite').addEventListener('click', () => {
   menuEl.classList.add('hidden');
   openInvite();
 });
+document.getElementById('connectors-btn').addEventListener('click', openKeys);
 
 // ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {
