@@ -185,7 +185,7 @@ button.primary {
 .modal-actions { align-items: center; }
 #reminder-form .modal-actions { flex-direction: column; align-items: stretch; }
 #reminder-form .modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
-#r-at { max-width: 210px; }
+
 button.danger-btn { color: #b91c1c; }
 .modal.detail { max-width: 560px; }
 .modal.detail h4 { margin: 1rem 0 0.5rem; font-size: 0.9rem; }
@@ -472,6 +472,27 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
 }
 #j-back { margin-bottom: 0.6rem; }
+
+/* Custom date/time picker */
+#dt-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 60;
+}
+#dt-backdrop.hidden { display: none; }
+.dt-picker { max-width: 340px; }
+.dt-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.dt-month { font-weight: 700; font-size: 0.95rem; }
+.dt-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 0.9rem; }
+.dt-grid .dow { font-size: 0.7rem; color: var(--muted); text-align: center; padding: 0.2rem 0; }
+.dt-grid .day-cell { width: 100%; height: auto; aspect-ratio: 1; font-size: 0.82rem; }
+.dt-grid .blank { visibility: hidden; }
+.dt-time { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.dt-time select { flex: 1; }
+.dt-field {
+  display: block; width: 100%; max-width: 230px; margin-top: 0.3rem; padding: 0.5rem;
+  border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+  background: #fff; color: var(--ink); text-align: left; cursor: pointer;
+}
 </style>
 </head>
 <body data-view="tasks">
@@ -752,7 +773,8 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     </label>
     <div class="row">
       <label>Remind at
-        <input id="r-at" type="datetime-local" required>
+        <input id="r-at" type="hidden">
+        <button type="button" id="r-at-btn" class="dt-field">Pick date &amp; time</button>
       </label>
       <label>Recurrence
         <select id="r-rrule">
@@ -785,6 +807,29 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
       <button type="button" id="reminder-cancel">Cancel</button>
     </div>
   </form>
+</div>
+
+<div id="dt-backdrop" class="hidden">
+  <div class="modal dt-picker">
+    <div class="dt-head">
+      <button type="button" id="dt-prev" class="chev-btn" aria-label="Previous month">&#8249;</button>
+      <div id="dt-month-label" class="dt-month"></div>
+      <button type="button" id="dt-next" class="chev-btn" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="dt-grid" id="dt-grid"></div>
+    <div class="dt-time">
+      <select id="dt-hour" aria-label="Hour"></select>
+      <select id="dt-min" aria-label="Minute"></select>
+      <select id="dt-ampm" aria-label="AM or PM">
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="dt-done" class="primary">Done</button>
+      <button type="button" id="dt-cancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div id="link-backdrop" class="hidden">
@@ -837,7 +882,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 3:59 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 4:05 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1639,6 +1684,7 @@ function openReminderModal(r) {
   const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
   d.setMinutes(0, 0, 0);
   document.getElementById('r-at').value = toLocalInput(d);
+  updateDtField();
   const rruleSel = document.getElementById('r-rrule');
   rruleSel.innerHTML =
     '<option value="">None</option>' +
@@ -1663,6 +1709,114 @@ function closeReminderModal() {
   document.getElementById('reminder-backdrop').classList.add('hidden');
   editingReminderId = null;
 }
+
+/* ---------- Custom date/time picker (replaces native datetime-local) ---------- */
+let dtState = null; // { y, m (0-11), d, hh (24h), mm }
+
+function fmtDtLabel(v) {
+  if (!v) return 'Pick date & time';
+  const d = new Date(v);
+  if (isNaN(d)) return 'Pick date & time';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function updateDtField() {
+  document.getElementById('r-at-btn').textContent = fmtDtLabel(document.getElementById('r-at').value);
+}
+function openDtPicker() {
+  const v = document.getElementById('r-at').value;
+  let d = v ? new Date(v) : new Date(Date.now() + 3600000);
+  if (isNaN(d)) d = new Date(Date.now() + 3600000);
+  const q0 = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - d.getMinutes()) < Math.abs(a - d.getMinutes()) ? b : a);
+  dtState = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate(), hh: d.getHours(), mm: q0 };
+  const hr = document.getElementById('dt-hour');
+  hr.innerHTML = '';
+  for (let h = 1; h <= 12; h++) {
+    const o = document.createElement('option');
+    o.value = h; o.textContent = h;
+    hr.appendChild(o);
+  }
+  const mn = document.getElementById('dt-min');
+  mn.innerHTML = '';
+  ['00', '15', '30', '45'].forEach((m) => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    mn.appendChild(o);
+  });
+  syncDtTimeSelects();
+  renderDtGrid();
+  document.getElementById('dt-backdrop').classList.remove('hidden');
+}
+function syncDtTimeSelects() {
+  const h12 = dtState.hh % 12 || 12;
+  document.getElementById('dt-hour').value = h12;
+  const q = [0, 15, 30, 45].reduce((a, b) => Math.abs(b - dtState.mm) < Math.abs(a - dtState.mm) ? b : a);
+  document.getElementById('dt-min').value = String(q).padStart(2, '0');
+  document.getElementById('dt-ampm').value = dtState.hh < 12 ? 'AM' : 'PM';
+}
+function renderDtGrid() {
+  const label = document.getElementById('dt-month-label');
+  label.textContent = new Date(dtState.y, dtState.m, 1)
+    .toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  const grid = document.getElementById('dt-grid');
+  grid.innerHTML = '';
+  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((w) => {
+    const s = document.createElement('span');
+    s.className = 'dow'; s.textContent = w;
+    grid.appendChild(s);
+  });
+  const first = new Date(dtState.y, dtState.m, 1).getDay();
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  const today = localDateStr(new Date());
+  for (let i = 0; i < first; i++) {
+    const b = document.createElement('span');
+    b.className = 'blank';
+    grid.appendChild(b);
+  }
+  for (let day = 1; day <= daysIn; day++) {
+    const ds = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(day);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'day-cell' +
+      (ds === today ? ' today' : '') +
+      (day === dtState.d ? ' selected' : '');
+    b.textContent = day;
+    b.addEventListener('click', () => { dtState.d = day; renderDtGrid(); });
+    grid.appendChild(b);
+  }
+}
+function closeDtPicker() {
+  document.getElementById('dt-backdrop').classList.add('hidden');
+  dtState = null;
+}
+function commitDtPicker() {
+  const h12 = parseInt(document.getElementById('dt-hour').value, 10);
+  const mm = parseInt(document.getElementById('dt-min').value, 10);
+  const ap = document.getElementById('dt-ampm').value;
+  const hh = (h12 % 12) + (ap === 'PM' ? 12 : 0);
+  const v = dtState.y + '-' + pad2(dtState.m + 1) + '-' + pad2(dtState.d) +
+    'T' + pad2(hh) + ':' + pad2(mm);
+  document.getElementById('r-at').value = v;
+  updateDtField();
+  closeDtPicker();
+}
+document.getElementById('r-at-btn').addEventListener('click', openDtPicker);
+document.getElementById('dt-prev').addEventListener('click', () => {
+  dtState.m--; if (dtState.m < 0) { dtState.m = 11; dtState.y--; }
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  if (dtState.d > daysIn) dtState.d = daysIn;
+  renderDtGrid();
+});
+document.getElementById('dt-next').addEventListener('click', () => {
+  dtState.m++; if (dtState.m > 11) { dtState.m = 0; dtState.y++; }
+  const daysIn = new Date(dtState.y, dtState.m + 1, 0).getDate();
+  if (dtState.d > daysIn) dtState.d = daysIn;
+  renderDtGrid();
+});
+document.getElementById('dt-done').addEventListener('click', commitDtPicker);
+document.getElementById('dt-cancel').addEventListener('click', closeDtPicker);
+document.getElementById('dt-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'dt-backdrop') closeDtPicker();
+});
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
 document.getElementById('reminder-cancel').addEventListener('click', closeReminderModal);
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
@@ -1952,7 +2106,12 @@ document.addEventListener('click', (e) => {
   if (rmenu && !rmenu.classList.contains('hidden') &&
       !e.target.closest('#rem-menu') && !e.target.closest('.link-menu-btn')) closeRemMenu();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLinkMenu(); closeRemMenu(); } });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dt = document.getElementById('dt-backdrop');
+  if (dt && !dt.classList.contains('hidden')) { closeDtPicker(); return; }
+  closeLinkMenu(); closeRemMenu();
+});
   return el;
 }
 
