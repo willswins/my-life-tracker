@@ -423,6 +423,7 @@ document.addEventListener('click', (e) => {
   if (!menuEl.classList.contains('hidden') && !e.target.closest('.menu-wrap')) {
     menuEl.classList.add('hidden');
   closeLinkMenu();
+  closeRemMenu();
   }
 });
 document.getElementById('menu-invite').addEventListener('click', () => {
@@ -731,17 +732,48 @@ function remRow(r) {
     (new Date(r.remind_at) < sod ? ' is-overdue' : '') +
     (r.status === 'snoozed' ? ' is-snoozed' : '');
   const label = rruleLabel(r.recurrence);
+  const metaBits = [fmtTime(r.remind_at), label, r.status === 'snoozed' ? 'Snoozed' : '']
+    .filter(Boolean).join(' · ');
   el.innerHTML =
-    `<div class="rem-time">${escHtml(fmtTime(r.remind_at))}</div>` +
-    `<div class="rem-main"><h4>${escHtml(r.title)}` +
-    (label ? `<span class="rec-label">${escHtml(label)}</span>` : '') +
-    (r.status === 'snoozed' ? '<span class="status-pill">Snoozed</span>' : '') +
-    `</h4>` + (r.detail ? `<p>${escHtml(r.detail)}</p>` : '') + `</div>` +
-    `<div class="rem-actions"><button data-a="dismiss">Dismiss</button>` +
-    `<button data-a="snooze">Snooze</button><button data-a="edit">Edit</button></div>`;
-  el.querySelectorAll('button').forEach((b) =>
-    b.addEventListener('click', () => remAct(r.id, b.dataset.a)));
+    `<div class="rem-main"><div class="link-title">${escHtml(r.title)}</div>` +
+    `<div class="link-line2">${escHtml(metaBits)}</div>` +
+    (r.detail ? `<div class="link-line3">${escHtml(r.detail)}</div>` : '') +
+    (r.detail ? `<div class="rem-detail"><div class="link-notes-full">${escHtml(r.detail)}</div></div>` : '') +
+    `</div>` +
+    `<div class="rem-actions"><button class="link-menu-btn" aria-label="Reminder actions" title="Actions">⋮</button></div>`;
+  el.querySelector('.rem-main').addEventListener('click', () => {
+    if (!r.detail) return; // nothing more to show
+    el.classList.toggle('expanded');
+  });
+  el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleRemMenu(r.id, e.currentTarget);
+  });
   return el;
+}
+
+// One icon per reminder row opens a shared popup menu.
+let remMenuFor = null;
+function closeRemMenu() {
+  const m = document.getElementById('rem-menu');
+  if (m) m.classList.add('hidden');
+  remMenuFor = null;
+}
+function toggleRemMenu(id, btn) {
+  const menu = document.getElementById('rem-menu');
+  if (remMenuFor === id) { closeRemMenu(); return; }
+  remMenuFor = id;
+  menu.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { closeRemMenu(); remAct(id, b.dataset.a); };
+  });
+  menu.classList.remove('hidden');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.right - mw, window.innerWidth - mw - 8);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 8) y = Math.max(8, r.top - mh - 6);
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top = y + 'px';
 }
 
 async function remAct(id, a) {
@@ -1073,11 +1105,13 @@ function toggleLinkMenu(id, btn) {
 }
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('link-menu');
-  if (!menu || menu.classList.contains('hidden')) return;
-  if (e.target.closest('#link-menu') || e.target.closest('.link-menu-btn')) return;
-  closeLinkMenu();
+  if (menu && !menu.classList.contains('hidden') &&
+      !e.target.closest('#link-menu') && !e.target.closest('.link-menu-btn')) closeLinkMenu();
+  const rmenu = document.getElementById('rem-menu');
+  if (rmenu && !rmenu.classList.contains('hidden') &&
+      !e.target.closest('#rem-menu') && !e.target.closest('.link-menu-btn')) closeRemMenu();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLinkMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLinkMenu(); closeRemMenu(); } });
   return el;
 }
 
