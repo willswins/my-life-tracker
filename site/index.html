@@ -33,7 +33,10 @@
     <h1 id="view-title">My Board</h1>
   </div>
   <div class="header-right">
-    <input id="search" class="tasks-only" type="search" placeholder="Search cards…" aria-label="Search cards">
+    <div class="search-add tasks-only">
+      <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
+      <button id="add-card" class="primary">+ Add card</button>
+    </div>
     <div class="filters tasks-only" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
@@ -41,7 +44,6 @@
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
     <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <button id="add-card" class="primary tasks-only">+ Add card</button>
   </div>
 </header>
 <main id="board">

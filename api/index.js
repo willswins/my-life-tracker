@@ -42,6 +42,8 @@ header {
 .header-left { display: flex; align-items: center; gap: 0.6rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
 .header-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.search-add { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 240px; }
+.search-add #search { flex: 1; min-width: 0; width: auto; }
 .filters { display: flex; gap: 0.25rem; background: var(--lane); border-radius: 999px; padding: 0.2rem; }
 .filters button {
   border: 0; background: transparent; border-radius: 999px;
@@ -436,7 +438,10 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
     <h1 id="view-title">My Board</h1>
   </div>
   <div class="header-right">
-    <input id="search" class="tasks-only" type="search" placeholder="Search cards…" aria-label="Search cards">
+    <div class="search-add tasks-only">
+      <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
+      <button id="add-card" class="primary">+ Add card</button>
+    </div>
     <div class="filters tasks-only" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
@@ -444,7 +449,6 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
     <button id="view-toggle" class="tasks-only" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <button id="add-card" class="primary tasks-only">+ Add card</button>
   </div>
 </header>
 <main id="board">
@@ -750,7 +754,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:36 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 10:39 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
