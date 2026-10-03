@@ -741,14 +741,9 @@ function remRow(r) {
     `<div class="rem-when"><span class="d">${escHtml(dateStr)}</span><span class="t">${escHtml(timeStr)}</span></div>` +
     `<div class="rem-main"><div class="link-title">${escHtml(r.title)}</div>` +
     (metaBits ? `<div class="link-line2">${escHtml(metaBits)}</div>` : '') +
-    (r.detail ? `<div class="link-line3">${escHtml(r.detail)}</div>` : '') +
-    (r.detail ? `<div class="rem-detail"><div class="link-notes-full">${escHtml(r.detail)}</div></div>` : '') +
+    (r.detail ? `<div class="rem-detail-full">${escHtml(r.detail)}</div>` : '') +
     `</div>` +
     `<div class="rem-actions"><button class="link-menu-btn" aria-label="Reminder actions" title="Actions">⋮</button></div>`;
-  el.querySelector('.rem-main').addEventListener('click', () => {
-    if (!r.detail) return; // nothing more to show
-    el.classList.toggle('expanded');
-  });
   el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     toggleRemMenu(r.id, e.currentTarget);

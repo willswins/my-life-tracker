@@ -268,18 +268,11 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 }
 .rem-row.is-overdue { border-left: 5px solid #b91c1c; }
 .rem-row.is-snoozed { opacity: 0.75; }
-.rem-main { flex: 1; min-width: 0; cursor: pointer; }
+.rem-main { flex: 1; min-width: 0; }
 .rem-when { flex: 0 0 4.4rem; display: flex; flex-direction: column; }
 .rem-when .d { font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
 .rem-when .t { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-.rem-detail { display: none; margin-top: 0.3rem; }
-.rem-row.expanded .rem-detail { display: block; }
-.rem-row.expanded .link-line2, .rem-row.expanded .link-line3 { display: none; }
-.rem-row .link-line3 {
-  white-space: normal;
-  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+.rem-detail-full { font-size: 0.82rem; color: var(--ink); white-space: pre-wrap; margin-top: 0.15rem; }
 .rem-actions { display: flex; flex: none; }
 
 
