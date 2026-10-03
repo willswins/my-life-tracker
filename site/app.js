@@ -1134,7 +1134,7 @@ function renderJournalList() {
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
     : journalEntries).filter((e) => !q || (e.preview || '').toLowerCase().includes(q));
   if (!items.length) {
-    box.innerHTML = '<p class="empty-note">No entries yet. Tap + New entry to write your first.</p>';
+    box.innerHTML = '<p class="empty-note">No entries yet. Tap + Add to write your first.</p>';
     return;
   }
   box.innerHTML = '';
@@ -1162,9 +1162,9 @@ function showJournalList() {
   loadJournalList();
 }
 
-document.querySelectorAll('.filter-pill').forEach((p) => {
+document.querySelectorAll('#view-journal .filters button').forEach((p) => {
   p.addEventListener('click', () => {
-    document.querySelectorAll('.filter-pill').forEach((x) => x.classList.remove('active'));
+    document.querySelectorAll('#view-journal .filters button').forEach((x) => x.classList.remove('active'));
     p.classList.add('active');
     journalFilter = p.dataset.f;
     renderJournalList();
