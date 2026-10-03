@@ -424,7 +424,10 @@ document.getElementById('menu-invite').addEventListener('click', () => {
   menuEl.classList.add('hidden');
   openInvite();
 });
-document.getElementById('connectors-btn').addEventListener('click', openKeys);
+document.getElementById('menu-connectors').addEventListener('click', () => {
+  menuEl.classList.add('hidden');
+  openKeys();
+});
 
 // ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {

@@ -155,6 +155,7 @@ button.primary {
   position: fixed; inset: 0; background: rgba(0,0,0,.4);
   display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
 }
+#confirm-backdrop { z-index: 70; }
 .modal {
   background: #fff; border-radius: 14px; padding: 1.25rem;
   width: 100%; max-width: 480px; max-height: 90vh; overflow: auto;
@@ -219,6 +220,7 @@ pre#ingest-docs {
       <button id="menu-btn" aria-label="Menu">☰</button>
       <div id="menu" class="hidden">
         <button id="menu-invite">Invite</button>
+        <button id="menu-connectors">Connectors</button>
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
@@ -234,7 +236,6 @@ pre#ingest-docs {
     </div>
     <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <button id="add-card" class="primary">+ Add card</button>
-    <button id="connectors-btn" title="API keys for connectors">Connectors</button>
   </div>
 </header>
 <main id="board">
@@ -809,7 +810,10 @@ document.getElementById('menu-invite').addEventListener('click', () => {
   menuEl.classList.add('hidden');
   openInvite();
 });
-document.getElementById('connectors-btn').addEventListener('click', openKeys);
+document.getElementById('menu-connectors').addEventListener('click', () => {
+  menuEl.classList.add('hidden');
+  openKeys();
+});
 
 // ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {
