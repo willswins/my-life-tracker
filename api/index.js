@@ -6,8 +6,8 @@ const HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DayBook</title>
-<link rel="icon" type="image/png" href="/site/icon.png">
-<link rel="apple-touch-icon" href="/site/icon.png">
+<link rel="icon" type="image/png" href="/api/icon">
+<link rel="apple-touch-icon" href="/api/icon">
 <style>:root {
   --work: #2563eb;
   --work-bg: #dbeafe;
@@ -434,7 +434,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
         <a href="/api/logout" id="menu-logout">Logout</a>
       </div>
     </div>
-    <img id="app-icon" src="/site/icon.png" alt="DayBook">
+    <img id="app-icon" src="/api/icon" alt="DayBook">
     <h1 id="view-title">My Board</h1>
   </div>
   <div class="header-right">
@@ -527,7 +527,7 @@ body:not([data-view="tasks"]) .tasks-only { display: none !important; }
 
 <main id="view-about" class="view hidden">
   <div class="about-card">
-    <img src="/site/icon.png" alt="DayBook icon" class="about-icon">
+    <img src="/api/icon" alt="DayBook icon" class="about-icon">
     <h2>DayBook</h2>
     <p class="about-desc">A private life-management system — tasks, reminders, journal, links, and inbox in one place.</p>
     <dl class="about-meta">
@@ -754,7 +754,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:39 AM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 11:05 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
