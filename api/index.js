@@ -689,8 +689,6 @@ pre#ingest-docs {
     <div id="j-rich" class="rich-area" contenteditable="true" data-placeholder="Write your thoughts…"></div>
     <input id="j-file" type="file" multiple class="hidden">
     <div id="j-attach-list" class="attach-list"></div>
-    <div class="section-label">Auto summary</div>
-    <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
     <div class="view-actions">
       <button id="j-save" class="primary">Save</button>
     </div>
@@ -986,7 +984,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 8:17 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 8:27 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2290,8 +2288,6 @@ async function loadJournalForm() {
   document.getElementById('j-rich').innerHTML = '';
   journalAttachments = [];
   renderAttachList();
-  const auto = document.getElementById('j-auto');
-  auto.innerHTML = '<p class="empty-note">No summary yet.</p>';
   try {
     const e = await api('GET', '/api/daybook/journal?date=' + ds);
     if (e) {
@@ -2299,12 +2295,30 @@ async function loadJournalForm() {
       document.getElementById('j-rich').innerHTML = sanitizeHtml(e.body || '');
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
-      if (e.auto_summary) auto.textContent = e.auto_summary;
     }
   } catch (err) { /* new entry */ }
 }
 
-// Paste images as data URLs into the rich area.
+// Insert an image data URL at the cursor in the rich area.
+function insertImageAtCursor(dataUrl, name) {
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.alt = name || 'image';
+  const rich = document.getElementById('j-rich');
+  rich.focus();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    rich.appendChild(img);
+  }
+}
 document.getElementById('j-rich').addEventListener('paste', (e) => {
   const files = (e.clipboardData && e.clipboardData.files) || [];
   const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -2312,25 +2326,7 @@ document.getElementById('j-rich').addEventListener('paste', (e) => {
   e.preventDefault();
   imgs.forEach((f) => {
     const r = new FileReader();
-    r.onload = () => {
-      const img = document.createElement('img');
-      img.src = r.result;
-      img.alt = f.name || 'pasted image';
-      const rich = document.getElementById('j-rich');
-      rich.focus();
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount) {
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(img);
-        range.setStartAfter(img);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } else {
-        rich.appendChild(img);
-      }
-    };
+    r.onload = () => insertImageAtCursor(r.result, f.name);
     r.readAsDataURL(f);
   });
 });
@@ -2344,8 +2340,13 @@ document.getElementById('j-file').addEventListener('change', (e) => {
     if (f.size > 8 * 1024 * 1024) { toast('"' + f.name + '" is over 8 MB \\u2014 skipped.'); return; }
     const r = new FileReader();
     r.onload = () => {
-      journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
-      renderAttachList();
+      if (f.type.startsWith('image/')) {
+        // Images go inline into the body at the cursor.
+        insertImageAtCursor(r.result, f.name);
+      } else {
+        journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
+        renderAttachList();
+      }
     };
     r.readAsDataURL(f);
   });
