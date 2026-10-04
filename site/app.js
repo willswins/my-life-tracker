@@ -1400,15 +1400,45 @@ function insertImageAtCursor(dataUrl, name) {
     rich.appendChild(img);
   }
 }
-document.getElementById('j-rich').addEventListener('paste', (e) => {
-  const files = (e.clipboardData && e.clipboardData.files) || [];
-  const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
-  if (!imgs.length) return;
-  e.preventDefault();
-  imgs.forEach(async (f) => {
-    const dataUrl = await resizeImage(f);
-    if (dataUrl) insertImageAtCursor(dataUrl, f.name);
+// Downscale any oversized inline images (catches HTML-paste from iOS etc).
+function downscaleInlineImages() {
+  const rich = document.getElementById('j-rich');
+  rich.querySelectorAll('img:not([data-rs])').forEach((img) => {
+    img.setAttribute('data-rs', '1');
+    const probe = new Image();
+    probe.onload = () => {
+      const max = 1200;
+      if (probe.width <= max && probe.height <= max) return;
+      const s = max / Math.max(probe.width, probe.height);
+      const c = document.createElement('canvas');
+      c.width = Math.round(probe.width * s);
+      c.height = Math.round(probe.height * s);
+      c.getContext('2d').drawImage(probe, 0, 0, c.width, c.height);
+      img.src = c.toDataURL('image/jpeg', 0.82);
+    };
+    probe.src = img.src;
   });
+}
+
+document.getElementById('j-rich').addEventListener('paste', (e) => {
+  const cd = e.clipboardData;
+  if (!cd) return;
+  const files = Array.from(cd.files || []).filter((f) => f.type.startsWith('image/'));
+  const items = Array.from(cd.items || [])
+    .filter((it) => it.type.startsWith('image/'))
+    .map((it) => it.getAsFile())
+    .filter(Boolean);
+  const imgs = files.length ? files : items;
+  if (imgs.length) {
+    e.preventDefault();
+    imgs.forEach(async (f) => {
+      const dataUrl = await resizeImage(f);
+      if (dataUrl) insertImageAtCursor(dataUrl, f.name);
+    });
+    return;
+  }
+  // HTML paste (iOS often pastes <img> tags): let it land, then downscale.
+  setTimeout(downscaleInlineImages, 50);
 });
 
 // File attachments -> base64 data URLs.
