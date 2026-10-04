@@ -36,7 +36,7 @@ async function api(method, path, body) {
 }
 
 async function loadCards() {
-  cards = await api('GET', '/api/cards' + (showDeleted ? '?deleted=only' : ''));
+  cards = await api('GET', '/api/app?r=cards' + (showDeleted ? '&deleted=only' : ''));
 }
 
 async function init() {
@@ -46,7 +46,7 @@ async function init() {
     if (!isAdmin) document.getElementById('menu-invite').style.display = 'none';
   } catch (e) { /* non-fatal */ }
   try {
-    allTags = await api('GET', '/api/daybook/tags');
+    allTags = await api('GET', '/api/app?r=daybook&view=tags');
   } catch (e) { /* tags non-fatal */ }
   try {
     await loadCards();
@@ -278,7 +278,7 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
       const c = cards.find((x) => x.id === editingId);
       if (c) Object.assign(c, updated);
     } else {
-      const created = await api('POST', '/api/cards', data);
+      const created = await api('POST', '/api/app?r=cards', data);
       cards.push(created);
     }
     render(); closeModal();
@@ -407,7 +407,7 @@ document.getElementById('comment-form').addEventListener('submit', async (e) => 
   const text = input.value.trim();
   if (!text || detailId == null) return;
   try {
-    await api('POST', '/api/comments', { card_id: detailId, body: text });
+    await api('POST', '/api/app?r=comments', { card_id: detailId, body: text });
     input.value = '';
     openDetail(detailId);
   } catch (err) { toast('Could not post the comment. Please try again.'); }
@@ -451,7 +451,7 @@ async function loadKeys() {
   const box = document.getElementById('keys-list');
   box.innerHTML = '<p class="empty-note">Loading…</p>';
   try {
-    const keys = await api('GET', '/api/keys');
+    const keys = await api('GET', '/api/app?r=keys');
     box.innerHTML = '';
     if (!keys.length) box.innerHTML = '<p class="empty-note">No connector keys yet.</p>';
     keys.forEach((k) => {
@@ -530,7 +530,7 @@ async function loadInvites() {
   const box = document.getElementById('invites-list');
   box.innerHTML = '<p class="empty-note">Loading…</p>';
   try {
-    const users = await api('GET', '/api/invites');
+    const users = await api('GET', '/api/app?r=invites');
     box.innerHTML = '';
     if (!users.length) box.innerHTML = '<p class="empty-note">Nobody invited yet.</p>';
     users.forEach((u) => {
@@ -571,7 +571,7 @@ document.getElementById('invite-form').addEventListener('submit', async (e) => {
   const email = input.value.trim();
   if (!email) return;
   try {
-    await api('POST', '/api/invites', { email });
+    await api('POST', '/api/app?r=invites', { email });
     input.value = '';
     loadInvites();
   } catch (err) { toast('Could not invite. Check the email address and try again.'); }
@@ -584,7 +584,7 @@ document.getElementById('key-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('k-name');
   try {
-    const created = await api('POST', '/api/keys', { name: input.value.trim() });
+    const created = await api('POST', '/api/app?r=keys', { name: input.value.trim() });
     input.value = '';
     document.getElementById('new-key-value').textContent = created.key;
     document.getElementById('new-key').classList.remove('hidden');
@@ -820,8 +820,8 @@ function setBadge(id, n, hot) {
 async function updateBadges() {
   try {
     const [rems, lks, ib] = await Promise.all([
-      api('GET', '/api/daybook/reminders'),
-      api('GET', '/api/daybook/links'),
+      api('GET', '/api/app?r=daybook&view=reminders'),
+      api('GET', '/api/app?r=daybook&view=links'),
       api('GET', '/api/daybook/inbox?badge=1'),
     ]);
     reminders = rems;
@@ -1266,7 +1266,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
     if (editingReminderId) {
       await api('PATCH', '/api/daybook/reminders?id=' + encodeURIComponent(editingReminderId), data);
     } else {
-      await api('POST', '/api/daybook/reminders', data);
+      await api('POST', '/api/app?r=daybook&view=reminders', data);
     }
     closeReminderModal();
     await updateBadges();
@@ -1701,7 +1701,7 @@ document.getElementById('j-save').addEventListener('click', async () => {
     attachments: journalAttachments,
   };
   try {
-    await api('POST', '/api/daybook/journal', payload);
+    await api('POST', '/api/app?r=daybook&view=journal', payload);
     toast('Entry saved.');
     showJournalList();
   } catch (e) {
@@ -1716,7 +1716,7 @@ async function loadLinks() {
   if (linkSearch) p.set('q', linkSearch);
   if (linkTag) p.set('tag', linkTag);
   const qs = p.toString();
-  links = await api('GET', '/api/daybook/links' + (qs ? '?' + qs : ''));
+  links = await api('GET', '/api/app?r=daybook&view=links' + (qs ? '?' + qs : ''));
   renderLinks();
   refreshLinkTagFilter();
 }
@@ -1879,7 +1879,7 @@ document.getElementById('link-form').addEventListener('submit', async (e) => {
   try {
     const res = editingLinkId
       ? await api('PATCH', '/api/daybook/links?id=' + encodeURIComponent(editingLinkId), data)
-      : await api('POST', '/api/daybook/links', data);
+      : await api('POST', '/api/app?r=daybook&view=links', data);
     closeLinkModal();
     const notice = document.getElementById('already-saved');
     if (res && res.alreadySaved) {
@@ -1980,7 +1980,7 @@ document.getElementById('inbox-form').addEventListener('submit', async (e) => {
   const text = input.value.trim();
   if (!text) return;
   try {
-    await api('POST', '/api/daybook/inbox', { text, source: 'manual' });
+    await api('POST', '/api/app?r=daybook&view=inbox', { text, source: 'manual' });
     input.value = '';
     await updateBadges();
     await loadInbox();
