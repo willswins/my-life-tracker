@@ -633,3 +633,11 @@ pre#ingest-docs {
 .game-feedback.good { color: #16a34a; }
 .game-feedback.bad { color: #dc2626; }
 .game-next { font-size: 1.1rem; padding: 0.75rem 2rem; border-radius: 999px; background: var(--ink); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+
+.spell-word { font-size: 3rem; font-weight: 800; letter-spacing: 0.3rem; margin: 1rem 0; color: var(--ink); min-height: 4.5rem; }
+.spell-difficulty { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+.spell-difficulty button { font-size: 0.85rem; padding: 0.4rem 1.1rem; border-radius: 999px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--muted); }
+.spell-difficulty button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spell-input-row { display: flex; gap: 0.5rem; justify-content: center; align-items: center; margin-bottom: 0.5rem; }
+.spell-input-row input { font-size: 1.3rem; padding: 0.7rem 1rem; border: 2px solid var(--line); border-radius: 12px; width: 200px; text-align: center; }
+.spell-input-row input:focus { outline: none; border-color: var(--ink); }
