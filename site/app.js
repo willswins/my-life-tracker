@@ -1163,13 +1163,20 @@ async function openJournalDetail(date) {
   try {
     const e = await api('GET', '/api/daybook/journal?date=' + date);
     const card = document.querySelector('#j-detail-screen .soft-card');
-    // remove any previous title/attachments blocks
-    card.querySelectorAll('.detail-title,.detail-attach').forEach((n) => n.remove());
+    // remove any previous title/mood/attachments blocks
+    card.querySelectorAll('.detail-title,.detail-mood,.detail-attach').forEach((n) => n.remove());
     if (e && e.title) {
       const t = document.createElement('div');
       t.className = 'detail-title';
       t.textContent = e.title;
       document.getElementById('j-detail-date').after(t);
+    }
+    if (e && e.mood) {
+      const m = document.createElement('div');
+      m.className = 'detail-mood';
+      m.textContent = e.mood;
+      const anchor = card.querySelector('.detail-title') || document.getElementById('j-detail-date');
+      anchor.after(m);
     }
     document.getElementById('j-detail-body').innerHTML = sanitizeHtml((e && e.body) || '') || '—';
     if (e && Array.isArray(e.attachments) && e.attachments.length) {
@@ -1246,6 +1253,51 @@ document.getElementById('j-back').addEventListener('click', showJournalList);
 
 /* ---------- Rich journal entry form ---------- */
 let journalAttachments = [];
+let journalMood = '';
+
+const MOODS = ['😄', '🙂', '😐', '😟', '😢', '😡', '🤩', '😴'];
+
+function renderMoodRow() {
+  const row = document.getElementById('j-mood');
+  row.innerHTML = '';
+  MOODS.forEach((m) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mood-btn' + (journalMood === m ? ' selected' : '');
+    b.textContent = m;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', journalMood === m ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      journalMood = journalMood === m ? '' : m;
+      renderMoodRow();
+    });
+    row.appendChild(b);
+  });
+}
+
+// Downscale large images (e.g. phone photos) before embedding.
+function resizeImage(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1200;
+      let w = img.width, h = img.height;
+      if (w > max || h > max) {
+        const s = max / Math.max(w, h);
+        w = Math.round(w * s);
+        h = Math.round(h * s);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
 
 // Allowlist HTML sanitizer for journal bodies (pasted HTML + images).
 function sanitizeHtml(html) {
@@ -1312,11 +1364,15 @@ async function loadJournalForm() {
   document.getElementById('j-title').value = '';
   document.getElementById('j-rich').innerHTML = '';
   journalAttachments = [];
+  journalMood = '';
+  renderMoodRow();
   renderAttachList();
   try {
     const e = await api('GET', '/api/daybook/journal?date=' + ds);
     if (e) {
       document.getElementById('j-title').value = e.title || '';
+      journalMood = e.mood || '';
+      renderMoodRow();
       document.getElementById('j-rich').innerHTML = sanitizeHtml(e.body || '');
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
@@ -1349,10 +1405,9 @@ document.getElementById('j-rich').addEventListener('paste', (e) => {
   const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
   if (!imgs.length) return;
   e.preventDefault();
-  imgs.forEach((f) => {
-    const r = new FileReader();
-    r.onload = () => insertImageAtCursor(r.result, f.name);
-    r.readAsDataURL(f);
+  imgs.forEach(async (f) => {
+    const dataUrl = await resizeImage(f);
+    if (dataUrl) insertImageAtCursor(dataUrl, f.name);
   });
 });
 
@@ -1361,19 +1416,19 @@ document.getElementById('j-attach-btn').addEventListener('click', () => {
   document.getElementById('j-file').click();
 });
 document.getElementById('j-file').addEventListener('change', (e) => {
-  Array.from(e.target.files || []).forEach((f) => {
+  Array.from(e.target.files || []).forEach(async (f) => {
     if (f.size > 8 * 1024 * 1024) { toast('"' + f.name + '" is over 8 MB \u2014 skipped.'); return; }
-    const r = new FileReader();
-    r.onload = () => {
-      if (f.type.startsWith('image/')) {
-        // Images go inline into the body at the cursor.
-        insertImageAtCursor(r.result, f.name);
-      } else {
+    if (f.type.startsWith('image/')) {
+      const dataUrl = await resizeImage(f);
+      if (dataUrl) insertImageAtCursor(dataUrl, f.name);
+    } else {
+      const r = new FileReader();
+      r.onload = () => {
         journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
         renderAttachList();
-      }
-    };
-    r.readAsDataURL(f);
+      };
+      r.readAsDataURL(f);
+    }
   });
   e.target.value = '';
 });
@@ -1396,6 +1451,7 @@ document.getElementById('j-save').addEventListener('click', async () => {
   const payload = {
     date: ds,
     title: document.getElementById('j-title').value.trim(),
+    mood: journalMood,
     body: sanitizeHtml(document.getElementById('j-rich').innerHTML),
     attachments: journalAttachments,
   };
