@@ -518,8 +518,8 @@ pre#ingest-docs {
 }
 .tag-filter-wrap #trash-toggle.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .tag-filter {
-  font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
-  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
+  font-size: 0.95rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 0.45rem 1.1rem; cursor: pointer; color: var(--muted); font-weight: 600;
 }
 .tag-filter.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .tag-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
