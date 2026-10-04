@@ -1313,8 +1313,6 @@ async function loadJournalForm() {
   document.getElementById('j-rich').innerHTML = '';
   journalAttachments = [];
   renderAttachList();
-  const auto = document.getElementById('j-auto');
-  auto.innerHTML = '<p class="empty-note">No summary yet.</p>';
   try {
     const e = await api('GET', '/api/daybook/journal?date=' + ds);
     if (e) {
@@ -1322,12 +1320,30 @@ async function loadJournalForm() {
       document.getElementById('j-rich').innerHTML = sanitizeHtml(e.body || '');
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
-      if (e.auto_summary) auto.textContent = e.auto_summary;
     }
   } catch (err) { /* new entry */ }
 }
 
-// Paste images as data URLs into the rich area.
+// Insert an image data URL at the cursor in the rich area.
+function insertImageAtCursor(dataUrl, name) {
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.alt = name || 'image';
+  const rich = document.getElementById('j-rich');
+  rich.focus();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    rich.appendChild(img);
+  }
+}
 document.getElementById('j-rich').addEventListener('paste', (e) => {
   const files = (e.clipboardData && e.clipboardData.files) || [];
   const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -1335,25 +1351,7 @@ document.getElementById('j-rich').addEventListener('paste', (e) => {
   e.preventDefault();
   imgs.forEach((f) => {
     const r = new FileReader();
-    r.onload = () => {
-      const img = document.createElement('img');
-      img.src = r.result;
-      img.alt = f.name || 'pasted image';
-      const rich = document.getElementById('j-rich');
-      rich.focus();
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount) {
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(img);
-        range.setStartAfter(img);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } else {
-        rich.appendChild(img);
-      }
-    };
+    r.onload = () => insertImageAtCursor(r.result, f.name);
     r.readAsDataURL(f);
   });
 });
@@ -1367,8 +1365,13 @@ document.getElementById('j-file').addEventListener('change', (e) => {
     if (f.size > 8 * 1024 * 1024) { toast('"' + f.name + '" is over 8 MB \u2014 skipped.'); return; }
     const r = new FileReader();
     r.onload = () => {
-      journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
-      renderAttachList();
+      if (f.type.startsWith('image/')) {
+        // Images go inline into the body at the cursor.
+        insertImageAtCursor(r.result, f.name);
+      } else {
+        journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
+        renderAttachList();
+      }
     };
     r.readAsDataURL(f);
   });
