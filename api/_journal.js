@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
       n = Math.min(n, 200);
       const rows = await sb(
         'GET',
-        `/rest/v1/journal_entries?${scope}&select=date,title,body&order=date.desc&limit=${n}`
+        `/rest/v1/journal_entries?${scope}&select=date,title,mood,body&order=date.desc&limit=${n}`
       );
       const stripHtml = (h) => (h || '').replace(/<[^>]*>/g, ' ');
       return send(
@@ -61,6 +61,7 @@ module.exports = async (req, res) => {
         rows.map((r) => ({
           date: r.date,
           title: r.title || '',
+          mood: r.mood || '',
           preview: stripHtml(r.body).replace(/\s+/g, ' ').trim().slice(0, 140),
         }))
       );
@@ -72,6 +73,7 @@ module.exports = async (req, res) => {
       const now = new Date().toISOString();
       const fields = {
         title: typeof body.title === 'string' ? body.title.slice(0, 200) : null,
+        mood: typeof body.mood === 'string' ? body.mood.slice(0, 20) : null,
         body: typeof body.body === 'string' ? body.body.slice(0, 2000000) : '',
         updated_at: now,
       };
