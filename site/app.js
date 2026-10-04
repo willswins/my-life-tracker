@@ -600,7 +600,7 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'about'];
+const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'about'];
 const VIEW_IDS = {
   tasks: 'board',
   reminders: 'view-reminders',
@@ -609,6 +609,7 @@ const VIEW_IDS = {
   inbox: 'view-inbox',
   game: 'view-game',
   spell: 'view-spell',
+  bee: 'view-bee',
   about: 'view-about',
 };
 const VIEW_TITLES = {
@@ -619,6 +620,7 @@ const VIEW_TITLES = {
   inbox: 'Inbox',
   game: 'Sum It Up',
   spell: 'Spell It',
+  bee: 'Spelling Bee',
   about: 'About',
 };
 let currentView = 'tasks';
@@ -963,6 +965,170 @@ if (spellInputEl) spellInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') checkSpell();
 });
 
+// ---- Spelling Bee ----
+// Tap-the-tiles spelling game (NYT Spelling Bee style). No keyboard involved:
+// build words from 7 letters, every word must use the center letter, 4+ letters.
+// Find the pangram (all 7 letters) for a bonus. Ranks up to Queen Bee.
+const BEE_WORDS = "that this with from your have more will home about page search free other information time they site what which their news there only when contact here business also help view online first been would were services some these click like service than find price date back people list name just over state year into email health world next used work last most products music data make them should product system post city policy number such please available copyright support message after best software then good video well where info rights public books high school through each links review years order very privacy book items company read group need many user said does under general research university january mail full reviews program life know games days management part could great united hotel real item international center ebay must store travel comments made development report member details line terms before hotels send right type because local those using results office education national design take posted internet address community within states area want phone shipping reserved subject between forum family long based code show even black check special prices website index being women much sign file link open today technology south case project same pages version section found sports house related security both county american photo game members power while care network down computer systems three total place following download without access think north resources current posts media control water history pictures size personal since including guide shop directory board location change white text small rating rate government children during return students shopping account times sites level digital profile previous form events love john main call hours image department title description insurance another shall property class still money quality every listing content country private little visit save tools reply customer december compare movies include college value article york card jobs provide food source author different press learn sale around print course canada process teen room stock training credit point join science categories advanced west sales look english left team estate conditions select windows photos thread week category note live large gallery table register however june october november market library really action start series model features industry plan human provided required second accessories cost movie forums march september better questions july yahoo going medical test friend come server study application cart staff articles feedback again play looking issues april never users complete street topic comment financial things working against standard person below mobile less blog party payment equipment login student programs offers legal above recent park stores side problem give memory performance social august quote language story sell options experience rates create body young america important field east paper single activities club example girls additional password latest something road gift question changes night hard texas four poker status browse issue range building seller court february always result audio light write offer blue groups easy given files event release analysis request china making picture needs possible might professional month major star areas future space committee hand cards problems london washington meeting become interest child keep enter california share similar garden schools million added reference companies listed baby learning energy delivery popular term film stories computers journal reports welcome central images president notice original head radio until cell color self council away includes track australia discussion archive once others entertainment agreement format least society months safety friends sure trade edition cars messages marketing tell further updated association able having provides david already green studies close common drive specific several gold living collection called short arts display limited powered solutions means director daily beach past natural whether electronics five upon period planning database says official weather land average done technical window france region island record direct microsoft conference environment records district calendar costs style front statement update parts ever downloads early miles sound resource present applications either document word works material bill written talk federal hosting rules final adult tickets thing centre requirements cheap kids finance true minutes else mark third rock gifts europe reading topics individual tips plus auto cover usually edit together videos percent fast function fact unit getting global tech meet economic player projects lyrics often subscribe submit germany amount watch included feel though bank risk thanks everything deals various words linux production commercial james weight town heart advertising received choose treatment newsletter archives points knowledge magazine error camera girl currently construction toys registered clear golf receive domain methods chapter makes protection policies loan wide beauty manager india position taken sort listings models michael known half cases step engineering florida simple quick none wireless license paul friday lake whole annual published later basic sony shows corporate google church method purchase customers active response practice hardware figure materials fire holiday chat enough designed along among death writing speed html countries loss face brand discount higher effects created remember standards yellow political increase advertise kingdom base near environmental thought stuff french storage japan doing loans shoes entry stay nature orders availability africa summary turn mean growth notes agency king monday european activity copy although drug pics western income force cash employment overall river commission package contents seen players engine port album regional stop supplies started administration institute views plans double build screen exchange types soon sponsored lines electronic continue across benefits needed season apply someone held anything printer condition effective believe organization effect asked mind sunday selection casino lost tour menu volume cross anyone mortgage hope silver corporation wish inside solution mature role rather weeks addition came supply nothing certain executive running lower necessary union jewelry according clothing particular fine names robert homepage hour skills bush islands advice career military rental decision leave british teens huge woman facilities kind sellers middle move cable opportunities taking values division coming tuesday object lesbian appropriate machine logo length actually nice score statistics client returns capital follow sample investment sent shown saturday christmas england culture band flash lead george choice went starting registration thursday courses consumer airport foreign artist outside furniture levels channel letter mode phones ideas wednesday structure fund summer allow degree contract button releases homes super male matter custom virginia almost took located multiple asian distribution editor industrial cause potential song cnet focus late fall featured idea rooms female responsible communications associated thomas primary cancer numbers reason tool browser spring foundation answer voice friendly schedule documents communication purpose feature comes police everyone independent approach cameras brown physical operating hill maps medicine deal hold ratings chicago forms glass happy smith wanted developed thank safe unique survey prior telephone sport ready feed animal sources mexico population regular secure navigation operations therefore simply evidence station christian round paypal favorite understand option master valley recently probably rentals built publications blood worldwide improve connection publisher hall larger anti networks earth parents nokia impact transfer introduction kitchen strong carolina wedding properties hospital ground overview ship accommodation owners disease excellent paid italy perfect hair opportunity classic basis command cities william express award distance tree peter assessment ensure thus wall involved extra especially interface partners budget rated guides success maximum operation existing quite selected amazon patients restaurants beautiful warning wine locations horse vote forward flowers stars significant lists technologies owner retail animals useful directly manufacturer ways providing rule housing takes bring catalog searches trying mother authority considered told traffic programme joined input strategy feet agent valid modern senior ireland teaching door grand testing trial charge units instead canadian cool normal wrote enterprise ships entire educational leading metal positive fitness chinese opinion asia football abstract uses output funds greater likely develop employees artists alternative processing responsibility resolution java guest seems publication pass relations trust contains session multi photography republic fees components vacation century academic assistance completed skin graphics indian prev mary expected ring grade dating pacific mountain organizations filter mailing vehicle longer consider northern behind panel floor german buying match proposed default require iraq boys outdoor deep morning otherwise allows rest protein plant reported transportation pool mini politics partner disclaimer authors boards faculty parties fish membership mission string sense modified pack released stage internal goods recommended born unless richard detailed japanese race approved background target except character maintenance ability maybe functions moving brands places pretty trademarks phentermine spain southern yourself winter battery youth pressure submitted boston debt keywords medium television interested core break purposes throughout sets dance wood itself defined papers playing awards studio reader virtual device established answers rent remote dark programming external apple regarding instructions offered theory enjoy remove surface minimum visual host variety teachers isbn martin manual block subjects agents increased repair fair civil steel understanding songs fixed wrong beginning hands associates finally updates desktop classes paris ohio gets sector capacity requires jersey fully father electric instruments quotes officer driver businesses dead respect unknown specified restaurant mike trip worth procedures poor teacher eyes relationship workers farm georgia peace traditional campus showing creative coast benefit progress funding devices lord grant agree fiction hear sometimes watches careers beyond goes families museum themselves transport interesting blogs wife evaluation accepted former implementation hits zone complex galleries references presented jack flat flow agencies literature respective parent spanish michigan columbia setting scale stand economy highest helpful monthly critical frame musical definition secretary angeles networking path australian employee chief gives bottom magazines packages detail francisco laws changed heard begin individuals colorado royal clean switch russian largest african titles relevant guidelines justice connect bible basket applied weekly installation described demand suite vegas square chris attention advance skip diet army auction gear difference allowed correct charles nation selling lots piece sheet firm seven older illinois regulations elements species jump cells module resort facility random pricing dvds certificate minister motion looks fashion directions visitors documentation monitor trading forest calls whose coverage couple giving chance vision ball ending clients actions listen discuss accept automotive naked goal successful sold wind communities clinical situation sciences markets lowest highly publishing appear emergency developing lives currency leather determine temperature palm announcements patient actual historical stone commerce ringtones perhaps persons difficult scientific satellite tests village accounts amateur pain xbox particularly factors coffee settings buyer cultural steve easily oral ford poster edge functional root closed holidays pink zealand balance monitoring graduate replies shot architecture initial label thinking scott recommend canon league waste minute provider optional dictionary cold accounting manufacturing sections chair fishing effort phase fields fantasy letters motor professor context install shirt apparel generally continued foot mass crime count breast techniques johnson quickly dollars websites religion claim driving permission surgery patch heat wild measures generation kansas miss chemical doctor task reduce brought himself component enable exercise santa guarantee leader diamond israel processes soft servers alone meetings seconds jones arizona keyword interests flight congress fuel username walk produced italian paperback classifieds wait supported pocket saint rose freedom argument competition creating drugs joint premium providers fresh characters attorney upgrade factor growing thousands stream apartments pick hearing eastern auctions therapy entries dates generated signed upper administrative serious prime samsung limit began louis steps errors shops efforts informed thoughts creek worked quantity urban practices sorted reporting essential myself tours platform load affiliate labor immediately admin nursing defense machines designated tags heavy covered recovery guys integrated configuration merchant comprehensive expert universal protect drop solid presentation languages became orange compliance vehicles prevent theme rich campaign marine improvement guitar finding pennsylvania examples ipod saying spirit claims challenge motorola acceptance strategies seem affairs touch intended towards goals hire election suggest branch charges serve affiliates reasons magic mount smart talking gave ones latin multimedia avoid certified manage corner rank computing oregon element birth virus abuse interactive requests separate quarter procedure leadership tables define racing religious facts breakfast kong column plants faith chain developer identify avenue missing died approximately domestic sitemap recommendations moved houston reach comparison mental viewed moment extended sequence inch attack sorry centers opening damage reserve recipes gamma plastic produce snow placed truth counter failure follows weekend dollar camp ontario automatically minnesota films bridge native fill williams movement printing baseball owned approval draft chart played contacts jesus readers clubs jackson equal adventure matching offering shirts profit leaders posters institutions assistant variable advertisement expect parking headlines yesterday compared determined wholesale workshop russia gone codes kinds extension seattle statements golden completely teams fort lighting senate forces funny brother gene turned portable tried electrical applicable disc returned pattern boat named theatre laser earlier manufacturers sponsor classical icon warranty dedicated indiana direction harry basketball objects ends delete evening assembly nuclear taxes mouse signal criminal issued brain sexual wisconsin powerful dream obtained false cast flower felt personnel passed supplied identified falls soul aids opinions promote stated stats hawaii professionals appears carry flag decided covers advantage hello designs maintain tourism priority newsletters adults clips savings graphic atom payments estimated binding brief ended winning eight anonymous iron straight script served wants miscellaneous prepared void dining alert integration atlanta dakota interview framework disk installed queen credits clearly handle sweet desk criteria pubmed dave massachusetts diego hong vice associate truck behavior enlarge frequently revenue measure changing votes duty looked discussions bear gain festival laboratory ocean flights experts signs lack depth iowa whatever logged laptop vintage train exactly explore maryland concept nearly eligible checkout reality forgot handling origin knew gaming feeds billion destination scotland faster intelligence dallas bought nations route followed specifications broken tripadvisor frank alaska zoom blow battle residential anime speak decisions industries protocol query clip partnership editorial expression equity provisions speech wire principles suggestions rural shared sounds replacement tape strategic judge spam economics acid bytes cent forced compatible fight apartment height null zero speaker filed netherlands obtain consulting recreation offices designer remain managed failed marriage roll korea banks participants secret bath kelly leads negative austin favorites toronto theater springs missouri andrew perform healthy translation estimates font assets injury joseph ministry drivers lawyer figures married protected proposal sharing philadelphia portal waiting birthday beta fail gratis banking officials brian toward slightly assist conduct contained lingerie legislation calling parameters jazz serving bags profiles miami comics matters houses postal relationships tennessee wear controls breaking combined ultimate wales representative frequency introduced minor finish departments residents noted displayed reduced physics rare spent performed extreme samples davis daniel bars reviewed forecast removed helps singles administrator cycle amounts contain accuracy dual rise sleep bird pharmacy brazil creation static scene hunter addresses lady crystal famous writer chairman violence fans oklahoma speakers drink academy dynamic gender permanent agriculture dell cleaning constitutes portfolio practical delivered collectibles infrastructure exclusive seat concerns vendor originally intel utilities philosophy regulation officers reduction bids referred supports nutrition recording regions junior toll cape rings meaning secondary wonderful mine ladies henry ticket announced guess agreed prevention whom soccer math import posting presence instant mentioned automatic healthcare viewing maintained increasing majority connected christ dogs directors aspects austria ahead moon participation scheme utility preview manner matrix containing combination devel amendment despite strength guaranteed turkey libraries proper distributed degrees singapore enterprises delta fear seeking inches phoenix convention shares principal daughter standing comfort colors wars cisco ordering kept alpha appeal cruise bonus certification previously bookmark buildings specials beat disney household batteries adobe smoking becomes drives arms alabama improved trees achieve positions dress subscription dealer contemporary utah nearby carried happen exposure panasonic hide permalink signature gambling refer miller provision outdoors clothes caused luxury babes frames certainly indeed newspaper circuit layer printed slow removal easier liability trademark printers faqs nine adding kentucky mostly eric spot taylor trackback prints spend factory interior revised grow americans optical promotion relative amazing clock identity suites conversion feeling hidden reasonable victoria serial relief revision broadband influence ratio importance rain onto planet webmaster copies recipe permit seeing proof diff tennis bass prescription bedroom empty instance hole pets ride licensed orlando specifically bureau maine represent conservation pair ideal specs recorded pieces finished parks dinner lawyers sydney stress cream runs trends yeah discover patterns boxes louisiana hills javascript fourth advisor marketplace evil aware wilson shape evolution irish certificates objectives stations suggested remains greatest firms concerned euro operator structures generic encyclopedia usage charts continuing mixed census interracial peak competitive exist wheel transit suppliers salt compact poetry lights tracking angel bell keeping preparation attempt receiving matches accordance width noise engines forget array discussed accurate stephen elizabeth climate reservations playstation alcohol greek instruction managing annotation sister differences walking explain smaller newest establish happened expressed jeff extent sharp lesbians lane paragraph kill mathematics compensation export managers aircraft modules sweden conflict conducted versions employer occur percentage knows mississippi describe concern backup requested citizens connecticut heritage personals immediate holding trouble spread coach kevin agricultural expand supporting audience assigned jordan collections ages participate plug specialist cook affect virgin experienced investigation raised institution directed dealers searching sporting helping perl affected bike totally plate expenses indicate blonde proceedings transmission anderson characteristics lose organic seek experiences albums cheats extremely verzeichnis contracts guests hosted diseases concerning developers equivalent chemistry tony neighborhood nevada kits thailand variables agenda anyway continues tracks advisory curriculum logic template prince circle soil grants anywhere psychology responses atlantic circumstances edward investor identification leaving wildlife appliances matt elementary cooking speaking sponsors unlimited respond sizes plain exit entered iran keys launch wave checking costa belgium printable holy acts guidance mesh trail enforcement symbol crafts highway buddy hardcover observed dean setup poll booking glossary fiscal celebrity styles denver unix filled bond channels ericsson appendix notify blues chocolate portion scope hampshire supplier cables cotton bluetooth controlled requirement authorities biology dental killed border ancient debate representatives starts pregnancy causes arkansas biography leisure attractions learned transactions notebook explorer historic attached opened husband disabled authorized crazy upcoming britain concert retirement scores financing efficiency comedy adopted efficient weblog linear commitment specialty bears jean carrier edited constant visa mouth jewish meter linked portland interviews concepts reflect pure deliver wonder lessons fruit begins qualified reform lens alerts treated discovery draw mysql classified relating assume confidence alliance confirm warm neither lewis howard offline leaves engineer lifestyle consistent replace clearance connections inventory converter organisation babe checks reached becoming safari objective indicated sugar crew legs stick securities allen relation enabled genre slide montana volunteer tested rear democratic enhance switzerland exact bound parameter adapter processor node formal dimensions contribute lock hockey storm micro colleges laptops mile showed challenges editors mens threads bowl supreme brothers recognition presents tank submission dolls estimate encourage navy regulatory inspection consumers cancel limits territory transaction manchester weapons paint delay pilot outlet contributions continuous czech resulting cambridge initiative novel execution disability increases ultra winner idaho contractor episode examination potter dish plays bulletin indicates modify oxford adam truly epinions painting committed extensive affordable universe candidate databases patent slot outstanding eating perspective planned watching lodge messenger mirror tournament consideration discounts sterling sessions kernel stocks buyers journals gray catalogue jennifer antonio charged broad taiwan chosen demo greece swiss sarah clark hate terminal publishers nights behalf caribbean liquid rice nebraska loop salary reservation foods gourmet guard properly orleans saving remaining empire resume twenty newly raise prepare avatar gary depending illegal expansion vary hundreds rome arab lincoln helped premier tomorrow purchased milk".split(" ");
+const BEE_SEEDS = BEE_WORDS.filter(w => new Set(w).size === 7);
+const BEE_RANKS = [[0,'Beginner'],[0.02,'Good Start'],[0.05,'Moving Up'],[0.08,'Good'],[0.15,'Solid'],[0.25,'Nice'],[0.40,'Great'],[0.50,'Amazing'],[0.70,'Genius'],[1,'Queen Bee']];
+let beeLetters=[], beeCenter='', beeValid=new Set(), beeFound=new Set(), beeScore=0, beeMax=1, beeCur='', beeBest=0;
+
+function beeWordScore(w, letters) {
+  let s = w.length === 4 ? 1 : w.length;
+  if (letters.every(ch => w.indexOf(ch) !== -1)) s += 7; // pangram bonus
+  return s;
+}
+function beeNewPuzzle() {
+  for (let a = 0; a < 200; a++) {
+    const s = BEE_SEEDS[(Math.random() * BEE_SEEDS.length) | 0];
+    const L = Array.from(new Set(s.split('')));
+    const center = L[(Math.random() * L.length) | 0];
+    const set = new Set(L);
+    const valid = BEE_WORDS.filter(w => w.indexOf(center) !== -1 && w.split('').every(ch => set.has(ch)));
+    if (valid.length >= 15) {
+      beeLetters = L; beeCenter = center; beeValid = new Set(valid);
+      beeFound = new Set(); beeScore = 0; beeCur = '';
+      beeMax = valid.reduce((t, w) => t + beeWordScore(w, L), 0);
+      beeRender();
+      return;
+    }
+  }
+  beeFlash('Could not make a puzzle — try again', false);
+}
+function beeRank() {
+  const pct = beeMax ? beeScore / beeMax : 0;
+  let r = BEE_RANKS[0][1];
+  for (let i = 0; i < BEE_RANKS.length; i++) if (pct >= BEE_RANKS[i][0]) r = BEE_RANKS[i][1];
+  return r;
+}
+function beeSet(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v;
+}
+function beeFlash(msg, good) {
+  const fb = document.getElementById('bee-feedback');
+  if (!fb) return;
+  fb.textContent = msg;
+  fb.className = 'game-feedback' + (good ? ' good' : ' bad');
+  clearTimeout(beeFlash._t);
+  beeFlash._t = setTimeout(() => { fb.textContent = ''; fb.className = 'game-feedback'; }, 1600);
+}
+function beeRenderHive() {
+  const hive = document.getElementById('bee-hive');
+  if (!hive) return;
+  hive.innerHTML = '';
+  const outer = beeLetters.filter(l => l !== beeCenter);
+  const rows = [[outer[0], outer[1]], [outer[2], 'CENTER', outer[3]], [outer[4], outer[5]]];
+  rows.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'bee-row';
+    r.forEach(t => {
+      const b = document.createElement('button');
+      const isC = t === 'CENTER';
+      b.className = 'bee-tile' + (isC ? ' center' : '');
+      b.textContent = (isC ? beeCenter : t).toUpperCase();
+      b.setAttribute('aria-label', 'letter ' + (isC ? beeCenter : t));
+      b.addEventListener('click', () => beeTap(isC ? beeCenter : t));
+      div.appendChild(b);
+    });
+    hive.appendChild(div);
+  });
+}
+function beeRender() {
+  beeSet('bee-score', String(beeScore));
+  beeSet('bee-rank', beeRank());
+  beeSet('bee-count', String(beeFound.size));
+  beeSet('bee-best', String(beeBest));
+  const pct = beeMax ? Math.min(100, (beeScore / beeMax) * 100) : 0;
+  const fill = document.getElementById('bee-rankfill');
+  if (fill) fill.style.width = pct + '%';
+  const cur = document.getElementById('bee-cur');
+  if (cur) {
+    cur.innerHTML = '';
+    beeCur.toUpperCase().split('').forEach(ch => {
+      const s = document.createElement('span');
+      s.textContent = ch;
+      cur.appendChild(s);
+    });
+    const c = document.createElement('span');
+    c.className = 'bee-cursor';
+    cur.appendChild(c);
+  }
+  const n = document.getElementById('bee-foundn');
+  if (n) n.textContent = String(beeFound.size);
+  const wl = document.getElementById('bee-words');
+  if (wl) {
+    const arr = Array.from(beeFound).sort();
+    wl.innerHTML = '';
+    arr.forEach(w => {
+      const s = document.createElement('span');
+      s.className = 'bee-word' + (beeLetters.every(ch => w.indexOf(ch) !== -1) ? ' pangram' : '');
+      s.textContent = w;
+      wl.appendChild(s);
+    });
+  }
+}
+function beeTap(ch) {
+  if (beeCur.length >= 15) return;
+  beeCur += ch;
+  beeRender();
+}
+function beeDelete() {
+  beeCur = beeCur.slice(0, -1);
+  beeRender();
+}
+function beeShuffle() {
+  const outer = beeLetters.filter(l => l !== beeCenter);
+  for (let i = outer.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    const t = outer[i]; outer[i] = outer[j]; outer[j] = t;
+  }
+  beeLetters = [outer[0], outer[1], outer[2], beeCenter, outer[3], outer[4], outer[5]];
+  beeRenderHive();
+}
+function beeSubmit() {
+  const w = beeCur.toLowerCase();
+  if (!w) return;
+  if (w.length < 4) { beeFlash('Too short — 4+ letters', false); return; }
+  if (w.indexOf(beeCenter) === -1) { beeFlash('Must use the center letter', false); return; }
+  if (beeFound.has(w)) { beeFlash('Already found', false); return; }
+  if (!beeValid.has(w)) { beeFlash('Not in word list', false); return; }
+  beeFound.add(w);
+  const pts = beeWordScore(w, beeLetters);
+  const isPang = beeLetters.every(ch => w.indexOf(ch) !== -1);
+  beeScore += pts;
+  if (beeScore > beeBest) {
+    beeBest = beeScore;
+    try { localStorage.setItem('bee_best', String(beeBest)); } catch (e) {}
+  }
+  beeCur = '';
+  beeRender();
+  if (beeFound.size === beeValid.size) beeFlash('Queen Bee! Every word found!', true);
+  else beeFlash((isPang ? 'Pangram! +' : '+') + pts, true);
+}
+function initBee() {
+  try { beeBest = parseInt(localStorage.getItem('bee_best') || '0', 10) || 0; } catch (e) { beeBest = 0; }
+  if (!beeLetters.length) beeNewPuzzle();
+  else beeRender();
+  const bind = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el && !el._beeBound) { el._beeBound = true; el.addEventListener('click', fn); }
+  };
+  bind('bee-delete', beeDelete);
+  bind('bee-shuffle', beeShuffle);
+  bind('bee-submit', beeSubmit);
+  bind('bee-new', () => { beeNewPuzzle(); });
+  const fh = document.getElementById('bee-foundhead');
+  if (fh && !fh._beeBound) {
+    fh._beeBound = true;
+    fh.addEventListener('click', () => {
+      const wl = document.getElementById('bee-words');
+      if (wl) wl.classList.toggle('hidden');
+    });
+  }
+}
+
 /* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
   if (!VIEWS.includes(name)) name = 'tasks';
@@ -985,6 +1151,7 @@ async function switchView(name, push = true) {
     else if (name === 'inbox') await loadInbox();
     else if (name === 'game') initGame();
     else if (name === 'spell') initSpell();
+    else if (name === 'bee') initBee();
     else if (name === 'about') renderAbout();
     else render();
   } catch (e) {
