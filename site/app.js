@@ -772,39 +772,51 @@ if (gameNextBtn) gameNextBtn.addEventListener('click', newRound);
 
 // ---- Spell It ----
 const SPELL_WORDS = {
-  easy: ['apple','tiger','house','water','happy','green','chair','smile','bread','cloud','train','light','music','dance','beach','stone','flame','grape','lemon','magic','north','ocean','piano','queen','river','sunny','table','uncle','ivory','joker'],
+  simple: ['apple','tiger','house','water','happy','green','chair','smile','bread','cloud','train','light','music','dance','beach','stone','flame','grape','lemon','magic','north','ocean','piano','queen','river','sunny','table','uncle','ivory','joker'],
   medium: ['beautiful','rhythm','chocolate','elephant','purple','enough','people','because','friend','school','answer','break','catch','doubt','earth','faith','ghost','honor','image','jungle','knife','layer','night','oasis','proud','quiet','rough','storm','taste','window'],
-  hard: ['accommodate','conscience','embarrass','fluorescent','guarantee','maintenance','necessary','occasion','receive','separate','calendar','definite','existence','foreign','government','hierarchy','immediate','jewelry','knowledge','liaison','millennium','noticeable','occurred','questionnaire','siege','threshold','vacuum','weird','playwright','rhythm'],
+  complex: ['accommodate','conscience','embarrass','fluorescent','guarantee','maintenance','necessary','occasion','receive','separate','calendar','definite','existence','foreign','government','hierarchy','immediate','jewelry','knowledge','liaison','millennium','noticeable','occurred','questionnaire','siege','threshold','vacuum','weird','playwright','rhythm'],
 };
-const SPELL_TIME = { easy: 2000, medium: 1200, hard: 700 };
+const SPELL_FLASH_MS = { simple: 2000, medium: 1200, complex: 700 };
+const SPELL_TYPE_SEC = { simple: 15, medium: 10, complex: 8 };
+const SPELL_LIVES = 3;
 let spellScore = 0, spellStreak = 0, spellBest = 0, spellWord = '', spellDiff = 'medium';
-let spellTimer = null, spellAccepting = false;
+let spellLives = SPELL_LIVES, spellFlashTimer = null, spellTickTimer = null;
+let spellAccepting = false, spellTypeLeft = 0;
 
 function spellSet(id, v) {
   const el = document.getElementById(id);
   if (el) el.textContent = v;
 }
+function spellLivesStr() {
+  return '❤'.repeat(spellLives) + '🖤'.repeat(Math.max(0, SPELL_LIVES - spellLives));
+}
 function initSpell() {
   spellBest = parseInt(localStorage.getItem('spellit_best') || '0', 10);
   spellScore = 0; spellStreak = 0; spellWord = ''; spellAccepting = false;
-  clearTimeout(spellTimer);
+  spellLives = SPELL_LIVES;
+  clearTimeout(spellFlashTimer);
+  clearInterval(spellTickTimer);
   spellSet('spell-best', spellBest);
   spellSet('spell-score', '0');
   spellSet('spell-streak', '0');
+  spellSet('spell-lives', spellLivesStr());
   spellSet('spell-word', '…');
-  spellSet('spell-hint', 'Tap Start, memorize the word, then type it.');
+  spellSet('spell-hint', 'Tap Start, memorize the word, then type it and hit Go.');
   spellSet('spell-feedback', '');
   const fb = document.getElementById('spell-feedback');
   if (fb) fb.className = 'game-feedback';
+  const timer = document.getElementById('spell-timer');
+  if (timer) timer.classList.add('hidden');
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.add('hidden');
   const next = document.getElementById('spell-next');
   if (next) next.classList.add('hidden');
   const start = document.getElementById('spell-start');
-  if (start) start.classList.remove('hidden');
+  if (start) { start.classList.remove('hidden'); start.textContent = 'Start'; }
 }
 function startSpellRound() {
-  clearTimeout(spellTimer);
+  clearTimeout(spellFlashTimer);
+  clearInterval(spellTickTimer);
   const pool = SPELL_WORDS[spellDiff] || SPELL_WORDS.medium;
   spellWord = pool[Math.floor(Math.random() * pool.length)];
   spellAccepting = false;
@@ -813,17 +825,19 @@ function startSpellRound() {
   spellSet('spell-feedback', '');
   const fb = document.getElementById('spell-feedback');
   if (fb) fb.className = 'game-feedback';
+  const timer = document.getElementById('spell-timer');
+  if (timer) timer.classList.add('hidden');
   const start = document.getElementById('spell-start');
   if (start) start.classList.add('hidden');
   const next = document.getElementById('spell-next');
   if (next) next.classList.add('hidden');
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.add('hidden');
-  spellTimer = setTimeout(hideSpellWord, SPELL_TIME[spellDiff] || 1200);
+  spellFlashTimer = setTimeout(hideSpellWord, SPELL_FLASH_MS[spellDiff] || 1200);
 }
 function hideSpellWord() {
   spellSet('spell-word', '?');
-  spellSet('spell-hint', 'Now type it from memory.');
+  spellSet('spell-hint', 'Type it and hit Go ⏎');
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.remove('hidden');
   const input = document.getElementById('spell-input');
@@ -832,18 +846,75 @@ function hideSpellWord() {
     input.disabled = false;
     input.focus();
   }
+  const timer = document.getElementById('spell-timer');
+  if (timer) timer.classList.remove('hidden');
+  const limit = SPELL_TYPE_SEC[spellDiff] || 10;
+  spellTypeLeft = limit;
   spellAccepting = true;
+  updateSpellTimer(limit);
+  spellTickTimer = setInterval(() => {
+    spellTypeLeft -= 0.1;
+    if (spellTypeLeft <= 0) {
+      spellTypeLeft = 0;
+      updateSpellTimer(limit);
+      spellMiss(true);
+    } else {
+      updateSpellTimer(limit);
+    }
+  }, 100);
+}
+function updateSpellTimer(limit) {
+  const fill = document.getElementById('spell-timer-fill');
+  if (fill) {
+    const pct = Math.max(0, (spellTypeLeft / limit) * 100);
+    fill.style.width = pct + '%';
+    fill.classList.toggle('low', spellTypeLeft < 3);
+  }
+}
+function spellMiss(timeout) {
+  if (!spellAccepting) return;
+  spellAccepting = false;
+  clearInterval(spellTickTimer);
+  spellLives--;
+  spellStreak = 0;
+  const input = document.getElementById('spell-input');
+  if (input) input.disabled = true;
+  const fb = document.getElementById('spell-feedback');
+  if (fb) {
+    fb.textContent = timeout ? `⏰ Time! It was "${spellWord.toUpperCase()}"` : `✗ It was "${spellWord.toUpperCase()}"`;
+    fb.className = 'game-feedback bad';
+  }
+  spellSet('spell-streak', '0');
+  spellSet('spell-lives', spellLivesStr());
+  const row = document.getElementById('spell-input-row');
+  if (row) row.classList.add('hidden');
+  const timer = document.getElementById('spell-timer');
+  if (timer) timer.classList.add('hidden');
+  if (spellLives <= 0) {
+    spellGameOver();
+  } else {
+    const next = document.getElementById('spell-next');
+    if (next) next.classList.remove('hidden');
+  }
+}
+function spellGameOver() {
+  spellSet('spell-word', '💀');
+  spellSet('spell-hint', `Game over! Final score: ${spellScore}`);
+  const start = document.getElementById('spell-start');
+  if (start) { start.textContent = 'Play Again'; start.classList.remove('hidden'); }
 }
 function checkSpell() {
   if (!spellAccepting) return;
-  spellAccepting = false;
-  clearTimeout(spellTimer);
+  clearInterval(spellTickTimer);
+  const limit = SPELL_TYPE_SEC[spellDiff] || 10;
   const input = document.getElementById('spell-input');
   const guess = (input ? input.value : '').trim().toLowerCase();
-  const fb = document.getElementById('spell-feedback');
   if (input) input.disabled = true;
+  const fb = document.getElementById('spell-feedback');
   if (guess === spellWord && spellWord) {
-    const pts = 100 + spellStreak * 10;
+    spellAccepting = false;
+    const speedBonus = Math.round(100 * Math.max(0, spellTypeLeft) / limit);
+    const pts = 100 + speedBonus + spellStreak * 10;
     spellScore += pts;
     spellStreak++;
     if (spellScore > spellBest) {
@@ -851,21 +922,20 @@ function checkSpell() {
       try { localStorage.setItem('spellit_best', String(spellBest)); } catch (e) {}
     }
     if (fb) {
-      fb.textContent = `✓ +${pts} pts`;
+      fb.textContent = `✓ +${pts} pts` + (speedBonus >= 80 ? ' ⚡' : '');
       fb.className = 'game-feedback good';
     }
+    spellSet('spell-score', String(spellScore));
+    spellSet('spell-streak', String(spellStreak));
+    spellSet('spell-best', String(spellBest));
   } else {
-    spellStreak = 0;
-    if (fb) {
-      fb.textContent = `✗ It was "${spellWord.toUpperCase()}"`;
-      fb.className = 'game-feedback bad';
-    }
+    spellMiss(false);
+    return;
   }
-  spellSet('spell-score', String(spellScore));
-  spellSet('spell-streak', String(spellStreak));
-  spellSet('spell-best', String(spellBest));
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.add('hidden');
+  const timer = document.getElementById('spell-timer');
+  if (timer) timer.classList.add('hidden');
   const next = document.getElementById('spell-next');
   if (next) next.classList.remove('hidden');
 }
@@ -877,11 +947,12 @@ document.querySelectorAll('[data-spell-diff]').forEach((b) => {
   });
 });
 const spellStartBtn = document.getElementById('spell-start');
-if (spellStartBtn) spellStartBtn.addEventListener('click', startSpellRound);
+if (spellStartBtn) spellStartBtn.addEventListener('click', () => {
+  if (spellLives <= 0) initSpell();
+  startSpellRound();
+});
 const spellNextBtn = document.getElementById('spell-next');
 if (spellNextBtn) spellNextBtn.addEventListener('click', startSpellRound);
-const spellCheckBtn = document.getElementById('spell-check');
-if (spellCheckBtn) spellCheckBtn.addEventListener('click', checkSpell);
 const spellInputEl = document.getElementById('spell-input');
 if (spellInputEl) spellInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') checkSpell();
