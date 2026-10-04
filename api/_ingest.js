@@ -1,40 +1,14 @@
 // Connector ingest API: lets external sources (journal app, email automation)
-// create cards without a browser session. Auth is a per-connector API key;
-// authz is inherent: a key acts only as the user it was issued to, and can
-// only list active cards and create new ones — never delete or touch others.
+// create cards without a browser session. Auth is a per-connector API key
+// (validated by the router in api/app.js, or directly here as a fallback);
+// authz is inherent: a key acts only as the user it was issued to.
 //
-//   POST /api/ingest   {title, details?, tag?, priority?, issue_type?, lane?, due_date?, owner?}
-//   GET  /api/ingest   -> { ok, user, cards } (latest 50 active, for dedup)
+//   POST /api/app?r=ingest   {title, details?, tag?, priority?, issue_type?, lane?, due_date?, owner?}
+//   GET  /api/app?r=ingest   -> { ok, user, cards } (latest 50 active, for dedup)
 //
 // Auth:  Authorization: Bearer mlt_...   (or X-API-Key: mlt_...)
-const crypto = require('crypto');
+const { keyAuth } = require('./_keyauth');
 const { readBody, sb, cleanCard } = require('./_db');
-
-// Tiny per-key rate limiter (120 req/min). Best-effort on serverless.
-const BUCKETS = new Map();
-function rateLimit(id) {
-  const now = Date.now();
-  const b = BUCKETS.get(id);
-  if (!b || now > b.reset) {
-    BUCKETS.set(id, { count: 1, reset: now + 60000 });
-    return true;
-  }
-  b.count += 1;
-  return b.count <= 120;
-}
-
-async function keyAuth(req) {
-  const raw = req.headers['authorization'] || req.headers['x-api-key'] || '';
-  const m = /^Bearer\s+(.+)$/i.exec(raw.trim());
-  const key = (m ? m[1] : raw).trim();
-  if (!key.startsWith('mlt_')) return null;
-  const hash = crypto.createHash('sha256').update(key).digest('hex');
-  const rows = await sb(
-    'GET',
-    `/rest/v1/api_keys?key_hash=eq.${hash}&revoked_at=is.null&select=id,user_email,name`
-  );
-  return rows.length ? { ...rows[0], hash } : null;
-}
 
 module.exports = async (req, res) => {
   const send = (status, data) => {
@@ -42,7 +16,9 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify(data));
   };
   try {
-    const k = await keyAuth(req);
+    // The router (api/app.js) already key-auths, rate-limits, and books
+    // usage; fall back to a direct check if invoked without it.
+    const k = req.keyAuth || await keyAuth(req);
     if (!k) {
       res.writeHead(401, {
         'Content-Type': 'application/json',
@@ -52,10 +28,7 @@ module.exports = async (req, res) => {
       res.end(JSON.stringify({ ok: false, error: 'invalid or revoked API key' }));
       return;
     }
-    if (!rateLimit(k.hash)) return send(429, { ok: false, error: 'rate limited, try again shortly' });
     const email = encodeURIComponent(k.user_email);
-    // Best-effort usage bookkeeping; never blocks the request.
-    sb('PATCH', `/rest/v1/api_keys?id=eq.${k.id}`, { last_used_at: new Date().toISOString() }).catch(() => {});
 
     if (req.method === 'GET') {
       const rows = await sb(
