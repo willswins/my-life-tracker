@@ -886,8 +886,6 @@ function spellMiss(timeout) {
   clearInterval(spellTickTimer);
   spellLives--;
   spellStreak = 0;
-  const input = document.getElementById('spell-input');
-  if (input) input.disabled = true;
   const fb = document.getElementById('spell-feedback');
   if (fb) {
     fb.textContent = timeout ? `⏰ Time! It was "${spellWord.toUpperCase()}"` : `✗ It was "${spellWord.toUpperCase()}"`;
@@ -915,7 +913,6 @@ function checkSpell() {
   const limit = SPELL_TYPE_SEC[spellDiff] || 10;
   const input = document.getElementById('spell-input');
   const guess = (input ? input.value : '').trim().toLowerCase();
-  if (input) input.disabled = true;
   const fb = document.getElementById('spell-feedback');
   if (guess === spellWord && spellWord) {
     spellAccepting = false;
