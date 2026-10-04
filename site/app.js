@@ -1168,6 +1168,15 @@ async function remAct(id, a) {
       });
     } else if (a === 'complete') {
       await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), { action: 'complete' });
+    } else if (a === 'delete') {
+      const r = reminders.find((x) => x.id === id);
+      const yes = await confirmAction({
+        title: 'Delete this reminder?',
+        message: (r ? '“' + r.title + '”' : 'This reminder') + ' will be permanently deleted.',
+        confirmLabel: 'Delete',
+      });
+      if (!yes) return;
+      await api('DELETE', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id));
     } else if (a === 'dismiss') {
       const yes = await confirmAction({
         title: 'Dismiss this reminder?',
