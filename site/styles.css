@@ -458,7 +458,39 @@ pre#ingest-docs {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .entry-chev { flex: none; color: var(--muted); font-size: 1.2rem; align-self: center; }
 .pill.danger { color: #b91c1c; }
-/* Journal detail screen */
+/* Journal rich entry form */
+#j-title {
+  display: block; width: 100%; margin-top: 0.3rem; padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; font-weight: 600;
+  font-family: inherit; color: var(--ink); background: #fff;
+}
+.rich-area {
+  width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: 14px;
+  padding: 0.9rem 1rem; font-size: 0.95rem; font-family: inherit; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05); line-height: 1.6; overflow-wrap: break-word;
+}
+.rich-area:empty:before { content: attr(data-placeholder); color: var(--muted); }
+.rich-area:focus { outline: 2px solid var(--work); outline-offset: -1px; }
+.rich-area img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+.rich-area p { margin: 0 0 0.6rem; }
+.attach-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.attach-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--lane); border-radius: 999px; padding: 0.35rem 0.7rem;
+  font-size: 0.8rem; color: var(--ink); max-width: 100%;
+}
+.attach-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12rem; }
+.attach-chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0; }
+.attach-chip button:hover { color: #b91c1c; }
+/* Journal detail attachments */
+.detail-attach { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.detail-attach a {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--lane); border-radius: 8px; padding: 0.45rem 0.8rem;
+  font-size: 0.82rem; color: var(--ink); text-decoration: none;
+}
+/* Detail title */
+.detail-title { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
 .detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
 .detail-actions { display: flex; gap: 0.5rem; }
 .detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
