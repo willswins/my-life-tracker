@@ -491,6 +491,15 @@ pre#ingest-docs {
 }
 /* Detail title */
 .detail-title { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
+/* Mood picker */
+.mood-row { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
+.mood-btn {
+  font-size: 1.5rem; line-height: 1; padding: 0.45rem 0.55rem; border-radius: 12px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer;
+  filter: grayscale(1); opacity: 0.55; transition: all 0.15s;
+}
+.mood-btn.selected { filter: none; opacity: 1; border-color: var(--work); background: var(--lane); transform: scale(1.1); }
+.detail-mood { font-size: 1.4rem; margin-top: 0.4rem; }
 .detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
 .detail-actions { display: flex; gap: 0.5rem; }
 .detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
