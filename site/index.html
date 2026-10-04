@@ -23,6 +23,7 @@
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
         <button data-view="game" class="view-link">Sum It Up</button>
         <button data-view="spell" class="view-link">Spell It</button>
+        <button data-view="bee" class="view-link">Spelling Bee</button>
         <button data-view="about" class="view-link">About</button>
         <hr class="menu-sep">
         <button id="menu-invite">Invite</button>
@@ -205,6 +206,31 @@
     </div>
     <div class="game-feedback" id="spell-feedback"></div>
     <button class="game-next" id="spell-start">Start</button>
+  </div>
+</main>
+<main id="view-bee" class="view hidden">
+  <div class="game-container">
+    <div class="game-stats">
+      <div class="game-stat"><span class="game-stat-label">Score</span><span class="game-stat-val" id="bee-score">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Rank</span><span class="game-stat-val" id="bee-rank">Beginner</span></div>
+      <div class="game-stat"><span class="game-stat-label">Words</span><span class="game-stat-val" id="bee-count">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Best</span><span class="game-stat-val" id="bee-best">0</span></div>
+    </div>
+    <div class="bee-rankbar"><div class="bee-rankfill" id="bee-rankfill"></div></div>
+    <div class="bee-cur" id="bee-cur" aria-live="polite"></div>
+    <div class="bee-hive" id="bee-hive"></div>
+    <div class="bee-actions">
+      <button id="bee-delete">Delete</button>
+      <button id="bee-shuffle">Shuffle</button>
+      <button id="bee-submit" class="primary">Submit</button>
+    </div>
+    <div class="game-feedback" id="bee-feedback"></div>
+    <div class="bee-found">
+      <button class="bee-foundhead" id="bee-foundhead">Found words (<span id="bee-foundn">0</span>) — tap to show</button>
+      <div class="bee-words hidden" id="bee-words"></div>
+    </div>
+    <button class="game-next" id="bee-new">New puzzle</button>
+    <p class="game-hint">Tap the tiles to spell words of 4+ letters. Every word must use the yellow center letter. Find the pangram — one word using all 7 letters!</p>
   </div>
 </main>
 
