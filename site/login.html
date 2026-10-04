@@ -28,7 +28,7 @@
       el.style.display = 'block';
       el.textContent = msg;
     }
-    fetch('/api/config')
+    fetch('/api/auth?action=config')
       .then((r) => r.json())
       .then((cfg) => {
         if (!cfg.clientId) { showErr('Sign-in is not configured yet.'); return; }
@@ -39,7 +39,7 @@
           google.accounts.id.initialize({
             client_id: cfg.clientId,
             callback: (resp) => {
-              fetch('/api/session', {
+              fetch('/api/auth?action=session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ credential: resp.credential }),
