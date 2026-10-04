@@ -515,6 +515,8 @@ pre#ingest-docs {
 .detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
 .detail-date .w { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.4rem; }
 .detail-body { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.65; margin-top: 0.75rem; }
+.detail-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+.detail-body p { margin: 0 0 0.6rem; }
 .fab {
   position: fixed; right: 1.25rem; bottom: 1.5rem; width: 3.5rem; height: 3.5rem;
   border-radius: 50%; border: none; background: var(--work); color: #fff;
@@ -995,7 +997,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 8:43 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 9:09 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2386,15 +2388,45 @@ function insertImageAtCursor(dataUrl, name) {
     rich.appendChild(img);
   }
 }
-document.getElementById('j-rich').addEventListener('paste', (e) => {
-  const files = (e.clipboardData && e.clipboardData.files) || [];
-  const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
-  if (!imgs.length) return;
-  e.preventDefault();
-  imgs.forEach(async (f) => {
-    const dataUrl = await resizeImage(f);
-    if (dataUrl) insertImageAtCursor(dataUrl, f.name);
+// Downscale any oversized inline images (catches HTML-paste from iOS etc).
+function downscaleInlineImages() {
+  const rich = document.getElementById('j-rich');
+  rich.querySelectorAll('img:not([data-rs])').forEach((img) => {
+    img.setAttribute('data-rs', '1');
+    const probe = new Image();
+    probe.onload = () => {
+      const max = 1200;
+      if (probe.width <= max && probe.height <= max) return;
+      const s = max / Math.max(probe.width, probe.height);
+      const c = document.createElement('canvas');
+      c.width = Math.round(probe.width * s);
+      c.height = Math.round(probe.height * s);
+      c.getContext('2d').drawImage(probe, 0, 0, c.width, c.height);
+      img.src = c.toDataURL('image/jpeg', 0.82);
+    };
+    probe.src = img.src;
   });
+}
+
+document.getElementById('j-rich').addEventListener('paste', (e) => {
+  const cd = e.clipboardData;
+  if (!cd) return;
+  const files = Array.from(cd.files || []).filter((f) => f.type.startsWith('image/'));
+  const items = Array.from(cd.items || [])
+    .filter((it) => it.type.startsWith('image/'))
+    .map((it) => it.getAsFile())
+    .filter(Boolean);
+  const imgs = files.length ? files : items;
+  if (imgs.length) {
+    e.preventDefault();
+    imgs.forEach(async (f) => {
+      const dataUrl = await resizeImage(f);
+      if (dataUrl) insertImageAtCursor(dataUrl, f.name);
+    });
+    return;
+  }
+  // HTML paste (iOS often pastes <img> tags): let it land, then downscale.
+  setTimeout(downscaleInlineImages, 50);
 });
 
 // File attachments -> base64 data URLs.
