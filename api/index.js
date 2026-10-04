@@ -649,10 +649,7 @@ pre#ingest-docs {
       <button id="add-card" class="primary">+ Add</button>
     </div>
     <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <div class="filters" role="group" aria-label="Filter by tag">
-      <button data-filter="all" class="active">All</button>
-      <button data-filter="work">Work</button>
-      <button data-filter="personal">Personal</button>
+    <div class="filters" role="group" aria-label="Show deleted">
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
   </div>
@@ -1044,10 +1041,9 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.2.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:46 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 10:49 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
-let filter = 'all';
 let searchText = '';
 let editingId = null;
 let detailId = null;
@@ -1167,7 +1163,7 @@ function render() {
     const lane = laneEl.dataset.lane;
     const box = laneEl.querySelector('.cards');
     const q = searchText.trim().toLowerCase();
-    const list = cards.filter((c) => c.lane === lane && (filter === 'all' || c.tag === filter) &&
+    const list = cards.filter((c) => c.lane === lane &&
       (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
@@ -1175,8 +1171,7 @@ function render() {
     box.innerHTML = '';
     list.forEach((c) => box.appendChild(cardEl(c)));
   });
-  document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
-    b.classList.toggle('active', b.dataset.filter === filter));
+
   document.querySelectorAll('.lane').forEach((laneEl) => {
     const box = laneEl.querySelector('.cards');
     box.ondragover = (e) => { e.preventDefault(); box.classList.add('dragover'); };
@@ -1313,8 +1308,7 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
     toast('Could not save the card. Please try again.');
   }
 });
-document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
-  b.addEventListener('click', () => { filter = b.dataset.filter; render(); }));
+
 document.getElementById('trash-toggle').addEventListener('click', async (e) => {
   showDeleted = !showDeleted;
   e.target.classList.toggle('active', showDeleted);
