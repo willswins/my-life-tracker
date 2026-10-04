@@ -1,1 +1,13 @@
-{"buildCommand": "mkdir -p public && base64 -d site/icon.b64.txt > public/icon.png", "rewrites": [{"source": "/", "destination": "/api/index"}, {"source": "/login", "destination": "/api/login"}]}
+{
+  "buildCommand": "mkdir -p public && base64 -d site/icon.b64.txt > public/icon.png && mkdir -p build/site && cp site/index.html site/app.js site/styles.css site/login.html build/site/ 2>/dev/null; node build/build.js && cp build/api/index.js api/index.js && cp build/api/login.js api/login.js",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/login",
+      "destination": "/api/login"
+    }
+  ]
+}
