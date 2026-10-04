@@ -524,6 +524,7 @@ pre#ingest-docs {
   font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
   padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
 }
+.tag-filter-wrap #trash-toggle.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .tag-filter {
   font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
   padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
@@ -641,7 +642,7 @@ pre#ingest-docs {
         <button id="menu-invite">Invite</button>
         <button id="menu-connectors">Connectors</button>
         <button id="menu-refresh">Refresh</button>
-        <a href="/api/logout" id="menu-logout">Logout</a>
+        <a href="/api/auth?action=logout" id="menu-logout">Logout</a>
       </div>
     </div>
     <img id="app-icon" src="/icon.png" alt="DayBook">
@@ -1047,7 +1048,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.2.0';
-const BUILD_DATE = 'Oct 3, 2026, 11:10 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 4, 2026, 9:32 AM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let searchText = '';
@@ -1079,7 +1080,7 @@ async function loadCards() {
 
 async function init() {
   try {
-    const me = await api('GET', '/api/me');
+    const me = await api('GET', '/api/auth?action=me');
     isAdmin = !!me.admin;
     if (!isAdmin) document.getElementById('menu-invite').style.display = 'none';
   } catch (e) { /* non-fatal */ }
