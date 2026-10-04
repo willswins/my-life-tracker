@@ -468,7 +468,39 @@ pre#ingest-docs {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .entry-chev { flex: none; color: var(--muted); font-size: 1.2rem; align-self: center; }
 .pill.danger { color: #b91c1c; }
-/* Journal detail screen */
+/* Journal rich entry form */
+#j-title {
+  display: block; width: 100%; margin-top: 0.3rem; padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; font-weight: 600;
+  font-family: inherit; color: var(--ink); background: #fff;
+}
+.rich-area {
+  width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: 14px;
+  padding: 0.9rem 1rem; font-size: 0.95rem; font-family: inherit; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05); line-height: 1.6; overflow-wrap: break-word;
+}
+.rich-area:empty:before { content: attr(data-placeholder); color: var(--muted); }
+.rich-area:focus { outline: 2px solid var(--work); outline-offset: -1px; }
+.rich-area img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+.rich-area p { margin: 0 0 0.6rem; }
+.attach-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.attach-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--lane); border-radius: 999px; padding: 0.35rem 0.7rem;
+  font-size: 0.8rem; color: var(--ink); max-width: 100%;
+}
+.attach-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12rem; }
+.attach-chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0; }
+.attach-chip button:hover { color: #b91c1c; }
+/* Journal detail attachments */
+.detail-attach { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.detail-attach a {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--lane); border-radius: 8px; padding: 0.45rem 0.8rem;
+  font-size: 0.82rem; color: var(--ink); text-decoration: none;
+}
+/* Detail title */
+.detail-title { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
 .detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
 .detail-actions { display: flex; gap: 0.5rem; }
 .detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
@@ -645,24 +677,23 @@ pre#ingest-docs {
   </div>
   <div id="j-day-screen" class="hidden">
     <button id="j-back" class="quiet-btn">‹ All entries</button>
-  <div class="date-nav">
-    <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
-    <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
-    <button id="j-next" class="chev-btn" title="Next day" aria-label="Next day">›</button>
-    <button id="j-today" class="quiet-btn">Today</button>
-  </div>
-  <div id="j-dots" class="month-strip hidden"></div>
-  <div class="section-label">Auto summary</div>
-  <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
-  <div class="section-head">
-    <div class="section-label">Notes</div>
-    <button id="j-preview-toggle" class="pill pill-sm">Preview</button>
-  </div>
-  <textarea id="j-body" class="notes-area" placeholder="What happened today…"></textarea>
-  <div id="j-preview" class="journal-preview hidden"></div>
-  <div class="view-actions">
-    <button id="j-save" class="primary">Save</button>
-  </div>
+    <div class="section-label">Title</div>
+    <input id="j-title" maxlength="200" placeholder="Entry title…" autocomplete="off">
+    <div class="section-label">Date</div>
+    <input id="j-date-hid" type="hidden">
+    <button id="j-date-btn" type="button" class="dd-field" data-dtdate="j-date-hid">Pick a date</button>
+    <div class="section-head">
+      <div class="section-label">Body</div>
+      <button id="j-attach-btn" type="button" class="pill pill-sm">+ Attach</button>
+    </div>
+    <div id="j-rich" class="rich-area" contenteditable="true" data-placeholder="Write your thoughts…"></div>
+    <input id="j-file" type="file" multiple class="hidden">
+    <div id="j-attach-list" class="attach-list"></div>
+    <div class="section-label">Auto summary</div>
+    <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
+    <div class="view-actions">
+      <button id="j-save" class="primary">Save</button>
+    </div>
   </div>
 </main>
 
@@ -955,7 +986,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 6:24 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 8:17 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1501,7 +1532,6 @@ let reminderSearch = '';
 let reminderSearchTimer = null;
 
 let journalDate = null; // set below after helpers
-let journalPreview = false;
 
 let links = [];
 let allLinks = [];
@@ -2089,7 +2119,7 @@ function renderJournalList() {
     const b = document.createElement('button');
     b.className = 'soft-card entry-card';
     b.innerHTML = \`<span class="entry-date"><span class="d">\${escHtml(f.date)}</span><br><span class="w">\${escHtml(f.weekday)}</span></span>\` +
-      \`<span class="entry-preview">\${escHtml(e.preview || '—')}</span>\` +
+      \`<span class="entry-preview">\${e.title ? '<strong>' + escHtml(e.title) + '</strong><br>' : ''}\${escHtml(e.preview || '—')}</span>\` +
       \`<span class="entry-chev">›</span>\`;
     b.addEventListener('click', () => openJournalDetail(e.date));
     box.appendChild(b);
@@ -2109,7 +2139,28 @@ async function openJournalDetail(date) {
   document.getElementById('j-detail-screen').classList.remove('hidden');
   try {
     const e = await api('GET', '/api/daybook/journal?date=' + date);
-    document.getElementById('j-detail-body').textContent = (e && e.body) || '—';
+    const card = document.querySelector('#j-detail-screen .soft-card');
+    // remove any previous title/attachments blocks
+    card.querySelectorAll('.detail-title,.detail-attach').forEach((n) => n.remove());
+    if (e && e.title) {
+      const t = document.createElement('div');
+      t.className = 'detail-title';
+      t.textContent = e.title;
+      document.getElementById('j-detail-date').after(t);
+    }
+    document.getElementById('j-detail-body').innerHTML = sanitizeHtml((e && e.body) || '') || '—';
+    if (e && Array.isArray(e.attachments) && e.attachments.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'detail-attach';
+      e.attachments.forEach((a) => {
+        const link = document.createElement('a');
+        link.href = a.data || '#';
+        link.download = a.name || 'file';
+        link.textContent = '📎 ' + (a.name || 'file');
+        wrap.appendChild(link);
+      });
+      card.appendChild(wrap);
+    }
   } catch (err) {
     document.getElementById('j-detail-body').textContent = 'Could not load entry.';
   }
@@ -2120,7 +2171,7 @@ function openJournalDay(date) {
   document.getElementById('j-list-screen').classList.add('hidden');
   document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-day-screen').classList.remove('hidden');
-  loadJournal();
+  loadJournalForm();
 }
 
 function showJournalList() {
@@ -2170,92 +2221,167 @@ document.getElementById('journal-search').addEventListener('input', (e) => {
 });
 document.getElementById('j-back').addEventListener('click', showJournalList);
 
-async function loadJournal() {
-  const e = await api('GET', '/api/daybook/journal?date=' + journalDate);
-  document.getElementById('j-date-label').textContent =
-    new Date(journalDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  document.getElementById('j-body').value = e ? (e.body || '') : '';
-  journalPreview = false;
-  document.getElementById('j-preview').classList.add('hidden');
-  document.getElementById('j-body').classList.remove('hidden');
-  document.getElementById('j-preview-toggle').textContent = 'Preview';
-  const auto = document.getElementById('j-auto');
-  if (e && e.auto_summary) auto.textContent = e.auto_summary;
-  else auto.innerHTML = '<p class="empty-note">No summary yet.</p>';
-  await loadJournalDots();
+/* ---------- Rich journal entry form ---------- */
+let journalAttachments = [];
+
+// Allowlist HTML sanitizer for journal bodies (pasted HTML + images).
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
+  const allowed = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE',
+    'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE', 'PRE', 'CODE',
+    'HR', 'DIV', 'SPAN', 'A', 'IMG', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD']);
+  const walk = (node) => {
+    const kids = Array.from(node.childNodes);
+    for (const k of kids) {
+      if (k.nodeType === 8) { k.remove(); continue; }
+      if (k.nodeType !== 1) continue;
+      if (!allowed.has(k.tagName)) {
+        while (k.firstChild) node.insertBefore(k.firstChild, k);
+        k.remove();
+        continue;
+      }
+      for (const a of Array.from(k.attributes)) {
+        const n = a.name.toLowerCase();
+        if (n.startsWith('on')) { k.removeAttribute(a.name); continue; }
+        if ((k.tagName === 'A' || k.tagName === 'IMG') && (n === 'href' || n === 'src')) {
+          const v = a.value.trim();
+          if (!/^(https?:|data:image\\/|mailto:)/i.test(v)) k.removeAttribute(a.name);
+          continue;
+        }
+        if (n === 'style' || n === 'class' || n === 'id') { k.removeAttribute(a.name); continue; }
+      }
+      walk(k);
+    }
+  };
+  const root = doc.body.firstChild || doc.body;
+  walk(root);
+  return root.innerHTML;
 }
 
-async function loadJournalDots() {
-  const month = journalDate.slice(0, 7);
-  let dates = [];
-  try {
-    dates = await api('GET', '/api/daybook/journal?month=' + month);
-  } catch (e) { /* non-fatal */ }
-  const set = new Set(dates);
-  const [y, m] = month.split('-').map(Number);
-  const daysIn = new Date(y, m, 0).getDate();
-  const today = localDateStr(new Date());
-  const box = document.getElementById('j-dots');
+function setFormDate(ds) {
+  document.getElementById('j-date-hid').value = ds;
+  document.getElementById('j-date-btn').textContent =
+    new Date(ds + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function renderAttachList() {
+  const box = document.getElementById('j-attach-list');
   box.innerHTML = '';
-  const label = document.createElement('span');
-  label.className = 'empty-note';
-  label.textContent = new Date(y, m - 1, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
-  box.appendChild(label);
-  for (let d = 1; d <= daysIn; d++) {
-    const ds = month + '-' + pad2(d);
-    const b = document.createElement('button');
-    b.className = 'day-cell' + (ds === today ? ' today' : '') + (ds === journalDate ? ' selected' : '');
-    b.innerHTML = \`<span>\${d}</span><span class="dot\${set.has(ds) ? '' : ' none'}"></span>\`;
-    b.addEventListener('click', () => { journalDate = ds; loadJournal();
-      document.getElementById('j-dots').classList.add('hidden'); });
-    box.appendChild(b);
-  }
+  journalAttachments.forEach((a, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'attach-chip';
+    const label = document.createElement('span');
+    label.textContent = a.name || 'file';
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = '\\u00d7';
+    x.setAttribute('aria-label', 'Remove attachment');
+    x.addEventListener('click', () => { journalAttachments.splice(i, 1); renderAttachList(); });
+    chip.appendChild(label);
+    chip.appendChild(x);
+    box.appendChild(chip);
+  });
 }
 
-// Tiny Markdown renderer (bold, italic, code, headings, lists). Good enough for v1.
-function md(src) {
-  let h = escHtml(src);
-  h = h.replace(/^### (.*)\$/gm, '<h4>\$1</h4>')
-    .replace(/^## (.*)\$/gm, '<h3>\$1</h3>')
-    .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>\$1</strong>')
-    .replace(/(^|[\\s(])\\*([^*\\n]+)\\*/g, '\$1<em>\$2</em>')
-    .replace(/\`([^\`]+)\`/g, '<code>\$1</code>')
-    .replace(/^- (.*)\$/gm, '<li>\$1</li>');
-  h = h.replace(/(<li>.*?<\\/li>(?:\\n)?)+/g, (m) => '<ul>' + m + '</ul>');
-  return h.replace(/\\n/g, '<br>');
-}
-
-function shiftJournalDate(n) {
-  journalDate = localDateStr(addDaysLocal(new Date(journalDate + 'T12:00:00'), n));
-  loadJournal();
-}
-document.getElementById('j-prev').addEventListener('click', () => shiftJournalDate(-1));
-document.getElementById('j-next').addEventListener('click', () => shiftJournalDate(1));
-document.getElementById('j-today').addEventListener('click', () => {
-  journalDate = localDateStr(new Date());
-  loadJournal();
-});
-document.getElementById('j-date-pill').addEventListener('click', () => {
-  document.getElementById('j-dots').classList.toggle('hidden');
-});
-document.getElementById('j-preview-toggle').addEventListener('click', () => {
-  journalPreview = !journalPreview;
-  document.getElementById('j-preview').classList.toggle('hidden', !journalPreview);
-  document.getElementById('j-body').classList.toggle('hidden', journalPreview);
-  if (journalPreview) {
-    document.getElementById('j-preview').innerHTML =
-      md(document.getElementById('j-body').value) || '<p class="empty-note">Nothing to preview.</p>';
-  }
-  document.getElementById('j-preview-toggle').textContent = journalPreview ? 'Edit' : 'Preview';
-});
-document.getElementById('j-save').addEventListener('click', async () => {
+async function loadJournalForm() {
+  const ds = journalDate;
+  setFormDate(ds);
+  document.getElementById('j-title').value = '';
+  document.getElementById('j-rich').innerHTML = '';
+  journalAttachments = [];
+  renderAttachList();
+  const auto = document.getElementById('j-auto');
+  auto.innerHTML = '<p class="empty-note">No summary yet.</p>';
   try {
-    await api('POST', '/api/daybook/journal', { date: journalDate, body: document.getElementById('j-body').value });
-    await loadJournalDots();
+    const e = await api('GET', '/api/daybook/journal?date=' + ds);
+    if (e) {
+      document.getElementById('j-title').value = e.title || '';
+      document.getElementById('j-rich').innerHTML = sanitizeHtml(e.body || '');
+      journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
+      renderAttachList();
+      if (e.auto_summary) auto.textContent = e.auto_summary;
+    }
+  } catch (err) { /* new entry */ }
+}
+
+// Paste images as data URLs into the rich area.
+document.getElementById('j-rich').addEventListener('paste', (e) => {
+  const files = (e.clipboardData && e.clipboardData.files) || [];
+  const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+  e.preventDefault();
+  imgs.forEach((f) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = document.createElement('img');
+      img.src = r.result;
+      img.alt = f.name || 'pasted image';
+      const rich = document.getElementById('j-rich');
+      rich.focus();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(img);
+        range.setStartAfter(img);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        rich.appendChild(img);
+      }
+    };
+    r.readAsDataURL(f);
+  });
+});
+
+// File attachments -> base64 data URLs.
+document.getElementById('j-attach-btn').addEventListener('click', () => {
+  document.getElementById('j-file').click();
+});
+document.getElementById('j-file').addEventListener('change', (e) => {
+  Array.from(e.target.files || []).forEach((f) => {
+    if (f.size > 8 * 1024 * 1024) { toast('"' + f.name + '" is over 8 MB \\u2014 skipped.'); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      journalAttachments.push({ name: f.name, type: f.type, size: f.size, data: r.result });
+      renderAttachList();
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value = '';
+});
+
+// Date picker for the form.
+document.getElementById('j-date-btn').addEventListener('click', () => {
+  openDtPicker({
+    initial: document.getElementById('j-date-hid').value,
+    mode: 'date',
+    onPick: (val) => {
+      journalDate = val;
+      setFormDate(val);
+      loadJournalForm();
+    },
+  });
+});
+
+document.getElementById('j-save').addEventListener('click', async () => {
+  const ds = document.getElementById('j-date-hid').value || journalDate;
+  const payload = {
+    date: ds,
+    title: document.getElementById('j-title').value.trim(),
+    body: sanitizeHtml(document.getElementById('j-rich').innerHTML),
+    attachments: journalAttachments,
+  };
+  try {
+    await api('POST', '/api/daybook/journal', payload);
+    toast('Entry saved.');
+    showJournalList();
   } catch (e) {
     toast('Could not save the journal entry. Please try again.');
   }
 });
+
 
 /* ---------- Links ---------- */
 async function loadLinks() {
