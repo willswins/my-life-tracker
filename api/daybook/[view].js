@@ -12,6 +12,7 @@ const handlers = {
   journal: require('../_journal'),
   links: require('../_links'),
   inbox: require('../_inbox'),
+  tags: require('../_tags'),
 };
 
 module.exports = async (req, res) => {
