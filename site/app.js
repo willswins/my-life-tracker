@@ -787,6 +787,12 @@ function spellSet(id, v) {
   const el = document.getElementById(id);
   if (el) el.textContent = v;
 }
+function fitSpellWord(word) {
+  const el = document.getElementById('spell-word');
+  if (!el) return;
+  const n = (word || '').length;
+  el.style.fontSize = n <= 6 ? '3rem' : n <= 8 ? '2.4rem' : n <= 10 ? '2rem' : '1.6rem';
+}
 function spellLivesStr() {
   return '❤'.repeat(spellLives) + '🖤'.repeat(Math.max(0, SPELL_LIVES - spellLives));
 }
@@ -827,6 +833,7 @@ function startSpellRound() {
   spellWord = pool[Math.floor(Math.random() * pool.length)];
   spellAccepting = false;
   spellSet('spell-word', spellWord.toUpperCase());
+  fitSpellWord(spellWord);
   spellSet('spell-hint', 'Memorize!');
   spellSet('spell-feedback', '');
   const fb = document.getElementById('spell-feedback');
