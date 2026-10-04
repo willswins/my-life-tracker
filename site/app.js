@@ -12,7 +12,6 @@ const APP_VERSION = '1.2.0';
 const BUILD_DATE = '__BUILD_DATE__'; // replaced by build.js with the build timestamp
 
 let cards = [];
-let filter = 'all';
 let searchText = '';
 let editingId = null;
 let detailId = null;
@@ -42,7 +41,7 @@ async function loadCards() {
 
 async function init() {
   try {
-    const me = await api('GET', '/api/me');
+    const me = await api('GET', '/api/auth?action=me');
     isAdmin = !!me.admin;
     if (!isAdmin) document.getElementById('menu-invite').style.display = 'none';
   } catch (e) { /* non-fatal */ }
@@ -70,7 +69,8 @@ function tagBubblesHtml(tags) {
 }
 
 // Tag filter row: renders "All" + one bubble per master tag.
-function renderTagFilter(box, selected, onPick) {
+// If includeDelete is true, appends the Deleted toggle as part of the same bubble group.
+function renderTagFilter(box, selected, onPick, includeDelete) {
   box.innerHTML = '';
   const mk = (label, val) => {
     const b = document.createElement('button');
@@ -82,6 +82,16 @@ function renderTagFilter(box, selected, onPick) {
   };
   mk('All tags', '');
   allTags.forEach((t) => mk(t.name, t.name));
+  if (includeDelete) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.id = 'trash-toggle';
+    del.className = 'tag-filter' + (showDeleted ? ' active' : '');
+    del.textContent = 'Deleted';
+    del.title = 'Show deleted cards';
+    del.addEventListener('click', toggleDeleted);
+    box.appendChild(del);
+  }
 }
 
 // Tag picker for edit forms: checkboxes from the master list.
@@ -127,12 +137,12 @@ function render() {
   renderTagFilter(document.getElementById('board-tag-filter'), boardTagFilter, (v) => {
     boardTagFilter = v;
     render();
-  });
+  }, true);
   document.querySelectorAll('.lane').forEach((laneEl) => {
     const lane = laneEl.dataset.lane;
     const box = laneEl.querySelector('.cards');
     const q = searchText.trim().toLowerCase();
-    const list = cards.filter((c) => c.lane === lane && (filter === 'all' || c.tag === filter) &&
+    const list = cards.filter((c) => c.lane === lane &&
       (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
@@ -140,8 +150,7 @@ function render() {
     box.innerHTML = '';
     list.forEach((c) => box.appendChild(cardEl(c)));
   });
-  document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
-    b.classList.toggle('active', b.dataset.filter === filter));
+
   document.querySelectorAll('.lane').forEach((laneEl) => {
     const box = laneEl.querySelector('.cards');
     box.ondragover = (e) => { e.preventDefault(); box.classList.add('dragover'); };
@@ -278,13 +287,12 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
     toast('Could not save the card. Please try again.');
   }
 });
-document.querySelectorAll('.filters button[data-filter]').forEach((b) =>
-  b.addEventListener('click', () => { filter = b.dataset.filter; render(); }));
-document.getElementById('trash-toggle').addEventListener('click', async (e) => {
+
+async function toggleDeleted(e) {
   showDeleted = !showDeleted;
-  e.target.classList.toggle('active', showDeleted);
-  try { await loadCards(); render(); } catch (err) { toast('Could not load deleted cards. Please try again.'); showDeleted = false; e.target.classList.remove('active'); }
-});
+  if (e && e.target) e.target.classList.toggle('active', showDeleted);
+  try { await loadCards(); render(); } catch (err) { toast('Could not load deleted cards. Please try again.'); showDeleted = false; if (e && e.target) e.target.classList.remove('active'); }
+}
 document.getElementById('search').addEventListener('input', (e) => {
   searchText = e.target.value;
   render();
