@@ -614,3 +614,22 @@ pre#ingest-docs {
 .dt-picker.date-only .dt-clear { display: block; }
 .dt-picker .modal-actions { flex-direction: column; align-items: stretch; }
 .dt-picker .modal-actions button { width: 100%; padding: 0.7rem; }
+
+/* Sum It Up game */
+.game-container { max-width: 500px; margin: 2rem auto; padding: 1rem; text-align: center; }
+.game-stats { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+.game-stat { display: flex; flex-direction: column; }
+.game-stat-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); }
+.game-stat-val { font-size: 1.5rem; font-weight: 700; }
+.game-word { font-size: 3rem; font-weight: 800; letter-spacing: 0.3rem; margin: 1rem 0; color: var(--ink); }
+.game-hint { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+.game-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+.game-option { font-size: 1.5rem; font-weight: 700; padding: 1rem; border: 2px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
+.game-option:hover:not(:disabled) { border-color: var(--ink); }
+.game-option.correct { background: #dcfce7; border-color: #16a34a; color: #166534; }
+.game-option.wrong { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+.game-option:disabled { cursor: default; opacity: 0.9; }
+.game-feedback { min-height: 2rem; font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; }
+.game-feedback.good { color: #16a34a; }
+.game-feedback.bad { color: #dc2626; }
+.game-next { font-size: 1.1rem; padding: 0.75rem 2rem; border-radius: 999px; background: var(--ink); color: #fff; border: none; cursor: pointer; font-weight: 600; }
