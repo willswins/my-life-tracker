@@ -505,6 +505,8 @@ pre#ingest-docs {
 .detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
 .detail-date .w { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.4rem; }
 .detail-body { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.65; margin-top: 0.75rem; }
+.detail-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+.detail-body p { margin: 0 0 0.6rem; }
 .fab {
   position: fixed; right: 1.25rem; bottom: 1.5rem; width: 3.5rem; height: 3.5rem;
   border-radius: 50%; border: none; background: var(--work); color: #fff;
