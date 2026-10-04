@@ -187,18 +187,19 @@
     <div class="game-stats">
       <div class="game-stat"><span class="game-stat-label">Score</span><span class="game-stat-val" id="spell-score">0</span></div>
       <div class="game-stat"><span class="game-stat-label">Streak</span><span class="game-stat-val" id="spell-streak">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Lives</span><span class="game-stat-val" id="spell-lives">❤❤❤</span></div>
       <div class="game-stat"><span class="game-stat-label">Best</span><span class="game-stat-val" id="spell-best">0</span></div>
     </div>
     <div class="spell-difficulty" role="group" aria-label="Difficulty">
-      <button data-spell-diff="easy">Easy</button>
+      <button data-spell-diff="simple">Simple</button>
       <button data-spell-diff="medium" class="active">Medium</button>
-      <button data-spell-diff="hard">Hard</button>
+      <button data-spell-diff="complex">Complex</button>
     </div>
     <div class="spell-word" id="spell-word">…</div>
-    <p class="game-hint" id="spell-hint">Tap Start, memorize the word, then type it.</p>
+    <div class="spell-timer hidden" id="spell-timer"><div class="spell-timer-fill" id="spell-timer-fill"></div></div>
+    <p class="game-hint" id="spell-hint">Tap Start, memorize the word, then type it and hit Go.</p>
     <div class="spell-input-row hidden" id="spell-input-row">
       <input id="spell-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Type the word" aria-label="Type the word">
-      <button id="spell-check" class="primary">Check</button>
     </div>
     <div class="game-feedback" id="spell-feedback"></div>
     <button class="game-next hidden" id="spell-next">Next →</button>

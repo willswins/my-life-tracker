@@ -641,3 +641,6 @@ pre#ingest-docs {
 .spell-input-row { display: flex; gap: 0.5rem; justify-content: center; align-items: center; margin-bottom: 0.5rem; }
 .spell-input-row input { font-size: 1.3rem; padding: 0.7rem 1rem; border: 2px solid var(--line); border-radius: 12px; width: 200px; text-align: center; }
 .spell-input-row input:focus { outline: none; border-color: var(--ink); }
+.spell-timer { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 0.5rem auto; max-width: 320px; }
+.spell-timer-fill { height: 100%; width: 100%; background: #16a34a; border-radius: 999px; transition: width 0.1s linear; }
+.spell-timer-fill.low { background: #dc2626; }
