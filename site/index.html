@@ -111,24 +111,23 @@
   </div>
   <div id="j-day-screen" class="hidden">
     <button id="j-back" class="quiet-btn">‹ All entries</button>
-  <div class="date-nav">
-    <button id="j-prev" class="chev-btn" title="Previous day" aria-label="Previous day">‹</button>
-    <button id="j-date-pill" class="pill"><span id="j-date-label"></span><span class="pill-chev">⌄</span></button>
-    <button id="j-next" class="chev-btn" title="Next day" aria-label="Next day">›</button>
-    <button id="j-today" class="quiet-btn">Today</button>
-  </div>
-  <div id="j-dots" class="month-strip hidden"></div>
-  <div class="section-label">Auto summary</div>
-  <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
-  <div class="section-head">
-    <div class="section-label">Notes</div>
-    <button id="j-preview-toggle" class="pill pill-sm">Preview</button>
-  </div>
-  <textarea id="j-body" class="notes-area" placeholder="What happened today…"></textarea>
-  <div id="j-preview" class="journal-preview hidden"></div>
-  <div class="view-actions">
-    <button id="j-save" class="primary">Save</button>
-  </div>
+    <div class="section-label">Title</div>
+    <input id="j-title" maxlength="200" placeholder="Entry title…" autocomplete="off">
+    <div class="section-label">Date</div>
+    <input id="j-date-hid" type="hidden">
+    <button id="j-date-btn" type="button" class="dd-field" data-dtdate="j-date-hid">Pick a date</button>
+    <div class="section-head">
+      <div class="section-label">Body</div>
+      <button id="j-attach-btn" type="button" class="pill pill-sm">+ Attach</button>
+    </div>
+    <div id="j-rich" class="rich-area" contenteditable="true" data-placeholder="Write your thoughts…"></div>
+    <input id="j-file" type="file" multiple class="hidden">
+    <div id="j-attach-list" class="attach-list"></div>
+    <div class="section-label">Auto summary</div>
+    <div id="j-auto" class="soft-card"><p class="empty-note">No summary yet.</p></div>
+    <div class="view-actions">
+      <button id="j-save" class="primary">Save</button>
+    </div>
   </div>
 </main>
 
