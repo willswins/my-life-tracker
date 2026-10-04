@@ -600,13 +600,14 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'about'];
+const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'about'];
 const VIEW_IDS = {
   tasks: 'board',
   reminders: 'view-reminders',
   journal: 'view-journal',
   links: 'view-links',
   inbox: 'view-inbox',
+  game: 'view-game',
   about: 'view-about',
 };
 const VIEW_TITLES = {
@@ -615,6 +616,7 @@ const VIEW_TITLES = {
   journal: 'Journal',
   links: 'Links',
   inbox: 'Inbox',
+  game: 'Sum It Up',
   about: 'About',
 };
 let currentView = 'tasks';
@@ -670,6 +672,101 @@ function extractUrl(text) {
 }
 journalDate = localDateStr(new Date());
 
+
+/* ---------- Sum It Up game ---------- */
+const GAME_WORDS = ['apple','brain','cloud','dance','eagle','flame','grape','happy','ivory','jungle','kite','lemon','magic','night','ocean','piano','queen','river','sunny','tiger','unity','vivid','water','xenon','youth','zebra','pizza','jazz','quiz','box','fox','dog','cat','sun','moon','star','tree','book','game','play','code','data','logic','sharp','brave','swift','candy','delta','ember','frost','globe','hazel','index','joker','karma','lunar','mango','north','olive','pilot','quartz','radar','storm','thorn','ultra','vapor','whale','xray','yearn','zip'];
+let gameScore = 0, gameStreak = 0, gameBest = 0, gameStartTime = 0, gameAnswered = false;
+let gameTimer = null;
+
+function letterValue(ch) {
+  const c = ch.toLowerCase().charCodeAt(0);
+  return (c >= 97 && c <= 122) ? c - 96 : 0;
+}
+function wordSum(w) {
+  return [...w].reduce((a, ch) => a + letterValue(ch), 0);
+}
+function shuffleArr(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function initGame() {
+  gameBest = parseInt(localStorage.getItem('sumitup_best') || '0', 10);
+  document.getElementById('game-best').textContent = gameBest;
+  document.getElementById('game-score').textContent = gameScore;
+  document.getElementById('game-streak').textContent = gameStreak;
+  newRound();
+}
+function newRound() {
+  gameAnswered = false;
+  const word = GAME_WORDS[Math.floor(Math.random() * GAME_WORDS.length)];
+  const correct = wordSum(word);
+  document.getElementById('game-word').textContent = word.toUpperCase();
+  document.getElementById('game-feedback').textContent = '';
+  document.getElementById('game-feedback').className = 'game-feedback';
+  document.getElementById('game-next').classList.add('hidden');
+  // Generate 3 wrong options
+  const opts = new Set([correct]);
+  while (opts.size < 4) {
+    const delta = Math.floor(Math.random() * 20) - 10;
+    const v = correct + delta;
+    if (v > 0 && v !== correct) opts.add(v);
+  }
+  const shuffled = shuffleArr([...opts]);
+  const box = document.getElementById('game-options');
+  box.innerHTML = '';
+  shuffled.forEach((v) => {
+    const b = document.createElement('button');
+    b.className = 'game-option';
+    b.textContent = v;
+    b.addEventListener('click', () => answerGame(v, correct, b));
+    box.appendChild(b);
+  });
+  // Start timer
+  gameStartTime = Date.now();
+  clearInterval(gameTimer);
+  gameTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - gameStartTime) / 1000);
+    document.getElementById('game-time').textContent = s + 's';
+  }, 500);
+}
+function answerGame(picked, correct, btn) {
+  if (gameAnswered) return;
+  gameAnswered = true;
+  clearInterval(gameTimer);
+  const secs = Math.floor((Date.now() - gameStartTime) / 1000);
+  const fb = document.getElementById('game-feedback');
+  document.querySelectorAll('.game-option').forEach((b) => {
+    b.disabled = true;
+    if (parseInt(b.textContent, 10) === correct) b.classList.add('correct');
+  });
+  if (picked === correct) {
+    btn.classList.add('correct');
+    const pts = Math.max(10, 100 - secs * 5);
+    gameScore += pts;
+    gameStreak++;
+    fb.textContent = `✓ +${pts} pts (${secs}s)`;
+    fb.className = 'game-feedback good';
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent = `✗ The answer was ${correct} (${secs}s)`;
+    fb.className = 'game-feedback bad';
+    gameStreak = 0;
+    if (gameScore > gameBest) {
+      gameBest = gameScore;
+      localStorage.setItem('sumitup_best', String(gameBest));
+    }
+    gameScore = 0;
+  }
+  document.getElementById('game-score').textContent = gameScore;
+  document.getElementById('game-streak').textContent = gameStreak;
+  document.getElementById('game-best').textContent = gameBest;
+  document.getElementById('game-next').classList.remove('hidden');
+}
+document.getElementById('game-next').addEventListener('click', newRound);
+
 /* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
   if (!VIEWS.includes(name)) name = 'tasks';
@@ -689,6 +786,7 @@ async function switchView(name, push = true) {
     else if (name === 'journal') await showJournalList();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
+    else if (name === 'game') initGame();
     else if (name === 'about') renderAbout();
     else render();
   } catch (e) {
