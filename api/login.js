@@ -5,8 +5,8 @@ const HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — DayBook</title>
-<link rel="icon" type="image/png" href="/api/index?icon">
-<link rel="apple-touch-icon" href="/api/index?icon">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
   .box { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 2.5rem; text-align: center; max-width: 360px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
@@ -29,7 +29,7 @@ const HTML = `<!DOCTYPE html>
       el.style.display = 'block';
       el.textContent = msg;
     }
-    fetch('/api/config')
+    fetch('/api/auth?action=config')
       .then((r) => r.json())
       .then((cfg) => {
         if (!cfg.clientId) { showErr('Sign-in is not configured yet.'); return; }
@@ -40,7 +40,7 @@ const HTML = `<!DOCTYPE html>
           google.accounts.id.initialize({
             client_id: cfg.clientId,
             callback: (resp) => {
-              fetch('/api/session', {
+              fetch('/api/auth?action=session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ credential: resp.credential }),
