@@ -53,13 +53,15 @@ module.exports = async (req, res) => {
       n = Math.min(n, 200);
       const rows = await sb(
         'GET',
-        `/rest/v1/journal_entries?${scope}&select=date,body&order=date.desc&limit=${n}`
+        `/rest/v1/journal_entries?${scope}&select=date,title,body&order=date.desc&limit=${n}`
       );
+      const stripHtml = (h) => (h || '').replace(/<[^>]*>/g, ' ');
       return send(
         200,
         rows.map((r) => ({
           date: r.date,
-          preview: (r.body || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+          title: r.title || '',
+          preview: stripHtml(r.body).replace(/\s+/g, ' ').trim().slice(0, 140),
         }))
       );
     }
@@ -69,9 +71,18 @@ module.exports = async (req, res) => {
       if (!d || !DATE_RE.test(d)) return send(400, { ok: false, error: 'date required (YYYY-MM-DD)' });
       const now = new Date().toISOString();
       const fields = {
-        body: typeof body.body === 'string' ? body.body.slice(0, 20000) : '',
+        title: typeof body.title === 'string' ? body.title.slice(0, 200) : null,
+        body: typeof body.body === 'string' ? body.body.slice(0, 2000000) : '',
         updated_at: now,
       };
+      if (Array.isArray(body.attachments)) {
+        fields.attachments = body.attachments.slice(0, 20).map((a) => ({
+          name: String(a.name || 'file').slice(0, 200),
+          type: String(a.type || '').slice(0, 100),
+          size: Number(a.size) || 0,
+          data: typeof a.data === 'string' ? a.data.slice(0, 5000000) : '',
+        }));
+      }
       if (body.auto_summary === null || typeof body.auto_summary === 'string') {
         fields.auto_summary = body.auto_summary ? body.auto_summary.slice(0, 5000) : null;
       }
