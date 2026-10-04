@@ -31,7 +31,7 @@
       </div>
     </div>
     <img id="app-icon" src="/icon.png" alt="DayBook">
-    <h1 id="view-title">My Board</h1>
+    <h1 id="view-title">DayBook</h1>
   </div>
 </header>
 <main id="board">
@@ -163,6 +163,22 @@
     <button type="submit" class="primary">+ Add</button>
   </form>
   <div id="inbox-list"></div>
+</main>
+
+<main id="view-game" class="view hidden">
+  <div class="game-container">
+    <div class="game-stats">
+      <div class="game-stat"><span class="game-stat-label">Score</span><span class="game-stat-val" id="game-score">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Streak</span><span class="game-stat-val" id="game-streak">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Best</span><span class="game-stat-val" id="game-best">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Time</span><span class="game-stat-val" id="game-time">0s</span></div>
+    </div>
+    <div class="game-word" id="game-word">…</div>
+    <p class="game-hint">Add up the letters (A=1 … Z=26) — tap the right total</p>
+    <div class="game-options" id="game-options"></div>
+    <div class="game-feedback" id="game-feedback"></div>
+    <button class="game-next hidden" id="game-next">Next →</button>
+  </div>
 </main>
 
 <main id="view-about" class="view hidden">

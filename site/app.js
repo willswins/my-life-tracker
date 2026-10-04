@@ -611,7 +611,7 @@ const VIEW_IDS = {
   about: 'view-about',
 };
 const VIEW_TITLES = {
-  tasks: 'My Board',
+  tasks: 'DayBook',
   reminders: 'Reminders',
   journal: 'Journal',
   links: 'Links',
@@ -765,7 +765,8 @@ function answerGame(picked, correct, btn) {
   document.getElementById('game-best').textContent = gameBest;
   document.getElementById('game-next').classList.remove('hidden');
 }
-document.getElementById('game-next').addEventListener('click', newRound);
+const gameNextBtn = document.getElementById('game-next');
+if (gameNextBtn) gameNextBtn.addEventListener('click', newRound);
 
 /* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
@@ -773,7 +774,8 @@ async function switchView(name, push = true) {
   currentView = name;
   document.body.dataset.view = name;
   Object.entries(VIEW_IDS).forEach(([v, id]) => {
-    document.getElementById(id).classList.toggle('hidden', v !== name);
+    const sec = document.getElementById(id);
+    if (sec) sec.classList.toggle('hidden', v !== name);
   });
   document.querySelectorAll('#menu .view-link').forEach((b) =>
     b.classList.toggle('active', b.dataset.view === name));
