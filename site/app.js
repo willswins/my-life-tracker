@@ -162,7 +162,7 @@ function render() {
       const c = cards.find((x) => String(x.id) === id);
       if (!c || c.lane === laneEl.dataset.lane) return;
       try {
-        const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(c.id), { lane: laneEl.dataset.lane });
+        const updated = await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(c.id), { lane: laneEl.dataset.lane });
         Object.assign(c, updated);
         render();
       } catch (err) { toast('Could not move the card. Please try again.'); }
@@ -212,18 +212,18 @@ async function act(id, action) {
     if (action === 'left' || action === 'right') {
       const idx = LANES.indexOf(c.lane) + (action === 'right' ? 1 : -1);
       if (idx >= 0 && idx < LANES.length) {
-        const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(id), { lane: LANES[idx] });
+        const updated = await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(id), { lane: LANES[idx] });
         Object.assign(c, updated);
         render();
       }
     } else if (action === 'edit') {
       openModal(c);
     } else if (action === 'done') {
-      const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(id), { lane: 'done' });
+      const updated = await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(id), { lane: 'done' });
       Object.assign(c, updated);
       render();
     } else if (action === 'restore') {
-      const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(id), { restore: true });
+      const updated = await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(id), { restore: true });
       cards = cards.filter((x) => x.id !== id);
       render();
     }
@@ -274,7 +274,7 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
   if (!data.title) return;
   try {
     if (editingId != null) {
-      const updated = await api('PATCH', '/api/cards?id=' + encodeURIComponent(editingId), data);
+      const updated = await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(editingId), data);
       const c = cards.find((x) => x.id === editingId);
       if (c) Object.assign(c, updated);
     } else {
@@ -325,7 +325,7 @@ async function openDetail(id) {
   document.getElementById('d-comments').innerHTML = '<p class="empty-note">Loading comments…</p>';
   document.getElementById('detail-backdrop').classList.remove('hidden');
   try {
-    const comments = await api('GET', '/api/comments?card_id=' + encodeURIComponent(c.id));
+    const comments = await api('GET', '/api/app?r=comments&card_id=' + encodeURIComponent(c.id));
     const box = document.getElementById('d-comments');
     if (detailId !== c.id) return;
     box.innerHTML = '';
@@ -369,7 +369,7 @@ document.getElementById('d-delete').addEventListener('click', async () => {
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id));
+    await api('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(c.id));
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
@@ -379,7 +379,7 @@ document.getElementById('d-restore').addEventListener('click', async () => {
   const c = cards.find((x) => x.id === detailId);
   if (!c) return;
   try {
-    await api('PATCH', '/api/cards?id=' + encodeURIComponent(c.id), { restore: true });
+    await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(c.id), { restore: true });
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
@@ -395,7 +395,7 @@ document.getElementById('d-purge').addEventListener('click', async () => {
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/cards?id=' + encodeURIComponent(c.id) + '&hard=true');
+    await api('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(c.id) + '&hard=true');
     cards = cards.filter((x) => x.id !== c.id);
     closeDetail();
     render();
@@ -472,7 +472,7 @@ async function loadKeys() {
             confirmLabel: 'Revoke key',
           });
           if (!yes) return;
-          try { await api('DELETE', '/api/keys?id=' + encodeURIComponent(k.id)); loadKeys(); }
+          try { await api('DELETE', '/api/app?r=keys&id=' + encodeURIComponent(k.id)); loadKeys(); }
           catch (e) { toast('Could not revoke the key. Please try again.'); }
         });
         row.appendChild(btn);
@@ -550,7 +550,7 @@ async function loadInvites() {
             confirmLabel: 'Remove',
           });
           if (!yes) return;
-          try { await api('DELETE', '/api/invites?email=' + encodeURIComponent(u.email)); loadInvites(); }
+          try { await api('DELETE', '/api/app?r=invites&email=' + encodeURIComponent(u.email)); loadInvites(); }
           catch (e) { toast('Could not remove. Please try again.'); }
         });
         row.appendChild(btn);
@@ -822,7 +822,7 @@ async function updateBadges() {
     const [rems, lks, ib] = await Promise.all([
       api('GET', '/api/app?r=daybook&view=reminders'),
       api('GET', '/api/app?r=daybook&view=links'),
-      api('GET', '/api/daybook/inbox?badge=1'),
+      api('GET', '/api/app?r=daybook&view=inbox&badge=1'),
     ]);
     reminders = rems;
     allLinks = lks;
@@ -965,7 +965,7 @@ async function remAct(id, a) {
     if (a === 'snooze') {
       const mins = await askSnooze();
       if (mins === null) return;
-      await api('POST', '/api/daybook/reminders?id=' + encodeURIComponent(id), {
+      await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), {
         action: 'snooze', minutes: mins,
       });
     } else if (a === 'dismiss') {
@@ -975,7 +975,7 @@ async function remAct(id, a) {
         confirmLabel: 'Dismiss',
       });
       if (!yes) return;
-      await api('POST', '/api/daybook/reminders?id=' + encodeURIComponent(id), { action: 'dismiss' });
+      await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), { action: 'dismiss' });
     }
     await updateBadges();
     renderReminders();
@@ -1264,7 +1264,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
   if (!data.title) return;
   try {
     if (editingReminderId) {
-      await api('PATCH', '/api/daybook/reminders?id=' + encodeURIComponent(editingReminderId), data);
+      await api('PATCH', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(editingReminderId), data);
     } else {
       await api('POST', '/api/app?r=daybook&view=reminders', data);
     }
@@ -1295,7 +1295,7 @@ async function loadJournalList() {
   const box = document.getElementById('j-entries');
   box.innerHTML = '<p class="empty-note">Loading entries…</p>';
   try {
-    journalEntries = await api('GET', '/api/daybook/journal?list=100');
+    journalEntries = await api('GET', '/api/app?r=daybook&view=journal&list=100');
   } catch (e) {
     box.innerHTML = '<p class="empty-note">Could not load entries.</p>';
     return;
@@ -1351,7 +1351,7 @@ async function openJournalDetail(id) {
   document.getElementById('j-day-screen').classList.add('hidden');
   document.getElementById('j-detail-screen').classList.remove('hidden');
   try {
-    const e = await api('GET', '/api/daybook/journal?id=' + id);
+    const e = await api('GET', '/api/app?r=daybook&view=journal&id=' + id);
     if (!e) { document.getElementById('j-detail-body').textContent = 'Entry not found.'; return; }
     const f = fmtEntryDate(e.date);
     document.getElementById('j-detail-date').innerHTML =
@@ -1443,7 +1443,7 @@ document.getElementById('j-detail-delete').addEventListener('click', async () =>
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/daybook/journal?id=' + journalDetailId);
+    await api('DELETE', '/api/app?r=daybook&view=journal&id=' + journalDetailId);
     toast('Entry deleted.');
     showJournalList();
   } catch (err) {
@@ -1578,7 +1578,7 @@ async function loadJournalForm() {
   renderAttachList();
   if (!journalEditId) return; // new entry
   try {
-    const e = await api('GET', '/api/daybook/journal?id=' + journalEditId);
+    const e = await api('GET', '/api/app?r=daybook&view=journal&id=' + journalEditId);
     if (e) {
       journalDate = e.date;
       setFormDate(e.date);
@@ -1716,7 +1716,7 @@ async function loadLinks() {
   if (linkSearch) p.set('q', linkSearch);
   if (linkTag) p.set('tag', linkTag);
   const qs = p.toString();
-  links = await api('GET', '/api/app?r=daybook&view=links' + (qs ? '?' + qs : ''));
+  links = await api('GET', '/api/app?r=daybook&view=links' + (qs ? '&' + qs : ''));
   renderLinks();
   refreshLinkTagFilter();
 }
@@ -1837,7 +1837,7 @@ async function linkAct(id, a) {
         confirmLabel: 'Delete',
       });
       if (!yes) return;
-      await api('DELETE', '/api/daybook/links?id=' + encodeURIComponent(id));
+      await api('DELETE', '/api/app?r=daybook&view=links&id=' + encodeURIComponent(id));
       await updateBadges();
       await loadLinks();
     }
@@ -1878,7 +1878,7 @@ document.getElementById('link-form').addEventListener('submit', async (e) => {
   if (!data.url || !data.title) return;
   try {
     const res = editingLinkId
-      ? await api('PATCH', '/api/daybook/links?id=' + encodeURIComponent(editingLinkId), data)
+      ? await api('PATCH', '/api/app?r=daybook&view=links&id=' + encodeURIComponent(editingLinkId), data)
       : await api('POST', '/api/app?r=daybook&view=links', data);
     closeLinkModal();
     const notice = document.getElementById('already-saved');
@@ -1912,7 +1912,7 @@ document.getElementById('link-search').addEventListener('input', (e) => {
 
 /* ---------- Inbox ---------- */
 async function loadInbox() {
-  inboxItems = await api('GET', '/api/daybook/inbox?triaged=' + (inboxShowTriaged ? 'all' : 'false'));
+  inboxItems = await api('GET', '/api/app?r=daybook&view=inbox&triaged=' + (inboxShowTriaged ? 'all' : 'false'));
   renderInbox();
 }
 
@@ -2007,7 +2007,7 @@ async function discardInbox(id) {
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/daybook/inbox?id=' + encodeURIComponent(id));
+    await api('DELETE', '/api/app?r=daybook&view=inbox&id=' + encodeURIComponent(id));
     await updateBadges();
     await loadInbox();
   } catch (e) {
@@ -2098,7 +2098,7 @@ document.getElementById('triage-form').addEventListener('submit', async (e) => {
     if (!data.title) data.title = data.url;
   }
   try {
-    await api('POST', '/api/daybook/inbox?id=' + encodeURIComponent(triageItem.id), { to: triageDest, data });
+    await api('POST', '/api/app?r=daybook&view=inbox&id=' + encodeURIComponent(triageItem.id), { to: triageDest, data });
     closeTriage();
     await updateBadges();
     await loadInbox();
