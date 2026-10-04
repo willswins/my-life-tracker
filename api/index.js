@@ -467,6 +467,14 @@ pre#ingest-docs {
 .entry-preview { flex: 1; color: var(--muted); font-size: 0.92rem; line-height: 1.45;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .entry-chev { flex: none; color: var(--muted); font-size: 1.2rem; align-self: center; }
+/* Journal grouped list */
+.journal-date-head {
+  margin: 1.1rem 0 0.5rem; padding: 0 0.25rem;
+  font-size: 1rem; font-weight: 700; color: var(--ink);
+}
+.journal-date-head .w { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.5rem; }
+.entry-card-grouped { margin-bottom: 0.5rem; }
+.entry-mood { font-size: 1rem; margin-right: 0.15rem; }
 .pill.danger { color: #b91c1c; }
 /* Journal rich entry form */
 #j-title {
@@ -997,7 +1005,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 9:09 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 9:38 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -2119,37 +2127,49 @@ function renderJournalList() {
   const q = journalSearch.trim().toLowerCase();
   const items = (journalFilter === 'month'
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
-    : journalEntries).filter((e) => !q || (e.preview || '').toLowerCase().includes(q));
+    : journalEntries).filter((e) => !q ||
+      (e.preview || '').toLowerCase().includes(q) ||
+      (e.title || '').toLowerCase().includes(q));
   if (!items.length) {
     box.innerHTML = '<p class="empty-note">No entries yet. Tap + Add to write your first.</p>';
     return;
   }
   box.innerHTML = '';
+  let lastDate = null;
   items.forEach((e) => {
-    const f = fmtEntryDate(e.date);
+    if (e.date !== lastDate) {
+      lastDate = e.date;
+      const f = fmtEntryDate(e.date);
+      const h = document.createElement('div');
+      h.className = 'journal-date-head';
+      h.innerHTML = \`<span class="d">\${escHtml(f.date)}</span><span class="w">\${escHtml(f.weekday)}</span>\`;
+      box.appendChild(h);
+    }
     const b = document.createElement('button');
-    b.className = 'soft-card entry-card';
-    b.innerHTML = \`<span class="entry-date"><span class="d">\${escHtml(f.date)}</span><br><span class="w">\${escHtml(f.weekday)}</span></span>\` +
-      \`<span class="entry-preview">\${e.title ? '<strong>' + escHtml(e.title) + '</strong><br>' : ''}\${escHtml(e.preview || '—')}</span>\` +
+    b.className = 'soft-card entry-card entry-card-grouped';
+    b.innerHTML =
+      \`<span class="entry-preview">\${e.mood ? '<span class="entry-mood">' + escHtml(e.mood) + '</span> ' : ''}\${e.title ? '<strong>' + escHtml(e.title) + '</strong><br>' : ''}\${escHtml(e.preview || '—')}</span>\` +
       \`<span class="entry-chev">›</span>\`;
-    b.addEventListener('click', () => openJournalDetail(e.date));
+    b.addEventListener('click', () => openJournalDetail(e.id));
     box.appendChild(b);
   });
 }
 
-let journalDetailDate = null;
+let journalDetailId = null;
 
-async function openJournalDetail(date) {
-  journalDetailDate = date;
-  const f = fmtEntryDate(date);
-  document.getElementById('j-detail-date').innerHTML =
-    escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
+async function openJournalDetail(id) {
+  journalDetailId = id;
+  document.getElementById('j-detail-date').textContent = '';
   document.getElementById('j-detail-body').textContent = 'Loading…';
   document.getElementById('j-list-screen').classList.add('hidden');
   document.getElementById('j-day-screen').classList.add('hidden');
   document.getElementById('j-detail-screen').classList.remove('hidden');
   try {
-    const e = await api('GET', '/api/daybook/journal?date=' + date);
+    const e = await api('GET', '/api/daybook/journal?id=' + id);
+    if (!e) { document.getElementById('j-detail-body').textContent = 'Entry not found.'; return; }
+    const f = fmtEntryDate(e.date);
+    document.getElementById('j-detail-date').innerHTML =
+      escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
     const card = document.querySelector('#j-detail-screen .soft-card');
     // remove any previous title/mood/attachments blocks
     card.querySelectorAll('.detail-title,.detail-mood,.detail-attach').forEach((n) => n.remove());
@@ -2184,12 +2204,20 @@ async function openJournalDetail(date) {
   }
 }
 
-function openJournalDay(date) {
-  journalDate = date;
+let journalEditId = null;
+
+function openJournalForm(id, date) {
+  journalEditId = id || null;
+  journalDate = date || localDateStr(new Date());
   document.getElementById('j-list-screen').classList.add('hidden');
   document.getElementById('j-detail-screen').classList.add('hidden');
   document.getElementById('j-day-screen').classList.remove('hidden');
   loadJournalForm();
+}
+
+// Back-compat: opening the form for a date with no id creates a new entry.
+function openJournalDay(date) {
+  openJournalForm(null, date);
 }
 
 function showJournalList() {
@@ -2212,10 +2240,10 @@ document.getElementById('j-add').addEventListener('click', () => {
 });
 document.getElementById('j-detail-back').addEventListener('click', showJournalList);
 document.getElementById('j-detail-edit').addEventListener('click', () => {
-  if (journalDetailDate) openJournalDay(journalDetailDate);
+  if (journalDetailId) openJournalForm(journalDetailId);
 });
 document.getElementById('j-detail-delete').addEventListener('click', async () => {
-  if (!journalDetailDate) return;
+  if (!journalDetailId) return;
   const yes = await confirmAction({
     title: 'Delete this entry?',
     message: 'The journal entry for this day will be permanently removed.',
@@ -2223,7 +2251,7 @@ document.getElementById('j-detail-delete').addEventListener('click', async () =>
   });
   if (!yes) return;
   try {
-    await api('DELETE', '/api/daybook/journal?date=' + journalDetailDate);
+    await api('DELETE', '/api/daybook/journal?id=' + journalDetailId);
     toast('Entry deleted.');
     showJournalList();
   } catch (err) {
@@ -2355,9 +2383,12 @@ async function loadJournalForm() {
   journalMood = '';
   renderMoodRow();
   renderAttachList();
+  if (!journalEditId) return; // new entry
   try {
-    const e = await api('GET', '/api/daybook/journal?date=' + ds);
+    const e = await api('GET', '/api/daybook/journal?id=' + journalEditId);
     if (e) {
+      journalDate = e.date;
+      setFormDate(e.date);
       document.getElementById('j-title').value = e.title || '';
       journalMood = e.mood || '';
       renderMoodRow();
@@ -2365,7 +2396,7 @@ async function loadJournalForm() {
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
     }
-  } catch (err) { /* new entry */ }
+  } catch (err) { /* treat as new */ }
 }
 
 // Insert an image data URL at the cursor in the rich area.
@@ -2467,6 +2498,7 @@ document.getElementById('j-date-btn').addEventListener('click', () => {
 document.getElementById('j-save').addEventListener('click', async () => {
   const ds = document.getElementById('j-date-hid').value || journalDate;
   const payload = {
+    id: journalEditId || undefined,
     date: ds,
     title: document.getElementById('j-title').value.trim(),
     mood: journalMood,
