@@ -10,9 +10,11 @@ async function readBody(req) {
   }
 }
 
+
 function sbBase() {
   return (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 }
+
 
 function sbHeaders() {
   const key = process.env.SUPABASE_SERVICE_KEY || '';
@@ -23,6 +25,7 @@ function sbHeaders() {
     Prefer: 'return=representation',
   };
 }
+
 
 async function sb(method, path, body) {
   const base = sbBase();
@@ -37,7 +40,9 @@ async function sb(method, path, body) {
   return text ? JSON.parse(text) : null;
 }
 
+
 module.exports = { readBody, sb, cleanCard };
+
 
 // Shared card field validation, used by the board API and the ingest API.
 const TAGS = ['work', 'personal'];
@@ -45,11 +50,14 @@ const PRIORITIES = ['high', 'normal', 'low'];
 const LANES = ['now', 'next', 'waiting', 'done'];
 const ISSUE_TYPES = ['task', 'bug', 'story'];
 
+
 function cleanCard(card) {
   const out = {};
   if (typeof card.title === 'string' && card.title.trim()) out.title = card.title.trim().slice(0, 160);
   if (typeof card.details === 'string') out.details = card.details.slice(0, 2000);
   if (TAGS.includes(card.tag)) out.tag = card.tag;
+  // tags column is an array: accept arrays natively (UI sends pickedTags as an array).
+  if (Array.isArray(card.tags)) out.tags = card.tags.map(t => String(t).slice(0, 50)).slice(0, 20);
   if (PRIORITIES.includes(card.priority)) out.priority = card.priority;
   if (LANES.includes(card.lane)) out.lane = card.lane;
   if (ISSUE_TYPES.includes(card.issue_type)) out.issue_type = card.issue_type;
