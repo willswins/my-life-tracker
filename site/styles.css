@@ -500,6 +500,36 @@ pre#ingest-docs {
   background: var(--lane); border-radius: 8px; padding: 0.45rem 0.8rem;
   font-size: 0.82rem; color: var(--ink); text-decoration: none;
 }
+/* Tags */
+.tag-bubbles { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+.tag-bubble {
+  display: inline-block; font-size: 0.72rem; font-weight: 600;
+  background: #eef2ff; color: #4338ca; border-radius: 999px; padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+.tag-filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+.card .tag-bubbles { margin-top: 0.5rem; }
+.card .tag-bubble { font-size: 0.65rem; padding: 0.1rem 0.45rem; }
+.tag-filter-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.6rem 0; }
+.tag-filter-wrap .tag-filter-row { margin: 0; flex: 1; }
+.tag-filter-wrap #trash-toggle {
+  font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
+}
+.tag-filter-wrap #trash-toggle.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tag-filter {
+  font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
+}
+.tag-filter.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tag-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
+.tag-pick {
+  display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem;
+  border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.7rem;
+  cursor: pointer; color: var(--muted); background: #fff;
+}
+.tag-pick.selected { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+.tag-pick input { display: none; }
 /* Detail title */
 .detail-title { font-size: 1.35rem; font-weight: 700; margin: 0.35rem 0 0.25rem; }
 /* Mood picker */
