@@ -780,7 +780,7 @@ const SPELL_FLASH_MS = { simple: 2000, medium: 1200, complex: 700 };
 const SPELL_TYPE_SEC = { simple: 15, medium: 10, complex: 8 };
 const SPELL_LIVES = 3;
 let spellScore = 0, spellStreak = 0, spellBest = 0, spellWord = '', spellDiff = 'medium';
-let spellLives = SPELL_LIVES, spellFlashTimer = null, spellTickTimer = null;
+let spellLives = SPELL_LIVES, spellFlashTimer = null, spellTickTimer = null, spellAutoTimer = null;
 let spellAccepting = false, spellTypeLeft = 0;
 
 function spellSet(id, v) {
@@ -790,12 +790,19 @@ function spellSet(id, v) {
 function spellLivesStr() {
   return '❤'.repeat(spellLives) + '🖤'.repeat(Math.max(0, SPELL_LIVES - spellLives));
 }
+function spellAutoNext() {
+  clearTimeout(spellAutoTimer);
+  spellAutoTimer = setTimeout(() => {
+    if (typeof currentView !== 'undefined' && currentView === 'spell') startSpellRound();
+  }, 1800);
+}
 function initSpell() {
   spellBest = parseInt(localStorage.getItem('spellit_best') || '0', 10);
   spellScore = 0; spellStreak = 0; spellWord = ''; spellAccepting = false;
   spellLives = SPELL_LIVES;
   clearTimeout(spellFlashTimer);
   clearInterval(spellTickTimer);
+  clearTimeout(spellAutoTimer);
   spellSet('spell-best', spellBest);
   spellSet('spell-score', '0');
   spellSet('spell-streak', '0');
@@ -809,14 +816,13 @@ function initSpell() {
   if (timer) timer.classList.add('hidden');
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.add('hidden');
-  const next = document.getElementById('spell-next');
-  if (next) next.classList.add('hidden');
   const start = document.getElementById('spell-start');
   if (start) { start.classList.remove('hidden'); start.textContent = 'Start'; }
 }
 function startSpellRound() {
   clearTimeout(spellFlashTimer);
   clearInterval(spellTickTimer);
+  clearTimeout(spellAutoTimer);
   const pool = SPELL_WORDS[spellDiff] || SPELL_WORDS.medium;
   spellWord = pool[Math.floor(Math.random() * pool.length)];
   spellAccepting = false;
@@ -829,8 +835,6 @@ function startSpellRound() {
   if (timer) timer.classList.add('hidden');
   const start = document.getElementById('spell-start');
   if (start) start.classList.add('hidden');
-  const next = document.getElementById('spell-next');
-  if (next) next.classList.add('hidden');
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.add('hidden');
   spellFlashTimer = setTimeout(hideSpellWord, SPELL_FLASH_MS[spellDiff] || 1200);
@@ -893,8 +897,7 @@ function spellMiss(timeout) {
   if (spellLives <= 0) {
     spellGameOver();
   } else {
-    const next = document.getElementById('spell-next');
-    if (next) next.classList.remove('hidden');
+    spellAutoNext();
   }
 }
 function spellGameOver() {
@@ -936,8 +939,7 @@ function checkSpell() {
   if (row) row.classList.add('hidden');
   const timer = document.getElementById('spell-timer');
   if (timer) timer.classList.add('hidden');
-  const next = document.getElementById('spell-next');
-  if (next) next.classList.remove('hidden');
+  spellAutoNext();
 }
 document.querySelectorAll('[data-spell-diff]').forEach((b) => {
   b.addEventListener('click', () => {
@@ -951,8 +953,6 @@ if (spellStartBtn) spellStartBtn.addEventListener('click', () => {
   if (spellLives <= 0) initSpell();
   startSpellRound();
 });
-const spellNextBtn = document.getElementById('spell-next');
-if (spellNextBtn) spellNextBtn.addEventListener('click', startSpellRound);
 const spellInputEl = document.getElementById('spell-input');
 if (spellInputEl) spellInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') checkSpell();
