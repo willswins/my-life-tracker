@@ -510,6 +510,27 @@ pre#ingest-docs {
   background: var(--lane); border-radius: 8px; padding: 0.45rem 0.8rem;
   font-size: 0.82rem; color: var(--ink); text-decoration: none;
 }
+/* Tags */
+.tag-bubbles { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+.tag-bubble {
+  display: inline-block; font-size: 0.72rem; font-weight: 600;
+  background: #eef2ff; color: #4338ca; border-radius: 999px; padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+.tag-filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+.tag-filter {
+  font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
+}
+.tag-filter.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tag-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
+.tag-pick {
+  display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem;
+  border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.7rem;
+  cursor: pointer; color: var(--muted); background: #fff;
+}
+.tag-pick.selected { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+.tag-pick input { display: none; }
 /* Detail title */
 .detail-title { font-size: 1.35rem; font-weight: 700; margin: 0.35rem 0 0.25rem; }
 /* Mood picker */
@@ -627,14 +648,15 @@ pre#ingest-docs {
       <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
       <button id="add-card" class="primary">+ Add</button>
     </div>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <div class="filters" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
   </div>
+  <div id="board-tag-filter" class="tag-filter-row"></div>
   <div id="lanes">
   <section class="lane" data-lane="now">
     <h2>Now</h2>
@@ -662,6 +684,7 @@ pre#ingest-docs {
       <button id="add-reminder" class="primary">+ Add</button>
     </div>
   </div>
+  <div id="rem-tag-filter" class="tag-filter-row"></div>
   <div id="reminder-timeline"></div>
   <div id="rem-menu" class="popup-menu hidden" role="menu">
     <button data-a="dismiss" role="menuitem" class="danger">Dismiss</button>
@@ -682,6 +705,7 @@ pre#ingest-docs {
       <button data-f="all" class="active">All</button>
       <button data-f="month">This Month</button>
     </div>
+    <div id="j-tag-filter" class="tag-filter-row"></div>
     <div id="j-entries"></div>
   </div>
   <div id="j-detail-screen" class="hidden">
@@ -703,6 +727,8 @@ pre#ingest-docs {
     <input id="j-title" maxlength="200" placeholder="Entry title…" autocomplete="off">
     <div class="section-label">Mood</div>
     <div id="j-mood" class="mood-row" role="radiogroup" aria-label="Mood"></div>
+    <div class="section-label">Tags</div>
+    <div id="j-tags" class="tag-picker"></div>
     <div class="section-label">Date</div>
     <input id="j-date-hid" type="hidden">
     <button id="j-date-btn" type="button" class="dd-field" data-dtdate="j-date-hid">Pick a date</button>
@@ -745,6 +771,7 @@ pre#ingest-docs {
     </div>
     <button id="inbox-toggle-triaged">Show triaged</button>
   </div>
+  <div id="inbox-tag-filter" class="tag-filter-row"></div>
   <form id="inbox-form">
     <input id="inbox-text" placeholder="Capture anything — text, a link, a note…" autocomplete="off">
     <button type="submit" class="primary">+ Add</button>
@@ -801,6 +828,10 @@ pre#ingest-docs {
       <label>Owner <span class="hint">(optional)</span>
         <input id="f-owner" maxlength="120" placeholder="Who owns it">
       </label>
+    </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="f-tags" class="tag-picker"></div>
     </div>
     <div class="modal-actions">
       <button type="button" id="modal-cancel">Cancel</button>
@@ -907,6 +938,10 @@ pre#ingest-docs {
         <button type="button" class="dd-field" data-dd="r-status">Active</button>
       </label>
     </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="r-tags" class="tag-picker"></div>
+    </div>
     <div class="modal-actions">
       <button type="submit" class="primary">Save</button>
       <button type="button" id="reminder-cancel">Cancel</button>
@@ -948,12 +983,13 @@ pre#ingest-docs {
       <input id="l-title" required maxlength="200" placeholder="What is this?">
     </label>
     <div class="row">
-      <label>Tags <span class="hint">(comma-separated)</span>
-        <input id="l-tags" maxlength="500" placeholder="school, forms">
-      </label>
       <label>Source
         <input id="l-source" maxlength="300" placeholder="Where it came from">
       </label>
+    </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="l-tags" class="tag-picker"></div>
     </div>
     <label>Notes
       <textarea id="l-notes" rows="3" maxlength="2000" placeholder="Why I saved this"></textarea>
@@ -1008,7 +1044,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 9:56 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 10:29 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
@@ -1018,6 +1054,8 @@ let detailId = null;
 let showDeleted = false;
 let isAdmin = false;
 let compactView = false;
+let allTags = []; // from /api/daybook/tags — the master tag list, never hardcoded
+let boardTagFilter = '';
 
 async function api(method, path, body) {
   const r = await fetch(path, {
@@ -1044,6 +1082,9 @@ async function init() {
     if (!isAdmin) document.getElementById('menu-invite').style.display = 'none';
   } catch (e) { /* non-fatal */ }
   try {
+    allTags = await api('GET', '/api/daybook/tags');
+  } catch (e) { /* tags non-fatal */ }
+  try {
     await loadCards();
   } catch (e) {
     document.querySelector('#lanes').innerHTML =
@@ -1053,6 +1094,56 @@ async function init() {
   render();
   const hm = location.hash.match(/^#\\/(\\w+)/);
   await switchView(hm ? hm[1] : 'tasks', false);
+}
+
+/* ---------- Tags (master list from API, never hardcoded) ---------- */
+function tagBubblesHtml(tags) {
+  if (!Array.isArray(tags) || !tags.length) return '';
+  return '<span class="tag-bubbles">' + tags.map((t) =>
+    '<span class="tag-bubble">' + escHtml(t) + '</span>'
+  ).join('') + '</span>';
+}
+
+// Tag filter row: renders "All" + one bubble per master tag.
+function renderTagFilter(box, selected, onPick) {
+  box.innerHTML = '';
+  const mk = (label, val) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tag-filter' + (selected === val ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => onPick(val));
+    box.appendChild(b);
+  };
+  mk('All tags', '');
+  allTags.forEach((t) => mk(t.name, t.name));
+}
+
+// Tag picker for edit forms: checkboxes from the master list.
+function renderTagPicker(box, selectedTags) {
+  box.innerHTML = '';
+  const sel = new Set(selectedTags || []);
+  allTags.forEach((t) => {
+    const label = document.createElement('label');
+    label.className = 'tag-pick' + (sel.has(t.name) ? ' selected' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = t.name;
+    cb.checked = sel.has(t.name);
+    cb.addEventListener('change', () => {
+      label.classList.toggle('selected', cb.checked);
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(t.name));
+    box.appendChild(label);
+  });
+  if (!allTags.length) {
+    box.innerHTML = '<span class="empty-note">No tags yet — add them from the menu.</span>';
+  }
+}
+
+function pickedTags(box) {
+  return Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map((c) => c.value);
 }
 
 function escHtml(s) {
@@ -1068,11 +1159,16 @@ function isOverdue(c) {
 }
 
 function render() {
+  renderTagFilter(document.getElementById('board-tag-filter'), boardTagFilter, (v) => {
+    boardTagFilter = v;
+    render();
+  });
   document.querySelectorAll('.lane').forEach((laneEl) => {
     const lane = laneEl.dataset.lane;
     const box = laneEl.querySelector('.cards');
     const q = searchText.trim().toLowerCase();
     const list = cards.filter((c) => c.lane === lane && (filter === 'all' || c.tag === filter) &&
+      (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
       escHtml(LANE_LABELS[lane]) + ' <span class="count">(' + list.length + ')</span>';
@@ -1124,6 +1220,7 @@ function cardEl(c) {
     \`<span class="pill size-\${c.priority}">\${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>\` +
     (showDeleted ? \`<span class="pill size-low">Deleted</span>\` : '') + \`</div>\` +
     \`<h3>\${escHtml(c.title)}</h3>\` +
+    tagBubblesHtml(c.tags) +
     (c.details ? \`<p class="details">\${escHtml(c.details)}</p>\` : '') +
     due +
     (showDeleted
@@ -1173,6 +1270,7 @@ function openModal(c) {
   setDropdown('f-lane', c ? c.lane : 'now');
   setDueDate(c && c.due_date ? c.due_date : '');
   document.getElementById('f-owner').value = c && c.owner ? c.owner : '';
+  renderTagPicker(document.getElementById('f-tags'), c ? c.tags : []);
   document.getElementById('modal-backdrop').classList.remove('hidden');
   document.getElementById('f-title').focus();
 }
@@ -1193,6 +1291,7 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
     title: document.getElementById('f-title').value.trim(),
     details: document.getElementById('f-details').value.trim(),
     tag: document.getElementById('f-tag').value,
+    tags: pickedTags(document.getElementById('f-tags')),
     issue_type: document.getElementById('f-issue-type').value,
     priority: document.getElementById('f-priority').value,
     lane: document.getElementById('f-lane').value,
@@ -1549,6 +1648,7 @@ const VIEW_TITLES = {
 let currentView = 'tasks';
 
 let reminders = [];
+let reminderTagFilter = '';
 let editingReminderId = null;
 let reminderSearch = '';
 let reminderSearchTimer = null;
@@ -1563,6 +1663,7 @@ let editingLinkId = null;
 let linkSearchTimer = null;
 
 let inboxItems = [];
+let inboxTagFilter = '';
 let inboxShowTriaged = false;
 let inboxSearch = '';
 let inboxSearchTimer = null;
@@ -1691,6 +1792,10 @@ function rruleLabel(rrule) {
 }
 
 function renderReminders() {
+  renderTagFilter(document.getElementById('rem-tag-filter'), reminderTagFilter, (v) => {
+    reminderTagFilter = v;
+    renderReminders();
+  });
   const box = document.getElementById('reminder-timeline');
   const now = new Date();
   const startToday = new Date(now);
@@ -1702,6 +1807,7 @@ function renderReminders() {
   const q = reminderSearch.trim().toLowerCase();
   reminders
     .filter((r) => r.status === 'active' || r.status === 'snoozed')
+    .filter((r) => (!reminderTagFilter || (r.tags || []).includes(reminderTagFilter)))
     .filter((r) => !q || ((r.title || '') + ' ' + (r.detail || '')).toLowerCase().includes(q))
     .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
     .forEach((r) => {
@@ -1746,6 +1852,7 @@ function remRow(r) {
     \`<div class="rem-main"><div class="link-title">\${escHtml(r.title)}</div>\` +
     (metaBits ? \`<div class="link-line2">\${escHtml(metaBits)}</div>\` : '') +
     (r.detail ? \`<div class="rem-detail-full">\${escHtml(r.detail)}</div>\` : '') +
+    tagBubblesHtml(r.tags) +
     \`</div>\` +
     \`<div class="rem-actions"><button class="link-menu-btn" aria-label="Reminder actions" title="Actions">⋮</button></div>\`;
   el.querySelector('.link-menu-btn').addEventListener('click', (e) => {
@@ -2081,6 +2188,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
     remind_at: at,
     recurrence: document.getElementById('r-rrule').value.trim() || null,
     tag: document.getElementById('r-tag').value || null,
+    tags: pickedTags(document.getElementById('r-tags')),
     status: document.getElementById('r-status').value,
   };
   if (!data.title) return;
@@ -2100,6 +2208,7 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
 
 /* ---------- Journal ---------- */
 let journalFilter = 'all';
+let journalTagFilter = '';
 let journalEntries = [];
 let journalSearch = '';
 let journalSearchTimer = null;
@@ -2125,14 +2234,18 @@ async function loadJournalList() {
 }
 
 function renderJournalList() {
+  renderTagFilter(document.getElementById('j-tag-filter'), journalTagFilter, (v) => {
+    journalTagFilter = v;
+    renderJournalList();
+  });
   const box = document.getElementById('j-entries');
   const thisMonth = localDateStr(new Date()).slice(0, 7);
   const q = journalSearch.trim().toLowerCase();
   const items = (journalFilter === 'month'
     ? journalEntries.filter((e) => e.date.slice(0, 7) === thisMonth)
-    : journalEntries).filter((e) => !q ||
+    : journalEntries).filter((e) => (!journalTagFilter || (e.tags || []).includes(journalTagFilter)) && (!q ||
       (e.preview || '').toLowerCase().includes(q) ||
-      (e.title || '').toLowerCase().includes(q));
+      (e.title || '').toLowerCase().includes(q)));
   if (!items.length) {
     box.innerHTML = '<p class="empty-note">No entries yet. Tap + Add to write your first.</p>';
     return;
@@ -2151,7 +2264,7 @@ function renderJournalList() {
     const b = document.createElement('button');
     b.className = 'soft-card entry-card entry-card-grouped';
     b.innerHTML =
-      \`<span class="entry-preview">\${e.mood ? '<span class="entry-mood">' + escHtml(e.mood) + '</span> ' : ''}\${e.title ? '<strong>' + escHtml(e.title) + '</strong><br>' : ''}\${escHtml(e.preview || '—')}</span>\` +
+      \`<span class="entry-preview">\${e.mood ? '<span class="entry-mood">' + escHtml(e.mood) + '</span> ' : ''}\${e.title ? '<strong>' + escHtml(e.title) + '</strong><br>' : ''}\${escHtml(e.preview || '—')}\${tagBubblesHtml(e.tags)}</span>\` +
       \`<span class="entry-chev">›</span>\`;
     b.addEventListener('click', () => openJournalDetail(e.id));
     box.appendChild(b);
@@ -2174,8 +2287,8 @@ async function openJournalDetail(id) {
     document.getElementById('j-detail-date').innerHTML =
       escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
     const card = document.querySelector('#j-detail-screen .soft-card');
-    // remove any previous title/mood/attachments blocks
-    card.querySelectorAll('.detail-title,.detail-mood,.detail-attach').forEach((n) => n.remove());
+    // remove any previous title/mood/tags/attachments blocks
+    card.querySelectorAll('.detail-title,.detail-mood,.detail-tags,.detail-attach').forEach((n) => n.remove());
     if (e && e.title) {
       const t = document.createElement('div');
       t.className = 'detail-title';
@@ -2190,6 +2303,12 @@ async function openJournalDetail(id) {
       anchor.after(m);
     }
     document.getElementById('j-detail-body').innerHTML = sanitizeHtml((e && e.body) || '') || '—';
+    if (e && Array.isArray(e.tags) && e.tags.length) {
+      const tb = document.createElement('div');
+      tb.className = 'detail-tags';
+      tb.innerHTML = tagBubblesHtml(e.tags);
+      document.getElementById('j-detail-body').after(tb);
+    }
     if (e && Array.isArray(e.attachments) && e.attachments.length) {
       const wrap = document.createElement('div');
       wrap.className = 'detail-attach';
@@ -2385,6 +2504,7 @@ async function loadJournalForm() {
   journalAttachments = [];
   journalMood = '';
   renderMoodRow();
+  renderTagPicker(document.getElementById('j-tags'), []);
   renderAttachList();
   if (!journalEditId) return; // new entry
   try {
@@ -2395,6 +2515,7 @@ async function loadJournalForm() {
       document.getElementById('j-title').value = e.title || '';
       journalMood = e.mood || '';
       renderMoodRow();
+      renderTagPicker(document.getElementById('j-tags'), e.tags || []);
       document.getElementById('j-rich').innerHTML = sanitizeHtml(e.body || '');
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
@@ -2505,6 +2626,7 @@ document.getElementById('j-save').addEventListener('click', async () => {
     date: ds,
     title: document.getElementById('j-title').value.trim(),
     mood: journalMood,
+    tags: pickedTags(document.getElementById('j-tags')),
     body: sanitizeHtml(document.getElementById('j-rich').innerHTML),
     attachments: journalAttachments,
   };
@@ -2550,7 +2672,7 @@ function linkRow(l) {
   el.dataset.id = l.id;
   let host = l.url;
   try { host = new URL(l.url).host; } catch (e) { /* keep raw url */ }
-  const tags = (l.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const tags = Array.isArray(l.tags) ? l.tags : [];
   const date = l.captured_at ? new Date(l.captured_at).toLocaleDateString() : '';
   const metaBits = [host, l.source, date].filter(Boolean).join(' \\u00b7 ');
   el.innerHTML =
@@ -2559,7 +2681,7 @@ function linkRow(l) {
     (l.notes ? \`<div class="link-line3">\${escHtml(l.notes)}</div>\` : '') +
     \`<div class="link-detail">\` +
     (l.notes ? \`<div class="link-notes-full">\${escHtml(l.notes)}</div>\` : '') +
-    (tags.length ? \`<div class="link-tags">\${tags.map((t) => \`<span class="link-tag">\${escHtml(t)}</span>\`).join('')}</div>\` : '') +
+    (tags.length ? \`<div class="link-tags">\${tagBubblesHtml(tags)}</div>\` : '') +
     \`</div></div>\` +
     \`<div class="link-actions"><button class="link-menu-btn" aria-label="Link actions" title="Actions">\\u22ee</button></div>\`;
   el.querySelector('.link-main').addEventListener('click', (e) => {
@@ -2659,7 +2781,7 @@ function openLinkModal(l) {
   document.getElementById('link-title').textContent = l ? 'Edit link' : 'Add link';
   document.getElementById('l-url').value = l ? l.url : '';
   document.getElementById('l-title').value = l ? l.title : '';
-  document.getElementById('l-tags').value = l ? (l.tags || '') : '';
+  renderTagPicker(document.getElementById('l-tags'), l && Array.isArray(l.tags) ? l.tags : []);
   document.getElementById('l-source').value = l ? (l.source || '') : '';
   document.getElementById('l-notes').value = l ? (l.notes || '') : '';
   document.getElementById('link-backdrop').classList.remove('hidden');
@@ -2679,7 +2801,7 @@ document.getElementById('link-form').addEventListener('submit', async (e) => {
   const data = {
     url: document.getElementById('l-url').value.trim(),
     title: document.getElementById('l-title').value.trim(),
-    tags: document.getElementById('l-tags').value.trim(),
+    tags: pickedTags(document.getElementById('l-tags')),
     source: document.getElementById('l-source').value.trim() || null,
     notes: document.getElementById('l-notes').value.trim(),
   };
@@ -2725,12 +2847,17 @@ async function loadInbox() {
 }
 
 function renderInbox() {
+  renderTagFilter(document.getElementById('inbox-tag-filter'), inboxTagFilter, (v) => {
+    inboxTagFilter = v;
+    renderInbox();
+  });
   const box = document.getElementById('inbox-list');
   document.getElementById('inbox-toggle-triaged').textContent =
     inboxShowTriaged ? 'Hide triaged' : 'Show triaged';
   box.innerHTML = '';
   const q = inboxSearch.trim().toLowerCase();
   const list = (inboxShowTriaged ? inboxItems : inboxItems.filter((i) => !i.triaged))
+    .filter((i) => (!inboxTagFilter || (i.tags || []).includes(inboxTagFilter)))
     .filter((i) => !q || (i.text || '').toLowerCase().includes(q));
   if (!list.length) {
     box.innerHTML = \`<p class="empty-note">\${inboxShowTriaged ? 'Nothing here yet.' : 'Inbox zero. Capture something above.'}</p>\`;
@@ -2744,7 +2871,7 @@ function inboxRow(it) {
   el.className = 'inbox-row';
   const when = it.created_at ? new Date(it.created_at).toLocaleString() : '';
   const srcLabel = { manual: 'Manual', email: 'Email', chat: 'Chat' }[it.source] || it.source;
-  el.innerHTML = \`<p></p><div class="inbox-meta"><span class="src-pill">\${escHtml(srcLabel)}</span>\${escHtml(when)}</div>\`;
+  el.innerHTML = \`<p></p><div class="inbox-meta"><span class="src-pill">\${escHtml(srcLabel)}</span>\${escHtml(when)}</div>\` + tagBubblesHtml(it.tags);
   el.querySelector('p').textContent = it.text;
   if (it.triaged) {
     const d = document.createElement('div');
