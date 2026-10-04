@@ -55,6 +55,9 @@ header h1 { font-size: 1.25rem; margin: 0; }
   border: 1px solid var(--line); background: #fff; border-radius: 8px;
   padding: 0.45rem 0.65rem; cursor: pointer; font-size: 1rem; line-height: 1;
 }
+#view-toggle {
+  width: 2.6rem; flex: none; text-align: center; /* fixed width: icon swap must not resize */
+}
 .menu-wrap { position: relative; }
 #menu {
   position: absolute; left: 0; top: calc(100% + 6px); z-index: 60;
@@ -508,7 +511,7 @@ pre#ingest-docs {
   font-size: 0.82rem; color: var(--ink); text-decoration: none;
 }
 /* Detail title */
-.detail-title { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
+.detail-title { font-size: 1.35rem; font-weight: 700; margin: 0.35rem 0 0.25rem; }
 /* Mood picker */
 .mood-row { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
 .mood-btn {
@@ -520,8 +523,8 @@ pre#ingest-docs {
 .detail-mood { font-size: 1.4rem; margin-top: 0.4rem; }
 .detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
 .detail-actions { display: flex; gap: 0.5rem; }
-.detail-date { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.15rem; }
-.detail-date .w { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.4rem; }
+.detail-date { font-size: 0.85rem; font-weight: 500; color: var(--muted); margin-bottom: 0.15rem; }
+.detail-date .w { font-size: 0.8rem; margin-left: 0.4rem; }
 .detail-body { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.65; margin-top: 0.75rem; }
 .detail-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
 .detail-body p { margin: 0 0 0.6rem; }
@@ -1005,7 +1008,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 9:38 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 9:56 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
