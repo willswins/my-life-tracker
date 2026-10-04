@@ -8,7 +8,10 @@ function cleanLink(b) {
   if (typeof b.url === 'string' && b.url.trim()) out.url = b.url.trim().slice(0, 2000);
   if (typeof b.title === 'string' && b.title.trim()) out.title = b.title.trim().slice(0, 200);
   if (b.source === null || typeof b.source === 'string') out.source = b.source ? b.source.slice(0, 300) : null;
-  if (typeof b.tags === 'string') out.tags = b.tags.slice(0, 500);
+  // tags column is an array: accept arrays natively, or comma-separated strings.
+  if (Array.isArray(b.tags)) out.tags = b.tags.map(t => String(t).slice(0, 50)).slice(0, 20);
+  else if (typeof b.tags === 'string' && b.tags.trim())
+    out.tags = b.tags.split(',').map(s => s.trim()).filter(Boolean).slice(0, 20);
   if (typeof b.notes === 'string') out.notes = b.notes.slice(0, 2000);
   out.updated_at = new Date().toISOString();
   return out;
@@ -57,7 +60,7 @@ module.exports = async (req, res) => {
       const existing = await findByUrl(email, row.url);
       if (existing) return send(200, { ...existing, alreadySaved: true });
       row.user_email = email;
-      if (!row.tags) row.tags = '';
+      if (!row.tags) row.tags = [];
       if (!row.notes) row.notes = '';
       const inserted = await sb('POST', '/rest/v1/links', row);
       return send(201, inserted[0]);
