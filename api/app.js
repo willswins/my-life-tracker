@@ -1,15 +1,4 @@
 // Consolidated DayBook API — ONE Vercel function for all non-auth capabilities.
-//
-// Vercel Hobby limit: 12 functions. This dispatcher + auth.js + game.js +
-// index.js + login.js = 5, well under the limit.
-//
-// Dispatch via ?r= parameter:
-//   ?r=cards      -> card CRUD (was /api/cards)
-//   ?r=comments   -> comments (was /api/comments)
-//   ?r=daybook&view=reminders|journal|links|inbox|tags (was /api/daybook/[view])
-//   ?r=ingest     -> connector ingest (was /api/ingest)
-//   ?r=invites    -> invite management (was /api/invites)
-//   ?r=keys       -> API key management (was /api/keys)
 const handlers = {
   cards: require('./_cards'),
   comments: require('./_comments'),
@@ -28,10 +17,12 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ ok: false, error: 'unknown resource' }));
     return;
   }
-  // For daybook, pass through with view param
+  // For daybook, ensure the view is available via req.query
+  // Vercel populates req.query from the URL, but we set it explicitly to be safe
   if (r === 'daybook') {
-    req.query = req.query || {};
-    req.query.view = url.searchParams.get('view');
+    const view = url.searchParams.get('view');
+    // Create a new query object to avoid mutating frozen objects
+    req.query = Object.assign({}, req.query, { view: view });
   }
   return handler(req, res);
 };
