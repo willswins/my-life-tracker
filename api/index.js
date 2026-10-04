@@ -1043,8 +1043,8 @@ const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', do
 const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
-const APP_VERSION = '1.1.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:29 PM'; // replaced by build.js with the build timestamp
+const APP_VERSION = '1.2.0';
+const BUILD_DATE = 'Oct 3, 2026, 10:46 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let filter = 'all';
