@@ -518,6 +518,12 @@ pre#ingest-docs {
   white-space: nowrap;
 }
 .tag-filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+.tag-filter-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.6rem 0; }
+.tag-filter-wrap .tag-filter-row { margin: 0; flex: 1; }
+.tag-filter-wrap #trash-toggle {
+  font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
+}
 .tag-filter {
   font-size: 0.78rem; border: 1px solid var(--line); background: #fff; border-radius: 999px;
   padding: 0.3rem 0.75rem; cursor: pointer; color: var(--muted);
@@ -649,11 +655,11 @@ pre#ingest-docs {
       <button id="add-card" class="primary">+ Add</button>
     </div>
     <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
-    <div class="filters" role="group" aria-label="Show deleted">
-      <button id="trash-toggle" title="Show deleted cards">Deleted</button>
-    </div>
   </div>
-  <div id="board-tag-filter" class="tag-filter-row"></div>
+  <div class="tag-filter-wrap">
+    <div id="board-tag-filter" class="tag-filter-row"></div>
+    <button id="trash-toggle" title="Show deleted cards">Deleted</button>
+  </div>
   <div id="lanes">
   <section class="lane" data-lane="now">
     <h2>Now</h2>
@@ -1041,7 +1047,7 @@ const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const ITYPE_GLYPH = { task: '\\u2713', story: '\\u25ae', bug: '\\u25cf' };
 const APP_VERSION = '1.2.0';
-const BUILD_DATE = 'Oct 3, 2026, 10:49 PM'; // replaced by build.js with the build timestamp
+const BUILD_DATE = 'Oct 3, 2026, 11:10 PM'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let searchText = '';
