@@ -5,8 +5,8 @@
 
 const LANES = ['now', 'next', 'waiting', 'done'];
 const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', done: 'Done' };
-const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
+const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const ITYPE_GLYPH = { task: '\u2713', story: '\u25ae', bug: '\u25cf' };
 const APP_VERSION = '1.2.0';
 const BUILD_DATE = '__BUILD_DATE__'; // replaced by build.js with the build timestamp
@@ -190,13 +190,12 @@ function cardEl(c) {
   const it = c.issue_type || 'task';
   el.innerHTML =
     `<div class="card-top"><span class="itype itype-${it}" title="${escHtml(ITYPE_LABELS[it] || it)}">${ITYPE_GLYPH[it] || ''}</span>` +
-    `<span class="pill tag-${c.tag}">${c.tag === 'work' ? 'Work' : 'Personal'}</span>` +
     `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>` +
     (showDeleted ? `<span class="pill size-low">Deleted</span>` : '') + `</div>` +
     `<h3>${escHtml(c.title)}</h3>` +
-    tagBubblesHtml(c.tags) +
     (c.details ? `<p class="details">${escHtml(c.details)}</p>` : '') +
     due +
+    tagBubblesHtml(c.tags) +
     (showDeleted
       ? `<div class="actions"><button data-act="restore">Restore</button></div>`
       : `<div class="actions">${leftBtn}${rightBtn}${doneBtn}<button data-act="edit">Edit</button></div>`);
@@ -313,8 +312,8 @@ async function openDetail(id) {
   const it = c.issue_type || 'task';
   document.getElementById('d-pills').innerHTML =
     `<span class="itype itype-${it}" title="${escHtml(ITYPE_LABELS[it] || it)}">${ITYPE_GLYPH[it] || ''}</span>` +
-    `<span class="pill tag-${c.tag}">${c.tag === 'work' ? 'Work' : 'Personal'}</span>` +
-    `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>`;
+    `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>` +
+    '';
   document.getElementById('d-title').textContent = c.title;
   document.getElementById('d-meta').innerHTML = metaLine(c);
   document.getElementById('d-details').textContent = c.details || '';
