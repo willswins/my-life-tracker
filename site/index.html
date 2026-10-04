@@ -39,14 +39,15 @@
       <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
       <button id="add-card" class="primary">+ Add</button>
     </div>
+    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
     <div class="filters" role="group" aria-label="Filter by tag">
       <button data-filter="all" class="active">All</button>
       <button data-filter="work">Work</button>
       <button data-filter="personal">Personal</button>
       <button id="trash-toggle" title="Show deleted cards">Deleted</button>
     </div>
-    <button id="view-toggle" title="Toggle compact view" aria-label="Toggle compact view">≡</button>
   </div>
+  <div id="board-tag-filter" class="tag-filter-row"></div>
   <div id="lanes">
   <section class="lane" data-lane="now">
     <h2>Now</h2>
@@ -74,6 +75,7 @@
       <button id="add-reminder" class="primary">+ Add</button>
     </div>
   </div>
+  <div id="rem-tag-filter" class="tag-filter-row"></div>
   <div id="reminder-timeline"></div>
   <div id="rem-menu" class="popup-menu hidden" role="menu">
     <button data-a="dismiss" role="menuitem" class="danger">Dismiss</button>
@@ -94,6 +96,7 @@
       <button data-f="all" class="active">All</button>
       <button data-f="month">This Month</button>
     </div>
+    <div id="j-tag-filter" class="tag-filter-row"></div>
     <div id="j-entries"></div>
   </div>
   <div id="j-detail-screen" class="hidden">
@@ -115,6 +118,8 @@
     <input id="j-title" maxlength="200" placeholder="Entry title…" autocomplete="off">
     <div class="section-label">Mood</div>
     <div id="j-mood" class="mood-row" role="radiogroup" aria-label="Mood"></div>
+    <div class="section-label">Tags</div>
+    <div id="j-tags" class="tag-picker"></div>
     <div class="section-label">Date</div>
     <input id="j-date-hid" type="hidden">
     <button id="j-date-btn" type="button" class="dd-field" data-dtdate="j-date-hid">Pick a date</button>
@@ -157,6 +162,7 @@
     </div>
     <button id="inbox-toggle-triaged">Show triaged</button>
   </div>
+  <div id="inbox-tag-filter" class="tag-filter-row"></div>
   <form id="inbox-form">
     <input id="inbox-text" placeholder="Capture anything — text, a link, a note…" autocomplete="off">
     <button type="submit" class="primary">+ Add</button>
@@ -213,6 +219,10 @@
       <label>Owner <span class="hint">(optional)</span>
         <input id="f-owner" maxlength="120" placeholder="Who owns it">
       </label>
+    </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="f-tags" class="tag-picker"></div>
     </div>
     <div class="modal-actions">
       <button type="button" id="modal-cancel">Cancel</button>
@@ -319,6 +329,10 @@
         <button type="button" class="dd-field" data-dd="r-status">Active</button>
       </label>
     </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="r-tags" class="tag-picker"></div>
+    </div>
     <div class="modal-actions">
       <button type="submit" class="primary">Save</button>
       <button type="button" id="reminder-cancel">Cancel</button>
@@ -360,12 +374,13 @@
       <input id="l-title" required maxlength="200" placeholder="What is this?">
     </label>
     <div class="row">
-      <label>Tags <span class="hint">(comma-separated)</span>
-        <input id="l-tags" maxlength="500" placeholder="school, forms">
-      </label>
       <label>Source
         <input id="l-source" maxlength="300" placeholder="Where it came from">
       </label>
+    </div>
+    <div>
+      <span class="section-label">Tags</span>
+      <div id="l-tags" class="tag-picker"></div>
     </div>
     <label>Notes
       <textarea id="l-notes" rows="3" maxlength="2000" placeholder="Why I saved this"></textarea>
