@@ -644,3 +644,24 @@ pre#ingest-docs {
 .spell-timer { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 0.5rem auto; max-width: 320px; }
 .spell-timer-fill { height: 100%; width: 100%; background: #16a34a; border-radius: 999px; transition: width 0.1s linear; }
 .spell-timer-fill.low { background: #dc2626; }
+
+.bee-rankbar { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 0.5rem auto; max-width: 320px; }
+.bee-rankfill { height: 100%; width: 0; background: #f59e0b; border-radius: 999px; transition: width 0.3s ease; }
+.bee-cur { font-size: 2rem; font-weight: 800; letter-spacing: 0.25rem; margin: 0.75rem 0 0.25rem; color: var(--ink); min-height: 3rem; text-align: center; }
+.bee-cursor { display: inline-block; width: 3px; height: 1.8rem; background: #f59e0b; vertical-align: -0.25rem; margin-left: 2px; animation: bee-blink 1s steps(2) infinite; }
+@keyframes bee-blink { 50% { opacity: 0; } }
+.bee-hive { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 0.75rem 0 1rem; }
+.bee-row { display: flex; gap: 8px; }
+.bee-tile { width: 66px; height: 72px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #e5e7eb; border: none; font-size: 1.7rem; font-weight: 800; cursor: pointer; color: var(--ink); min-height: 44px; }
+.bee-tile.center { background: #fbbf24; }
+.bee-tile:active { transform: scale(0.92); }
+.bee-actions { display: flex; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+.bee-actions button { font-size: 1rem; padding: 0.8rem 1.4rem; min-height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink); font-weight: 600; }
+.bee-actions button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.bee-found { margin: 0.75rem auto; max-width: 340px; }
+.bee-foundhead { width: 100%; font-size: 0.95rem; padding: 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; color: var(--muted); min-height: 44px; }
+.bee-words { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-top: 0.5rem; }
+.bee-word { font-size: 0.9rem; padding: 0.25rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; background: #f9fafb; color: var(--ink); }
+.bee-word.pangram { font-weight: 800; border-color: #f59e0b; background: #fef3c7; }
+.game-feedback.good { color: #16a34a; }
+.game-feedback.bad { color: #dc2626; }
