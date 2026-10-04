@@ -835,20 +835,25 @@ function startSpellRound() {
   if (timer) timer.classList.add('hidden');
   const start = document.getElementById('spell-start');
   if (start) start.classList.add('hidden');
+  // Show + focus the input immediately (inside the tap gesture) so iOS
+  // opens the keyboard right away; preventScroll keeps the word visible.
   const row = document.getElementById('spell-input-row');
-  if (row) row.classList.add('hidden');
+  if (row) row.classList.remove('hidden');
+  const input0 = document.getElementById('spell-input');
+  if (input0) {
+    input0.value = '';
+    input0.disabled = false;
+    try { input0.focus({ preventScroll: true }); } catch (e) { input0.focus(); }
+  }
   spellFlashTimer = setTimeout(hideSpellWord, SPELL_FLASH_MS[spellDiff] || 1200);
 }
 function hideSpellWord() {
   spellSet('spell-word', '?');
   spellSet('spell-hint', 'Type it and hit Go ⏎');
-  const row = document.getElementById('spell-input-row');
-  if (row) row.classList.remove('hidden');
   const input = document.getElementById('spell-input');
   if (input) {
-    input.value = '';
     input.disabled = false;
-    input.focus();
+    try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
   }
   const timer = document.getElementById('spell-timer');
   if (timer) timer.classList.remove('hidden');
@@ -890,8 +895,6 @@ function spellMiss(timeout) {
   }
   spellSet('spell-streak', '0');
   spellSet('spell-lives', spellLivesStr());
-  const row = document.getElementById('spell-input-row');
-  if (row) row.classList.add('hidden');
   const timer = document.getElementById('spell-timer');
   if (timer) timer.classList.add('hidden');
   if (spellLives <= 0) {
@@ -935,8 +938,6 @@ function checkSpell() {
     spellMiss(false);
     return;
   }
-  const row = document.getElementById('spell-input-row');
-  if (row) row.classList.add('hidden');
   const timer = document.getElementById('spell-timer');
   if (timer) timer.classList.add('hidden');
   spellAutoNext();
