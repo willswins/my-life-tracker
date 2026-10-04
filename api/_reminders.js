@@ -4,7 +4,7 @@ const { getSessionEmail } = require('./_session');
 const { readBody, sb } = require('./_db');
 
 const TAGS = ['work', 'personal'];
-const STATUSES = ['active', 'dismissed', 'snoozed'];
+const STATUSES = ['active', 'dismissed', 'snoozed', 'completed'];
 
 function cleanReminder(b) {
   const out = {};
@@ -114,6 +114,19 @@ module.exports = async (req, res) => {
             : { status: 'dismissed', last_fired_at: now, updated_at: now };
         } else {
           patch = { status: 'dismissed', last_fired_at: now, updated_at: now };
+        }
+        const updated = await sb('PATCH', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`, patch);
+        return send(200, updated[0]);
+      }
+      if (action === 'complete') {
+        let patch;
+        if (cur.recurrence) {
+          const next = nextRrule(cur.remind_at, cur.recurrence);
+          patch = next
+            ? { remind_at: next, status: 'active', last_fired_at: now, updated_at: now }
+            : { status: 'completed', last_fired_at: now, updated_at: now };
+        } else {
+          patch = { status: 'completed', last_fired_at: now, updated_at: now };
         }
         const updated = await sb('PATCH', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`, patch);
         return send(200, updated[0]);

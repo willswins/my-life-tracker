@@ -1166,6 +1166,8 @@ async function remAct(id, a) {
       await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), {
         action: 'snooze', minutes: mins,
       });
+    } else if (a === 'complete') {
+      await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), { action: 'complete' });
     } else if (a === 'dismiss') {
       const yes = await confirmAction({
         title: 'Dismiss this reminder?',
@@ -1314,7 +1316,7 @@ const DD_DEFS = {
   'f-priority': () => [['high', 'Big rock'], ['normal', 'Medium'], ['low', 'Small']],
   'f-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
   'r-tag': () => [['', 'None'], ['work', 'Work'], ['personal', 'Personal']],
-  'r-status': () => [['active', 'Active'], ['snoozed', 'Snoozed'], ['dismissed', 'Dismissed']],
+  'r-status': () => [['active', 'Active'], ['snoozed', 'Snoozed'], ['dismissed', 'Dismissed'], ['completed', 'Completed']],
   'r-rrule': () => rruleItems(),
   't-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
   't-tag': () => [['work', 'Work'], ['personal', 'Personal']],
