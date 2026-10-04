@@ -1,16 +1,14 @@
-// Journal API, backed by Supabase Postgres. One row per calendar date per
-// user; writes are always upserts. Scoped to the signed-in user's email.
+// Journal API, backed by Supabase Postgres. Multiple entries per calendar
+// date per user are allowed; entries are identified by UUID id.
+// Scoped to the signed-in user's email.
 const { getSessionEmail } = require('./_session');
 const { readBody, sb } = require('./_db');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const MONTH_RE = /^\d{4}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function nextMonth(month) {
-  const [y, m] = month.split('-').map(Number);
-  const d = new Date(Date.UTC(y, m, 1));
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}`;
+function stripPreview(h) {
+  return (h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
 }
 
 module.exports = async (req, res) => {
@@ -26,50 +24,49 @@ module.exports = async (req, res) => {
   };
   try {
     const url = new URL(req.url, 'https://localhost');
+    const id = url.searchParams.get('id');
     const date = url.searchParams.get('date');
-    const month = url.searchParams.get('month');
     const scope = `user_email=eq.${encodeURIComponent(email)}`;
 
-    if (req.method === 'GET' && date) {
-      if (!DATE_RE.test(date)) return send(400, { ok: false, error: 'bad date' });
-      const rows = await sb('GET', `/rest/v1/journal_entries?${scope}&date=eq.${date}`);
-      // Send JSON null explicitly — the shared send() helper turns null into an
-      // empty body, which would break the client's response.json().
+    // Single entry by id.
+    if (req.method === 'GET' && id) {
+      if (!UUID_RE.test(id)) return send(400, { ok: false, error: 'bad id' });
+      const rows = await sb('GET', `/rest/v1/journal_entries?${scope}&id=eq.${id}`);
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify(rows[0] || null));
       return;
     }
-    if (req.method === 'GET' && month) {
-      if (!MONTH_RE.test(month)) return send(400, { ok: false, error: 'bad month' });
+    // Entries for one date (array, newest first).
+    if (req.method === 'GET' && date) {
+      if (!DATE_RE.test(date)) return send(400, { ok: false, error: 'bad date' });
       const rows = await sb(
         'GET',
-        `/rest/v1/journal_entries?${scope}&date=gte.${month}-01&date=lt.${nextMonth(month)}-01&select=date&order=date.asc`
+        `/rest/v1/journal_entries?${scope}&date=eq.${date}&select=id,date,title,mood,body,attachments&order=created_at.desc`
       );
-      return send(200, rows.map((r) => r.date));
+      return send(200, rows);
     }
+    // Full list for grouping (id, date, title, mood, preview).
     if (req.method === 'GET' && url.searchParams.get('list') !== null) {
-      let n = parseInt(url.searchParams.get('list') || '60', 10);
-      if (!Number.isFinite(n) || n < 1) n = 60;
-      n = Math.min(n, 200);
+      let n = parseInt(url.searchParams.get('list') || '200', 10);
+      if (!Number.isFinite(n) || n < 1) n = 200;
+      n = Math.min(n, 500);
       const rows = await sb(
         'GET',
-        `/rest/v1/journal_entries?${scope}&select=date,title,mood,body&order=date.desc&limit=${n}`
+        `/rest/v1/journal_entries?${scope}&select=id,date,title,mood,body&order=date.desc&order=created_at.desc&limit=${n}`
       );
-      const stripHtml = (h) => (h || '').replace(/<[^>]*>/g, ' ');
       return send(
         200,
         rows.map((r) => ({
+          id: r.id,
           date: r.date,
           title: r.title || '',
           mood: r.mood || '',
-          preview: stripHtml(r.body).replace(/\s+/g, ' ').trim().slice(0, 140),
+          preview: stripPreview(r.body),
         }))
       );
     }
     if (req.method === 'POST') {
       const body = await readBody(req);
-      const d = body.date;
-      if (!d || !DATE_RE.test(d)) return send(400, { ok: false, error: 'date required (YYYY-MM-DD)' });
       const now = new Date().toISOString();
       const fields = {
         title: typeof body.title === 'string' ? body.title.slice(0, 200) : null,
@@ -85,12 +82,16 @@ module.exports = async (req, res) => {
           data: typeof a.data === 'string' ? a.data.slice(0, 5000000) : '',
         }));
       }
-      if (body.auto_summary === null || typeof body.auto_summary === 'string') {
-        fields.auto_summary = body.auto_summary ? body.auto_summary.slice(0, 5000) : null;
+      // Update an existing entry.
+      if (body.id) {
+        if (!UUID_RE.test(body.id)) return send(400, { ok: false, error: 'bad id' });
+        const patched = await sb('PATCH', `/rest/v1/journal_entries?${scope}&id=eq.${body.id}`, fields);
+        if (!patched.length) return send(404, { ok: false });
+        return send(200, patched[0]);
       }
-      // Upsert via PATCH-then-POST (no upsert helper in _db.js).
-      const patched = await sb('PATCH', `/rest/v1/journal_entries?${scope}&date=eq.${d}`, fields);
-      if (patched.length) return send(200, patched[0]);
+      // Create a new entry.
+      const d = body.date;
+      if (!d || !DATE_RE.test(d)) return send(400, { ok: false, error: 'date required (YYYY-MM-DD)' });
       const inserted = await sb('POST', '/rest/v1/journal_entries', {
         user_email: email,
         date: d,
@@ -98,9 +99,9 @@ module.exports = async (req, res) => {
       });
       return send(201, inserted[0]);
     }
-    if (req.method === 'DELETE' && date) {
-      if (!DATE_RE.test(date)) return send(400, { ok: false, error: 'bad date' });
-      await sb('DELETE', `/rest/v1/journal_entries?${scope}&date=eq.${date}`);
+    if (req.method === 'DELETE' && id) {
+      if (!UUID_RE.test(id)) return send(400, { ok: false, error: 'bad id' });
+      await sb('DELETE', `/rest/v1/journal_entries?${scope}&id=eq.${id}`);
       return send(200, { ok: true });
     }
     return send(405, { ok: false });
