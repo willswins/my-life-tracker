@@ -148,6 +148,7 @@ function render() {
     const box = laneEl.querySelector('.cards');
     const q = searchText.trim().toLowerCase();
     const list = cards.filter((c) => c.lane === lane &&
+      !(c.tags || []).includes('news') &&
       (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
@@ -605,7 +606,7 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
   home: 'view-home',
   tasks: 'board',
@@ -613,6 +614,7 @@ const VIEW_IDS = {
   journal: 'view-journal',
   links: 'view-links',
   inbox: 'view-inbox',
+  news: 'view-news',
   game: 'view-game',
   spell: 'view-spell',
   bee: 'view-bee',
@@ -626,6 +628,7 @@ const VIEW_TITLES = {
   journal: 'Journal',
   links: 'Links',
   inbox: 'Inbox',
+  news: 'News',
   game: 'Sum It Up',
   spell: 'Spell It',
   bee: 'Spelling Bee',
@@ -1285,6 +1288,7 @@ document.querySelectorAll('[data-gram-diff]').forEach((b) => {
   });
 });
 
+
 /* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
   if (!VIEWS.includes(name)) name = 'tasks';
@@ -1305,6 +1309,7 @@ async function switchView(name, push = true) {
     else if (name === 'journal') await showJournalList();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
+    else if (name === 'news') renderNews();
     else if (name === 'game') initGame();
     else if (name === 'spell') initSpell();
     else if (name === 'bee') initBee();
