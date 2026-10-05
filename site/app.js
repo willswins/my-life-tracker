@@ -57,7 +57,7 @@ async function init() {
   }
   render();
   const hm = location.hash.match(/^#\/(\w+)/);
-  await switchView(hm ? hm[1] : 'tasks', false);
+  await switchView(hm ? hm[1] : 'home', false);
 }
 
 /* ---------- Tags (master list from API, never hardcoded) ---------- */
@@ -600,8 +600,9 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
+  home: 'view-home',
   tasks: 'board',
   reminders: 'view-reminders',
   journal: 'view-journal',
@@ -614,7 +615,8 @@ const VIEW_IDS = {
   about: 'view-about',
 };
 const VIEW_TITLES = {
-  tasks: 'DayBook',
+  home: 'DayBook',
+  tasks: 'My Board',
   reminders: 'Reminders',
   journal: 'Journal',
   links: 'Links',
@@ -625,7 +627,7 @@ const VIEW_TITLES = {
   grammar: 'Grammar Quiz',
   about: 'About',
 };
-let currentView = 'tasks';
+let currentView = 'home';
 
 let reminders = [];
 let reminderTagFilter = '';
@@ -643,6 +645,7 @@ let editingLinkId = null;
 let linkSearchTimer = null;
 
 let inboxItems = [];
+let inboxCount = 0;
 let inboxTagFilter = '';
 let inboxShowTriaged = false;
 let inboxSearch = '';
@@ -1277,9 +1280,76 @@ document.querySelectorAll('[data-gram-diff]').forEach((b) => {
   });
 });
 
+
+/* ---------- home ---------- */
+function homeGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+function homeRelTime(ms) {
+  const diff = ms - Date.now();
+  if (diff <= 0) return 'due now';
+  const m = Math.round(diff / 60000);
+  if (m < 60) return 'in ' + m + 'm';
+  const h = Math.round(m / 60);
+  if (h < 48) return 'in ' + h + 'h';
+  const d = Math.round(h / 24);
+  return d === 1 ? 'tomorrow' : 'in ' + d + 'd';
+}
+function homeSet(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v;
+}
+function renderHome() {
+  homeSet('home-hello', homeGreeting());
+  homeSet('home-date', new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
+  const nowMs = Date.now();
+  homeSet('home-now', String(cards.filter((c) => c.lane === 'now' && !c.deleted_at).length));
+  homeSet('home-due', String(reminders.filter((r) =>
+    (r.status === 'active' || r.status === 'snoozed') && new Date(r.remind_at).getTime() <= nowMs).length));
+  homeSet('home-inbox', String(inboxCount));
+  homeSet('home-links', String(allLinks.length));
+  const up = reminders
+    .filter((r) => (r.status === 'active' || r.status === 'snoozed') && new Date(r.remind_at).getTime() > nowMs)
+    .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
+    .slice(0, 3);
+  const box = document.getElementById('home-upnext');
+  if (box) {
+    box.innerHTML = '';
+    if (!up.length) box.innerHTML = '<div class="home-empty">Nothing scheduled. Enjoy the quiet.</div>';
+    up.forEach((r) => {
+      const d = document.createElement('button');
+      d.className = 'home-rem';
+      d.type = 'button';
+      const t = document.createElement('span');
+      t.className = 'home-rem-title';
+      t.textContent = r.title;
+      const w = document.createElement('span');
+      w.className = 'home-rem-when';
+      w.textContent = homeRelTime(new Date(r.remind_at).getTime());
+      d.appendChild(t); d.appendChild(w);
+      d.addEventListener('click', () => switchView('reminders'));
+      box.appendChild(d);
+    });
+  }
+}
+document.querySelectorAll('#view-home [data-go]').forEach((b) => {
+  if (b._homeBound) return;
+  b._homeBound = true;
+  b.addEventListener('click', () => switchView(b.dataset.go));
+});
+document.querySelectorAll('#view-home [data-add]').forEach((b) => {
+  if (b._homeBound) return;
+  b._homeBound = true;
+  b.addEventListener('click', () => {
+    const el = document.getElementById(b.dataset.add);
+    if (el) el.click();
+  });
+});
+
 /* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
-  if (!VIEWS.includes(name)) name = 'tasks';
+  if (!VIEWS.includes(name)) name = 'home';
   currentView = name;
   document.body.dataset.view = name;
   Object.entries(VIEW_IDS).forEach(([v, id]) => {
@@ -1302,6 +1372,7 @@ async function switchView(name, push = true) {
     else if (name === 'bee') initBee();
     else if (name === 'grammar') initGrammar();
     else if (name === 'about') renderAbout();
+    else if (name === 'home') renderHome();
     else render();
   } catch (e) {
     console.error('view load failed:', e);
@@ -1310,7 +1381,7 @@ async function switchView(name, push = true) {
 
 window.addEventListener('hashchange', () => {
   const m = location.hash.match(/^#\/(\w+)/);
-  const name = m ? m[1] : 'tasks';
+  const name = m ? m[1] : 'home';
   if (name !== currentView) switchView(name, false);
 });
 
@@ -1349,6 +1420,7 @@ async function updateBadges() {
     setBadge('badge-reminders', due, due > 0);
     setBadge('badge-links', lks.length, false);
     setBadge('badge-inbox', ib.count, ib.count > 0);
+    inboxCount = ib.count || 0;
     const dot = document.getElementById('menu-dot');
     dot.textContent = ib.count > 99 ? '99+' : String(ib.count);
     dot.classList.toggle('hidden', ib.count === 0);
