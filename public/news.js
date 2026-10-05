@@ -49,7 +49,7 @@ async function renderNews() {
   el.innerHTML = '<div class="news-loading">Loading today\u2019s briefing\u2026</div>';
   newsByDate = {}; newsDates = []; newsSelected = null;
   try {
-    var cards = await api("GET", "cards");
+    var cards = await api("GET", "/api/app?r=cards");
     (cards || []).forEach(function (c) {
       if (!(c.tags || []).some(function (t) { return String(t).toLowerCase() === "news"; })) return;
       var p = parseNewsCard(c);
