@@ -24,6 +24,7 @@
         <button data-view="game" class="view-link">Sum It Up</button>
         <button data-view="spell" class="view-link">Spell It</button>
         <button data-view="bee" class="view-link">Spelling Bee</button>
+        <button data-view="grammar" class="view-link">Grammar Quiz</button>
         <button data-view="about" class="view-link">About</button>
         <hr class="menu-sep">
         <button id="menu-invite">Invite</button>
@@ -231,6 +232,27 @@
     </div>
     <button class="game-next" id="bee-new">New puzzle</button>
     <p class="game-hint">Tap the tiles to spell words of 4+ letters. Every word must use the yellow center letter. Find the pangram — one word using all 7 letters!</p>
+  </div>
+</main>
+<main id="view-grammar" class="view hidden">
+  <div class="game-container">
+    <div class="game-stats">
+      <div class="game-stat"><span class="game-stat-label">Score</span><span class="game-stat-val" id="gram-score">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Streak</span><span class="game-stat-val" id="gram-streak">0</span></div>
+      <div class="game-stat"><span class="game-stat-label">Time</span><span class="game-stat-val" id="gram-time">60s</span></div>
+      <div class="game-stat"><span class="game-stat-label">Best</span><span class="game-stat-val" id="gram-best">0</span></div>
+    </div>
+    <div class="spell-difficulty" role="group" aria-label="Difficulty">
+      <button data-gram-diff="simple">Simple</button>
+      <button data-gram-diff="medium" class="active">Medium</button>
+      <button data-gram-diff="complex">Complex</button>
+    </div>
+    <div class="quiz-timer hidden" id="gram-timer"><div class="quiz-timer-fill" id="gram-timer-fill"></div></div>
+    <div class="quiz-q" id="gram-q">…</div>
+    <div class="game-options" id="gram-options"></div>
+    <div class="game-feedback" id="gram-feedback"></div>
+    <button class="game-next" id="gram-start">Start</button>
+    <p class="game-hint">60 seconds — answer as many as you can. +10 per correct answer, streak bonus up to +10.</p>
   </div>
 </main>
 
@@ -488,6 +510,7 @@
 
 <div id="toast" class="toast hidden" role="status"></div>
 
+<script src="/grammar.js"></script>
 <!--APP-->
 </body>
 </html>
