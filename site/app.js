@@ -62,7 +62,7 @@ async function init() {
   }
   render();
   const hm = location.hash.match(/^#\/(\w+)/);
-  await switchView(hm ? hm[1] : 'tasks', false);
+  await switchView(hm ? hm[1] : 'home', false);
 }
 
 /* ---------- Tags (master list from API, never hardcoded) ---------- */
@@ -605,8 +605,9 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
+  home: 'view-home',
   tasks: 'board',
   reminders: 'view-reminders',
   journal: 'view-journal',
@@ -619,6 +620,7 @@ const VIEW_IDS = {
   about: 'view-about',
 };
 const VIEW_TITLES = {
+  home: 'DayBook',
   tasks: 'DayBook',
   reminders: 'Reminders',
   journal: 'Journal',
@@ -633,6 +635,7 @@ const VIEW_TITLES = {
 let currentView = 'tasks';
 
 let reminders = [];
+let inboxCount = 0;
 let reminderTagFilter = '';
 let editingReminderId = null;
 let reminderSearch = '';
@@ -1307,6 +1310,7 @@ async function switchView(name, push = true) {
     else if (name === 'bee') initBee();
     else if (name === 'grammar') initGrammar();
     else if (name === 'about') renderAbout();
+    else if (name === 'home') renderHome();
     else render();
   } catch (e) {
     console.error('view load failed:', e);
@@ -1321,6 +1325,57 @@ window.addEventListener('hashchange', () => {
 
 document.querySelectorAll('#menu .view-link').forEach((b) =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
+
+// ---- Home dashboard ----
+document.querySelectorAll('#view-home [data-go]').forEach((b) =>
+  b.addEventListener('click', () => switchView(b.dataset.go)));
+document.querySelectorAll('#view-home [data-add]').forEach((b) =>
+  b.addEventListener('click', () => homeQuickAdd(b.dataset.add)));
+
+async function homeQuickAdd(kind) {
+  if (kind === 'task') { await switchView('tasks'); openModal(null); }
+  else if (kind === 'reminder') { await switchView('reminders'); openReminderModal(null); }
+  else if (kind === 'journal') { await switchView('journal'); openJournalDay(localDateStr(new Date())); }
+  else if (kind === 'link') { await switchView('links'); openLinkModal(null); }
+}
+
+function renderHome() {
+  try {
+    const now = new Date();
+    const h = now.getHours();
+    const greet = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    const hh = document.getElementById('home-hello');
+    if (hh) hh.textContent = greet;
+    const hd = document.getElementById('home-date');
+    if (hd) hd.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const setNum = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setNum('home-now', cards.filter((c) => c.lane === 'now' && !c.deleted_at).length);
+    const nowMs = Date.now();
+    const isLive = (r) => (r.status === 'active' || r.status === 'snoozed');
+    setNum('home-due', reminders.filter((r) => isLive(r) && new Date(r.remind_at).getTime() <= nowMs).length);
+    setNum('home-inbox', inboxCount);
+    setNum('home-links', allLinks.length);
+    const up = document.getElementById('home-upnext');
+    if (up) {
+      const upcoming = reminders.filter((r) => isLive(r) && new Date(r.remind_at).getTime() > nowMs)
+        .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)).slice(0, 3);
+      if (!upcoming.length) {
+        up.innerHTML = '<p class="home-empty">Nothing coming up.</p>';
+      } else {
+        up.innerHTML = upcoming.map((r) => {
+          const at = new Date(r.remind_at);
+          const when = at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
+            at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          return '<button type="button" class="home-up-item"><span class="home-up-title">' +
+            escHtml(r.title || '(untitled)') + '</span><span class="home-up-when">' +
+            escHtml(when) + '</span></button>';
+        }).join('');
+        up.querySelectorAll('.home-up-item').forEach((b) =>
+          b.addEventListener('click', () => switchView('reminders')));
+      }
+    }
+  } catch (e) { /* home render is non-fatal */ }
+}
 
 const profileBtn = document.getElementById('profile-btn');
 const profileMenu = document.getElementById('profile-menu');
@@ -1364,6 +1419,7 @@ async function updateBadges() {
       (r.status === 'active' || r.status === 'snoozed') && new Date(r.remind_at).getTime() <= nowMs
     ).length;
     const nowCount = cards.filter((c) => c.lane === 'now' && !c.deleted_at).length;
+    inboxCount = ib.count || 0;
     setBadge('badge-tasks', nowCount, false);
     setBadge('badge-reminders', due, due > 0);
     setBadge('badge-links', lks.length, false);
