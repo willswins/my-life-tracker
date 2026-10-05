@@ -990,6 +990,7 @@ function beeNewPuzzle() {
       beeLetters = L; beeCenter = center; beeValid = new Set(valid);
       beeFound = new Set(); beeScore = 0; beeCur = '';
       beeMax = valid.reduce((t, w) => t + beeWordScore(w, L), 0);
+      beeRenderHive();
       beeRender();
       return;
     }
@@ -1027,9 +1028,10 @@ function beeRenderHive() {
       const b = document.createElement('button');
       const isC = t === 'CENTER';
       b.className = 'bee-tile' + (isC ? ' center' : '');
-      b.textContent = (isC ? beeCenter : t).toUpperCase();
-      b.setAttribute('aria-label', 'letter ' + (isC ? beeCenter : t));
-      b.addEventListener('click', () => beeTap(isC ? beeCenter : t));
+      const ch = isC ? beeCenter : t;
+      b.textContent = ch.toUpperCase();
+      b.setAttribute('aria-label', 'letter ' + ch);
+      b.addEventListener('click', () => beeTap(ch));
       div.appendChild(b);
     });
     hive.appendChild(div);
