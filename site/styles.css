@@ -711,3 +711,16 @@ pre#ingest-docs {
 .home-up-title { font-weight: 600; font-size: 0.9rem; }
 .home-up-when { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 .home-empty { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* News view */
+.news-dates { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.25rem 0 0.75rem; -webkit-overflow-scrolling: touch; }
+.news-date-pill {
+  flex: 0 0 auto; font-size: 0.85rem; font-weight: 600; padding: 0.55rem 1rem; min-height: 44px;
+  border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--muted); cursor: pointer;
+}
+.news-date-pill.active { background: #1e293b; border-color: #1e293b; color: #fff; }
+.news-story { background: #fff; border: 1px solid var(--line); border-radius: 0.75rem; padding: 0.9rem 1rem; margin-bottom: 0.75rem; }
+.news-headline { font-size: 1.02rem; font-weight: 700; color: #1e293b; text-decoration: none; line-height: 1.35; display: block; }
+.news-headline:active { text-decoration: underline; }
+.news-summary { font-size: 0.9rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.45; }
+.news-source { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8; margin-top: 0.5rem; }
