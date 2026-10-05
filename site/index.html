@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/icon.png">
 <!--STYLES-->
 </head>
-<body data-view="tasks">
+<body data-view="home">
 <header>
   <div class="header-left">
     <div class="menu-wrap">
@@ -16,7 +16,8 @@
       <div id="menu" class="hidden">
         <div class="menu-appname">DayBook</div>
         <hr class="menu-sep">
-        <button data-view="tasks" class="view-link">Tasks <span class="badge" id="badge-tasks"></span></button>
+        <button data-view="home" class="view-link">Home</button>
+        <button data-view="tasks" class="view-link">My Board <span class="badge" id="badge-tasks"></span></button>
         <button data-view="reminders" class="view-link">Reminders <span class="badge" id="badge-reminders"></span></button>
         <button data-view="journal" class="view-link">Journal</button>
         <button data-view="links" class="view-link">Links <span class="badge" id="badge-links"></span></button>
@@ -37,6 +38,55 @@
     <h1 id="view-title">DayBook</h1>
   </div>
 </header>
+<main id="view-home" class="view">
+  <div class="home-wrap">
+    <div class="home-greet">
+      <div class="home-hello" id="home-hello">Hello</div>
+      <div class="home-date" id="home-date"></div>
+    </div>
+    <div class="home-stats">
+      <button type="button" class="home-stat" data-go="tasks">
+        <span class="home-stat-num" id="home-now">0</span>
+        <span class="home-stat-label">In Now</span>
+      </button>
+      <button type="button" class="home-stat" data-go="reminders">
+        <span class="home-stat-num hot" id="home-due">0</span>
+        <span class="home-stat-label">Due reminders</span>
+      </button>
+      <button type="button" class="home-stat" data-go="inbox">
+        <span class="home-stat-num" id="home-inbox">0</span>
+        <span class="home-stat-label">Inbox</span>
+      </button>
+      <button type="button" class="home-stat" data-go="links">
+        <span class="home-stat-num" id="home-links">0</span>
+        <span class="home-stat-label">Links</span>
+      </button>
+    </div>
+    <div class="home-section">
+      <div class="home-section-title">Up next</div>
+      <div id="home-upnext"></div>
+    </div>
+    <div class="home-section">
+      <div class="home-section-title">Quick add</div>
+      <div class="home-quick">
+        <button type="button" data-add="add-card">+ Task</button>
+        <button type="button" data-add="add-reminder">+ Reminder</button>
+        <button type="button" data-add="j-add">+ Journal</button>
+        <button type="button" data-add="add-link">+ Link</button>
+      </div>
+    </div>
+    <div class="home-section">
+      <div class="home-section-title">Games</div>
+      <div class="home-games">
+        <button type="button" data-go="game">Sum It Up</button>
+        <button type="button" data-go="spell">Spell It</button>
+        <button type="button" data-go="bee">Spelling Bee</button>
+        <button type="button" data-go="grammar">Grammar Quiz</button>
+      </div>
+    </div>
+  </div>
+</main>
+
 <main id="board">
   <div class="view-head">
     <div class="search-add">
