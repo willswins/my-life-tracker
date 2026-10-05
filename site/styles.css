@@ -665,3 +665,9 @@ pre#ingest-docs {
 .bee-word.pangram { font-weight: 800; border-color: #f59e0b; background: #fef3c7; }
 .game-feedback.good { color: #16a34a; }
 .game-feedback.bad { color: #dc2626; }
+
+.quiz-timer { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 0.5rem auto; max-width: 320px; }
+.quiz-timer-fill { height: 100%; width: 100%; background: #8b5cf6; border-radius: 999px; transition: width 1s linear; }
+.quiz-q { font-size: 1.25rem; font-weight: 700; margin: 1rem 0; color: var(--ink); min-height: 3.5rem; line-height: 1.4; }
+.game-option.correct { background: #dcfce7; border-color: #16a34a; color: #166534; }
+.game-option.wrong { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
