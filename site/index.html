@@ -31,11 +31,17 @@
         <button id="menu-invite">Invite</button>
         <button id="menu-connectors">Connectors</button>
         <button id="menu-refresh">Refresh</button>
-        <a href="/api/auth?action=logout" id="menu-logout">Logout</a>
-      </div>
+              </div>
     </div>
     <img id="app-icon" src="/icon.png" alt="DayBook">
     <h1 id="view-title">DayBook</h1>
+  </div>
+  <div class="header-right">
+    <button id="profile-btn" aria-label="Account"><span id="profile-initial">?</span></button>
+    <div id="profile-menu" class="hidden">
+      <div class="profile-email" id="profile-email"></div>
+      <a href="/api/auth?action=logout" class="profile-logout">Logout</a>
+    </div>
   </div>
 </header>
 <main id="view-home" class="view">
