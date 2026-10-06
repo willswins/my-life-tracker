@@ -149,6 +149,7 @@ function render() {
     const q = searchText.trim().toLowerCase();
     const list = cards.filter((c) => c.lane === lane &&
       !(c.tags || []).includes('news') &&
+      !(c.tags || []).includes('mood') &&
       (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
@@ -606,7 +607,7 @@ init();
    so the browser back button works. */
 'use strict';
 
-const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'mood', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
   home: 'view-home',
   tasks: 'board',
@@ -615,6 +616,7 @@ const VIEW_IDS = {
   links: 'view-links',
   inbox: 'view-inbox',
   news: 'view-news',
+  mood: 'view-mood',
   game: 'view-game',
   spell: 'view-spell',
   bee: 'view-bee',
@@ -629,6 +631,7 @@ const VIEW_TITLES = {
   links: 'Links',
   inbox: 'Inbox',
   news: 'News',
+  mood: 'Mood',
   game: 'Sum It Up',
   spell: 'Spell It',
   bee: 'Spelling Bee',
@@ -1310,6 +1313,7 @@ async function switchView(name, push = true) {
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
     else if (name === 'news') renderNews();
+    else if (name === 'mood') renderMood();
     else if (name === 'game') initGame();
     else if (name === 'spell') initSpell();
     else if (name === 'bee') initBee();
