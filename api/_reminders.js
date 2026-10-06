@@ -15,6 +15,14 @@ function cleanReminder(b) {
     if (isNaN(d)) throw new Error('bad remind_at');
     out.remind_at = d.toISOString();
   }
+  if (b.event_at !== undefined) {
+    if (b.event_at === null) out.event_at = null;
+    else {
+      const d = new Date(b.event_at);
+      if (isNaN(d)) throw new Error('bad event_at');
+      out.event_at = d.toISOString();
+    }
+  }
   if (b.recurrence === null) out.recurrence = null;
   else if (typeof b.recurrence === 'string') out.recurrence = b.recurrence.trim().slice(0, 120) || null;
   if (b.tag === null || TAGS.includes(b.tag)) out.tag = b.tag;
