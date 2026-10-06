@@ -245,12 +245,10 @@ function openModal(c) {
   document.getElementById('f-title').value = c ? c.title : '';
   document.getElementById('f-details').value = c ? (c.details || '') : '';
   setDropdown('f-tag', c ? c.tag : 'work');
-  setDropdown('f-issue-type', c ? (c.issue_type || 'task') : 'task');
   setDropdown('f-priority', c ? c.priority : 'normal');
   setDropdown('f-lane', c ? c.lane : 'now');
   setDueDate(c && c.due_date ? c.due_date : '');
   document.getElementById('f-owner').value = c && c.owner ? c.owner : '';
-  renderTagPicker(document.getElementById('f-tags'), c ? c.tags : []);
   document.getElementById('modal-backdrop').classList.remove('hidden');
   document.getElementById('f-title').focus();
 }
@@ -267,12 +265,12 @@ document.getElementById('modal-backdrop').addEventListener('click', (e) => {
 });
 document.getElementById('card-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const tagVal = document.getElementById('f-tag').value;
   const data = {
     title: document.getElementById('f-title').value.trim(),
     details: document.getElementById('f-details').value.trim(),
-    tag: document.getElementById('f-tag').value,
-    tags: pickedTags(document.getElementById('f-tags')),
-    issue_type: document.getElementById('f-issue-type').value,
+    tag: tagVal,
+    tags: tagVal ? [tagVal] : [],
     priority: document.getElementById('f-priority').value,
     lane: document.getElementById('f-lane').value,
     due_date: document.getElementById('f-due').value || null,
@@ -1730,8 +1728,7 @@ document.getElementById('dt-backdrop').addEventListener('click', (e) => {
 
 /* ---------- Custom dropdown (replaces native select) ---------- */
 const DD_DEFS = {
-  'f-tag': () => [['work', 'Work'], ['personal', 'Personal']],
-  'f-issue-type': () => [['task', 'Task'], ['story', 'Story'], ['bug', 'Bug']],
+  'f-tag': () => allTags.length ? allTags.map(t => [t.name, t.name]) : [['work', 'Work'], ['personal', 'Personal']],
   'f-priority': () => [['high', 'Big rock'], ['normal', 'Medium'], ['low', 'Small']],
   'f-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
   'r-tag': () => [['', 'None'], ['work', 'Work'], ['personal', 'Personal']],
