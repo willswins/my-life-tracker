@@ -2072,12 +2072,12 @@ document.getElementById('j-back').addEventListener('click', showJournalList);
 let journalAttachments = [];
 let journalMood = '';
 
-const MOODS = ['😄', '🙂', '😐', '😟', '😢', '😡', '🤩', '😴'];
+const JOURNAL_MOODS = ['😄', '🙂', '😐', '😟', '😢', '😡', '🤩', '😴'];
 
 function renderMoodRow() {
   const row = document.getElementById('j-mood');
   row.innerHTML = '';
-  MOODS.forEach((m) => {
+  JOURNAL_MOODS.forEach((m) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'mood-btn' + (journalMood === m ? ' selected' : '');
