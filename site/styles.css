@@ -797,3 +797,13 @@ pre#ingest-docs {
 .home-up-title { font-weight: 600; font-size: 0.9rem; }
 .home-up-when { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 .home-empty { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* Spell It game-over review list */
+.spell-review { margin-top: 1rem; text-align: left; max-height: 40vh; overflow-y: auto; }
+.spell-review-head { font-weight: 600; margin-bottom: 0.5rem; }
+.spell-review-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.spell-review-item { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.spell-review-item.ok .spell-review-mark { color: #16a34a; font-weight: 700; }
+.spell-review-item.miss .spell-review-mark { color: #dc2626; font-weight: 700; }
+.spell-review-word { font-weight: 700; letter-spacing: 0.06em; }
+.spell-review-guess { color: var(--muted); font-size: 0.85rem; }
