@@ -1,15 +1,9 @@
-/* Daybook — client logic. Cards live in Supabase Postgres and are
-   loaded/saved through /api/cards. No board data is stored in the browser
-   or in git. */
 'use strict';
 
 const LANES = ['now', 'next', 'waiting', 'done'];
 const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', done: 'Done' };
-const ITYPE_LABELS = { task: 'Task', story: 'Story', bug: 'Bug' };
 const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
-const ITYPE_GLYPH = { task: '\u2713', story: '\u25ae', bug: '\u25cf' };
 const APP_VERSION = '1.2.0';
-const BUILD_DATE = '__BUILD_DATE__'; // replaced by build.js with the build timestamp
 
 let cards = [];
 let searchText = '';
@@ -18,7 +12,7 @@ let detailId = null;
 let showDeleted = false;
 let isAdmin = false;
 let compactView = false;
-let allTags = []; // from /api/daybook/tags — the master tag list, never hardcoded
+let allTags = [];
 let boardTagFilter = '';
 
 async function api(method, path, body) {
@@ -194,9 +188,8 @@ function cardEl(c) {
   const due = c.due_date
     ? `<div class="meta">${isOverdue(c) ? '<span class="overdue">Overdue: ' : 'Due: '}${escHtml(c.due_date)}${isOverdue(c) ? '</span>' : ''}${c.owner ? ' \u00b7 ' + escHtml(c.owner) : ''}</div>`
     : (c.owner ? `<div class="meta">${escHtml(c.owner)}</div>` : '');
-  const it = c.issue_type || 'task';
   el.innerHTML =
-    `<div class="card-top"><span class="itype itype-${it}" title="${escHtml(ITYPE_LABELS[it] || it)}">${ITYPE_GLYPH[it] || ''}</span>` +
+    `<div class="card-top">` +
     `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>` +
     (showDeleted ? `<span class="pill size-low">Deleted</span>` : '') + `</div>` +
     `<h3>${escHtml(c.title)}</h3>` +
@@ -314,9 +307,7 @@ async function openDetail(id) {
   const c = cards.find((x) => String(x.id) === String(id));
   if (!c) return;
   detailId = c.id;
-  const it = c.issue_type || 'task';
   document.getElementById('d-pills').innerHTML =
-    `<span class="itype itype-${it}" title="${escHtml(ITYPE_LABELS[it] || it)}">${ITYPE_GLYPH[it] || ''}</span>` +
     `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>` +
     '';
   document.getElementById('d-title').textContent = c.title;
@@ -1374,13 +1365,13 @@ function renderHome() {
     setNum('home-links', allLinks.length);
     const up = document.getElementById('home-upnext');
     if (up) {
-      const upcoming = reminders.filter((r) => isLive(r) && new Date(r.remind_at).getTime() > nowMs)
-        .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)).slice(0, 3);
+      const upcoming = reminders.filter((r) => isLive(r) && new Date(remEventAt(r)).getTime() > nowMs)
+        .sort((a, b) => new Date(remEventAt(a)) - new Date(remEventAt(b))).slice(0, 3);
       if (!upcoming.length) {
         up.innerHTML = '<p class="home-empty">Nothing coming up.</p>';
       } else {
         up.innerHTML = upcoming.map((r) => {
-          const at = new Date(r.remind_at);
+          const at = new Date(remEventAt(r));
           const when = at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
             at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
           return '<button type="button" class="home-up-item"><span class="home-up-title">' +
@@ -1485,9 +1476,9 @@ function renderReminders() {
     .filter((r) => r.status === 'active' || r.status === 'snoozed')
     .filter((r) => (!reminderTagFilter || (r.tags || []).includes(reminderTagFilter)))
     .filter((r) => !q || ((r.title || '') + ' ' + (r.detail || '')).toLowerCase().includes(q))
-    .sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at))
+    .sort((a, b) => new Date(remEventAt(a)) - new Date(remEventAt(b)))
     .forEach((r) => {
-      const at = new Date(r.remind_at);
+      const at = new Date(remEventAt(r));
       const key = at < startToday ? 'Overdue'
         : localDateStr(at) === localDateStr(now) ? 'Today'
         : localDateStr(at) === tmr ? 'Tomorrow'
@@ -1515,10 +1506,10 @@ function remRow(r) {
   const sod = new Date();
   sod.setHours(0, 0, 0, 0);
   el.className = 'rem-row' +
-    (new Date(r.remind_at) < sod ? ' is-overdue' : '') +
+    (new Date(remEventAt(r)) < sod ? ' is-overdue' : '') +
     (r.status === 'snoozed' ? ' is-snoozed' : '');
   const label = rruleLabel(r.recurrence);
-  const at = new Date(r.remind_at);
+  const at = new Date(remEventAt(r));
   const dateStr = at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const timeStr = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   const metaBits = [label, r.status === 'snoozed' ? 'Snoozed' : '']
@@ -1601,15 +1592,19 @@ async function remAct(id, a) {
   }
 }
 
+const remEventAt=(r)=>r.event_at||r.remind_at; let remTimeTouched=false;
 function openReminderModal(r) {
   editingReminderId = r ? r.id : null;
   document.getElementById('reminder-title').textContent = r ? 'Edit reminder' : 'Add reminder';
   document.getElementById('r-title').value = r ? r.title : '';
   document.getElementById('r-detail').value = r ? (r.detail || '') : '';
-  const d = r ? new Date(r.remind_at) : new Date(Date.now() + 3600000);
-  d.setMinutes(0, 0, 0);
-  document.getElementById('r-at').value = toLocalInput(d);
-  document.querySelector('[data-dtdate="r-at"]').textContent = fmtDtButtonLabel(toLocalInput(d), document.querySelector('[data-dtdate="r-at"]'));
+  remTimeTouched=false;
+  const ev=r?new Date(remEventAt(r)):new Date(Date.now()+3600000); ev.setMinutes(0,0,0);
+  const evv=toLocalInput(ev); document.getElementById('r-event').value=evv;
+  const eb=document.querySelector('[data-dtdate="r-event"]'); eb.textContent=fmtDtButtonLabel(evv,eb);
+  const d=r&&r.remind_at?new Date(r.remind_at):new Date(ev.getTime()-3600000); d.setMinutes(0,0,0);
+  const dv=toLocalInput(d); document.getElementById('r-at').value=dv;
+  const ab2=document.querySelector('[data-dtdate="r-at"]'); ab2.textContent=fmtDtButtonLabel(dv,ab2);
   const rv = r ? (r.recurrence || '') : '';
   setDropdown('r-rrule', rv);
   setDropdown('r-tag', r && r.tag ? r.tag : '');
@@ -1864,13 +1859,28 @@ document.getElementById('reminder-cancel').addEventListener('click', closeRemind
 document.getElementById('reminder-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'reminder-backdrop') closeReminderModal();
 });
+document.getElementById('r-event-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  openDtPicker({ mode: 'datetime', initial: document.getElementById('r-event').value, onDone: (v) => {
+    document.getElementById('r-event').value = v;
+    const b = document.querySelector('[data-dtdate="r-event"]'); b.textContent = fmtDtButtonLabel(v, b);
+    if (!remTimeTouched && v) {
+      const rv = toLocalInput(new Date(new Date(fromLocalInput(v)).getTime() - 3600000));
+      document.getElementById('r-at').value = rv;
+      const ab = document.querySelector('[data-dtdate="r-at"]'); ab.textContent = fmtDtButtonLabel(rv, ab);
+    } } });
+});
+document.getElementById('r-at-btn').addEventListener('click', () => { remTimeTouched = true; });
+
 document.getElementById('reminder-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const at = fromLocalInput(document.getElementById('r-at').value);
-  if (!at) { toast('Pick a valid date and time.'); return; }
+  const at=fromLocalInput(document.getElementById('r-at').value);
+  const evAt=fromLocalInput(document.getElementById('r-event').value);
+  if(!at){toast('Pick a valid date and time.');return;}
   const data = {
     title: document.getElementById('r-title').value.trim(),
     detail: document.getElementById('r-detail').value.trim(),
+    event_at: evAt || null,
     remind_at: at,
     recurrence: document.getElementById('r-rrule').value.trim() || null,
     tag: document.getElementById('r-tag').value || null,
