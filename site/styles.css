@@ -728,6 +728,45 @@ pre#ingest-docs {
 .news-section-title:first-child { margin-top: 0.25rem; }
 .news-loading, .news-empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 0.95rem; }
 
+/* ---- Mood view ---- */
+.mood-loading, .mood-empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 0.95rem; }
+.mood-capture { border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem; background: var(--card, #fff); }
+.mood-q { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem; }
+.mood-btns { display: flex; gap: 0.5rem; }
+.mood-btn { flex: 1; min-width: 0; border: 2px solid var(--line); border-radius: 12px; background: transparent; padding: 0.6rem 0.2rem; cursor: pointer; }
+.mood-btn-e { display: block; font-size: 1.7rem; line-height: 1.2; }
+.mood-btn-l { display: block; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+.mood-btn.sel .mood-btn-l { color: inherit; font-weight: 700; }
+.mood-note { width: 100%; box-sizing: border-box; margin-top: 0.75rem; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; }
+.mood-save { width: 100%; margin-top: 0.75rem; padding: 0.7rem; border: none; border-radius: 10px; background: #2563eb; color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+.mood-save:disabled { opacity: 0.45; cursor: default; }
+.mood-sec-t { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; margin: 1.25rem 0 0.5rem; }
+.mood-none { color: var(--muted); font-size: 0.9rem; padding: 0.5rem 0; }
+.mood-entry { display: flex; align-items: flex-start; gap: 0.6rem; border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; }
+.mood-entry-e { font-size: 1.4rem; line-height: 1.2; }
+.mood-entry-b { flex: 1; min-width: 0; }
+.mood-entry-t { font-weight: 700; font-size: 0.9rem; }
+.mood-entry-time { font-weight: 400; color: var(--muted); font-size: 0.78rem; margin-left: 0.35rem; }
+.mood-entry-n { font-size: 0.88rem; color: var(--muted); margin-top: 0.15rem; word-break: break-word; }
+.mood-del { border: none; background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 0 0.2rem; }
+.mood-stats { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.mood-stat { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.4rem; text-align: center; }
+.mood-stat-v { display: block; font-size: 1.15rem; font-weight: 800; }
+.mood-stat-l { display: block; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.15rem; }
+.mood-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.mood-cal-label { font-weight: 800; font-size: 1rem; }
+#mood-prev, #mood-next { border: 1px solid var(--line); background: transparent; border-radius: 8px; width: 2.2rem; height: 2.2rem; font-size: 1.2rem; cursor: pointer; }
+.mood-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+.mood-dow { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 0.25rem 0; }
+.mood-cell { position: relative; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; background: transparent; cursor: pointer; padding: 0; }
+.mood-cell.empty { border: none; cursor: default; }
+.mood-cell:disabled { opacity: 0.35; cursor: default; }
+.mood-cell.today .mood-num { font-weight: 800; text-decoration: underline; }
+.mood-cell.sel { box-shadow: 0 0 0 2px #2563eb; }
+.mood-num { position: absolute; top: 2px; left: 5px; font-size: 0.7rem; color: var(--muted); }
+.mood-e { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; padding-top: 0.5rem; }
+.mood-cnt { position: absolute; bottom: 2px; right: 4px; font-size: 0.62rem; font-weight: 800; color: var(--muted); }
+
 /* ---- Home dashboard ---- */
 .home-wrap { max-width: 640px; margin: 0 auto; }
 .home-greet { margin: 0.5rem 0 1.25rem; }
