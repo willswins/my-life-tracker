@@ -800,6 +800,7 @@ const SPELL_LIVES = 3;
 let spellScore = 0, spellStreak = 0, spellBest = 0, spellWord = '', spellDiff = 'medium';
 let spellLives = SPELL_LIVES, spellFlashTimer = null, spellTickTimer = null, spellAutoTimer = null;
 let spellAccepting = false, spellTypeLeft = 0;
+let spellHistory = []; // spell-it game-over review
 
 function spellSet(id, v) {
   const el = document.getElementById(id);
@@ -824,6 +825,11 @@ function initSpell() {
   spellBest = parseInt(localStorage.getItem('spellit_best') || '0', 10);
   spellScore = 0; spellStreak = 0; spellWord = ''; spellAccepting = false;
   spellLives = SPELL_LIVES;
+  spellHistory = [];
+  const srb = document.getElementById('spell-review-btn');
+  if (srb) { srb.classList.add('hidden'); srb.textContent = 'Review Words'; }
+  const srl = document.getElementById('spell-review');
+  if (srl) { srl.classList.add('hidden'); srl.innerHTML = ''; }
   clearTimeout(spellFlashTimer);
   clearInterval(spellTickTimer);
   clearTimeout(spellAutoTimer);
@@ -905,10 +911,11 @@ function updateSpellTimer(limit) {
     fill.classList.toggle('low', spellTypeLeft < 3);
   }
 }
-function spellMiss(timeout) {
+function spellMiss(timeout, guess) {
   if (!spellAccepting) return;
   spellAccepting = false;
   clearInterval(spellTickTimer);
+  spellHistory.push({ w: spellWord, ok: false, guess: guess || '' });
   spellLives--;
   spellStreak = 0;
   const fb = document.getElementById('spell-feedback');
@@ -931,6 +938,8 @@ function spellGameOver() {
   spellSet('spell-hint', `Game over! Final score: ${spellScore}`);
   const start = document.getElementById('spell-start');
   if (start) { start.textContent = 'Play Again'; start.classList.remove('hidden'); }
+  const srb = document.getElementById('spell-review-btn');
+  if (srb && spellHistory.length && typeof renderSpellReview === 'function') srb.classList.remove('hidden');
 }
 function checkSpell() {
   if (!spellAccepting) return;
@@ -941,6 +950,7 @@ function checkSpell() {
   const fb = document.getElementById('spell-feedback');
   if (guess === spellWord && spellWord) {
     spellAccepting = false;
+    spellHistory.push({ w: spellWord, ok: true, guess: guess });
     const speedBonus = Math.round(100 * Math.max(0, spellTypeLeft) / limit);
     const pts = 100 + speedBonus + spellStreak * 10;
     spellScore += pts;
@@ -957,7 +967,7 @@ function checkSpell() {
     spellSet('spell-streak', String(spellStreak));
     spellSet('spell-best', String(spellBest));
   } else {
-    spellMiss(false);
+    spellMiss(false, guess);
     return;
   }
   const timer = document.getElementById('spell-timer');
