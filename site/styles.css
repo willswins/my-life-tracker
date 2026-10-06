@@ -807,3 +807,4 @@ pre#ingest-docs {
 .spell-review-item.miss .spell-review-mark { color: #dc2626; font-weight: 700; }
 .spell-review-word { font-weight: 700; letter-spacing: 0.06em; }
 .spell-review-guess { color: var(--muted); font-size: 0.85rem; }
+#spell-review-btn { display: block; margin: 0.75rem auto 0; }
