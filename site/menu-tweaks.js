@@ -39,6 +39,15 @@ function wireMenuTweaks() {
       b.addEventListener('click', closeProfileMenu);
     }
   });
+  // About moved to profile menu — navigate via switchView
+  var ab = document.getElementById('profile-about');
+  if (ab && !ab.dataset.wired) {
+    ab.dataset.wired = '1';
+    ab.addEventListener('click', function() {
+      closeProfileMenu();
+      if (typeof switchView === 'function') switchView('about');
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
