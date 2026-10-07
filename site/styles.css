@@ -1004,3 +1004,23 @@ pre#ingest-docs {
     font-size: 1rem;
   }
 }
+
+/* Games toggle: styled like a view-link (view-link class removed to avoid switchView(undefined)) */
+#menu .games-toggle {
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: inherit;
+  font-family: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+#menu .games-toggle:hover {
+  background: var(--lane);
+}
