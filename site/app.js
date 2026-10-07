@@ -1824,6 +1824,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 3500);
 }
 
+
 document.getElementById('add-reminder').addEventListener('click', () => openReminderModal(null));
 document.getElementById('reminder-search').addEventListener('input', (e) => {
   clearTimeout(reminderSearchTimer);
