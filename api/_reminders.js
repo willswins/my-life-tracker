@@ -25,6 +25,18 @@ function cleanReminder(b) {
   }
   if (b.recurrence === null) out.recurrence = null;
   else if (typeof b.recurrence === 'string') out.recurrence = b.recurrence.trim().slice(0, 120) || null;
+  if (b.recurrence_end_date !== undefined) {
+    if (b.recurrence_end_date === null) out.recurrence_end_date = null;
+    else {
+      const d = new Date(b.recurrence_end_date);
+      if (isNaN(d)) throw new Error('bad recurrence_end_date');
+      out.recurrence_end_date = d.toISOString();
+    }
+  }
+  if (b.recurrence_end_after !== undefined) {
+    const n = parseInt(b.recurrence_end_after, 10);
+    out.recurrence_end_after = (isNaN(n) || n < 1) ? null : n;
+  }
   if (b.tag === null || TAGS.includes(b.tag)) out.tag = b.tag;
   if (STATUSES.includes(b.status)) out.status = b.status;
   out.updated_at = new Date().toISOString();
@@ -129,10 +141,13 @@ module.exports = async (req, res) => {
       if (action === 'complete') {
         let patch;
         if (cur.recurrence) {
+          const occurred = (cur.recurrence_occurred || 0) + 1;
           const next = nextRrule(cur.remind_at, cur.recurrence);
-          patch = next
-            ? { remind_at: next, status: 'active', last_fired_at: now, updated_at: now }
-            : { status: 'completed', last_fired_at: now, updated_at: now };
+          const pastEndDate = cur.recurrence_end_date && next && new Date(next) > new Date(cur.recurrence_end_date);
+          const pastEndCount = cur.recurrence_end_after && occurred >= cur.recurrence_end_after;
+          patch = (next && !pastEndDate && !pastEndCount)
+            ? { remind_at: next, status: 'active', last_fired_at: now, updated_at: now, recurrence_occurred: occurred }
+            : { status: 'completed', last_fired_at: now, updated_at: now, recurrence_occurred: occurred };
         } else {
           patch = { status: 'completed', last_fired_at: now, updated_at: now };
         }
