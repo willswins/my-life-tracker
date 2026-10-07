@@ -142,6 +142,8 @@
     <button data-a="dismiss" role="menuitem" class="danger">Dismiss</button>
     <button data-a="snooze" role="menuitem">Snooze</button>
     <button data-a="edit" role="menuitem">Edit</button>
+    <button data-a="copy-to-board" role="menuitem">Copy to Board</button>
+    <button data-a="move-to-board" role="menuitem">Move to Board</button>
     <button data-a="delete" role="menuitem" class="danger">Delete</button>
   </div>
 </main>
@@ -213,6 +215,8 @@
     <button data-a="open" role="menuitem">Open</button>
     <button data-a="copy" role="menuitem">Copy URL</button>
     <button data-a="edit" role="menuitem">Edit</button>
+    <button data-a="copy-to-board" role="menuitem">Copy to Board</button>
+    <button data-a="move-to-board" role="menuitem">Move to Board</button>
     <button data-a="delete" role="menuitem" class="danger">Delete</button>
   </div>
 </main>
@@ -442,6 +446,8 @@
       <button type="submit" class="primary">Comment</button>
     </form>
     <div class="modal-actions">
+      <button type="button" id="d-copy-rem">Copy to Reminders</button>
+      <button type="button" id="d-move-rem">Move to Reminders</button>
       <button type="button" id="d-edit">Edit</button>
       <button type="button" id="d-restore" class="hidden">Restore</button>
       <button type="button" id="d-delete" class="danger-btn">Delete</button>
@@ -603,5 +609,6 @@
 <script src="/spell-review.js"></script>
 <script src="/due-alerts.js"></script>
 <script src="/reminder-views.js"></script>
+  <script src="/cross-move.js"></script>
 </body>
 </html>
