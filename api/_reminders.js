@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
   };
   try {
     const url = new URL(req.url, 'https://localhost');
-    const id = url.searchParams.get('id');
+    const id = (req.query && req.query.id) || url.searchParams.get('id');
     const scope = `user_email=eq.${encodeURIComponent(email)}`;
 
     if (req.method === 'GET') {
