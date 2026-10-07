@@ -1,6 +1,7 @@
 // Long Term view: simple boxes for long-term reminders. No dates.
 // Cards tagged 'longterm' (excluded from My Board). Uses existing cards API.
 // Loads after app.js.
+// Build trigger: force fresh Vercel build.
 (function() {
 'use strict';
 
