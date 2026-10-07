@@ -1024,3 +1024,85 @@ pre#ingest-docs {
 #menu .games-toggle:hover {
   background: var(--lane);
 }
+
+/* Long Term view: simple glanceable boxes */
+.lt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.lt-sub {
+  margin: 0;
+  color: var(--muted, #888);
+  font-size: 0.95rem;
+}
+.lt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.lt-box {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  cursor: pointer;
+  min-height: 110px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.lt-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+.lt-box-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+.lt-box-notes {
+  font-size: 0.9rem;
+  color: var(--muted, #666);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.lt-empty {
+  color: var(--muted, #888);
+  font-size: 0.95rem;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+/* Long Term edit modal */
+.ltm-modal label {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.ltm-modal input,
+.ltm-modal textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.7rem;
+  font-size: 1rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.ltm-modal textarea {
+  resize: vertical;
+}
+.ltm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+.ltm-spacer {
+  flex: 1;
+}
