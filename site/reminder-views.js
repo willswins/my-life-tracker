@@ -78,12 +78,12 @@ window.remRow = function(r) {
     (r.status === 'completed' ? ' rem-completed-row' : '');
   const label = rruleLabel(r.recurrence);
   const at = new Date(remEventAt(r));
-  const dateStr = at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const dateStr = at.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const timeStr = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
   const priDot = pri === 'none' ? '' : '<span class="pri-dot pri-' + pri + '" title="' + pri + '"></span>';
   let metaBits = [label, r.status === 'snoozed' ? 'Snoozed' : ''].filter(Boolean).join(' · ');
   if (r.status === 'completed' && r.completed_at) {
-    metaBits += (metaBits ? ' · ' : '') + 'Done ' + new Date(r.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    metaBits += (metaBits ? ' · ' : '') + 'Done ' + new Date(r.completed_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   }
   el.innerHTML =
     '<div class="rem-when"><span class="d">' + escHtml(dateStr) + '</span><span class="t">' + escHtml(timeStr) + '</span></div>' +
