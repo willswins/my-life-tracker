@@ -132,9 +132,13 @@
     </div>
   </div>
   <div id="rem-tag-filter" class="tag-filter-row"></div>
+  <div class="rem-view-toggle">
+    <button type="button" id="rem-show-completed" class="link-btn">Show completed</button>
+  </div>
   <div id="reminder-timeline"></div>
   <div id="rem-menu" class="popup-menu hidden" role="menu">
     <button data-a="complete" role="menuitem">Complete</button>
+    <button data-a="restore" role="menuitem">Restore</button>
     <button data-a="dismiss" role="menuitem" class="danger">Dismiss</button>
     <button data-a="snooze" role="menuitem">Snooze</button>
     <button data-a="edit" role="menuitem">Edit</button>
@@ -486,6 +490,11 @@
       <label>Tag
         <input type="hidden" id="r-tag">
         <button type="button" class="dd-field" data-dd="r-tag">None</button>
+      </label>
+      <label>Priority
+        <input id="r-priority" type="hidden" value="none">
+        <button type="button" id="r-priority-btn" class="dd-field fit" data-dd="r-priority">None</button>
+      </label>
       </label>
       <label>Status
         <input type="hidden" id="r-status" value="active">
