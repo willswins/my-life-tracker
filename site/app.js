@@ -43,10 +43,10 @@ async function init() {
     if (pi) pi.textContent = (meEmail.charAt(0) || '?').toUpperCase();
     const pe = document.getElementById('profile-email');
     if (pe) pe.textContent = meEmail;
-  } catch (e) { /* non-fatal */ }
+  } catch (e) {  }
   try {
     allTags = await api('GET', '/api/app?r=daybook&view=tags');
-  } catch (e) { /* tags non-fatal */ }
+  } catch (e) {  }
   try {
     await loadCards();
   } catch (e) {
@@ -59,7 +59,6 @@ async function init() {
   await switchView(hm ? hm[1] : 'home', false);
 }
 
-/* ---------- Tags (master list from API, never hardcoded) ---------- */
 function tagBubblesHtml(tags) {
   if (!Array.isArray(tags) || !tags.length) return '';
   return '<span class="tag-bubbles">' + tags.map((t) =>
@@ -67,8 +66,6 @@ function tagBubblesHtml(tags) {
   ).join('') + '</span>';
 }
 
-// Tag filter row: renders "All" + one bubble per master tag.
-// If includeDelete is true, appends the Deleted toggle as part of the same bubble group.
 function renderTagFilter(box, selected, onPick, includeDelete) {
   box.innerHTML = '';
   const mk = (label, val) => {
@@ -93,7 +90,6 @@ function renderTagFilter(box, selected, onPick, includeDelete) {
   }
 }
 
-// Tag picker for edit forms: checkboxes from the master list.
 function renderTagPicker(box, selectedTags) {
   box.innerHTML = '';
   const sel = new Set(selectedTags || []);
@@ -412,7 +408,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeModal(); closeDetail(); closeKeys(); closeInvite(); closeReminderModal(); closeLinkModal(); closeTriage(); document.getElementById('confirm-backdrop').classList.add('hidden'); }
 });
 
-// ---- In-app confirmation for destructive actions ----
 function confirmAction({ title, message, confirmLabel }) {
   return new Promise((resolve) => {
     const bd = document.getElementById('confirm-backdrop');
@@ -433,7 +428,6 @@ function confirmAction({ title, message, confirmLabel }) {
   });
 }
 
-// ---- Connectors: API key management ----
 function openKeys() {
   document.getElementById('keys-backdrop').classList.remove('hidden');
   document.getElementById('new-key').classList.add('hidden');
@@ -506,7 +500,6 @@ document.getElementById('menu-refresh').addEventListener('click', async () => {
   catch (e) { toast('Could not refresh. Please try again.'); }
 });
 
-// ---- Compact / detailed view toggle ----
 document.getElementById('view-toggle').addEventListener('click', (e) => {
   compactView = !compactView;
   document.body.classList.toggle('compact', compactView);
@@ -514,7 +507,6 @@ document.getElementById('view-toggle').addEventListener('click', (e) => {
   e.target.title = compactView ? 'Switch to detailed view' : 'Switch to compact view';
 });
 
-// ---- Invite management (admin) ----
 function openInvite() {
   document.getElementById('invite-backdrop').classList.remove('hidden');
   loadInvites();
@@ -590,10 +582,6 @@ document.getElementById('key-form').addEventListener('submit', async (e) => {
 
 init();
 
-/* ---- Five-view extension: Reminders / Journal / Links / Inbox ----
-   The board above stays 100% behavior-identical as the Tasks view.
-   Views are toggled via JS with hash routing (#/tasks, #/reminders, …)
-   so the browser back button works. */
 'use strict';
 
 const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'mood', 'game', 'spell', 'bee', 'grammar', 'about'];
@@ -653,7 +641,6 @@ let inboxSearchTimer = null;
 let triageItem = null;
 let triageDest = 'task';
 
-/* ---------- small helpers ---------- */
 function pad2(n) { return String(n).padStart(2, '0'); }
 function localDateStr(d) {
   return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -681,8 +668,6 @@ function extractUrl(text) {
 }
 journalDate = localDateStr(new Date());
 
-
-/* ---------- Sum It Up game ---------- */
 const GAME_WORDS = ['apple','brain','cloud','dance','eagle','flame','grape','happy','ivory','jungle','kite','lemon','magic','night','ocean','piano','queen','river','sunny','tiger','unity','vivid','water','xenon','youth','zebra','pizza','jazz','quiz','box','fox','dog','cat','sun','moon','star','tree','book','game','play','code','data','logic','sharp','brave','swift','candy','delta','ember','frost','globe','hazel','index','joker','karma','lunar','mango','north','olive','pilot','quartz','radar','storm','thorn','ultra','vapor','whale','xray','yearn','zip'];
 let gameScore = 0, gameStreak = 0, gameBest = 0, gameStartTime = 0, gameAnswered = false;
 let gameTimer = null;
@@ -716,7 +701,6 @@ function newRound() {
   document.getElementById('game-feedback').textContent = '';
   document.getElementById('game-feedback').className = 'game-feedback';
   document.getElementById('game-next').classList.add('hidden');
-  // Generate 3 wrong options
   const opts = new Set([correct]);
   while (opts.size < 4) {
     const delta = Math.floor(Math.random() * 20) - 10;
@@ -733,7 +717,6 @@ function newRound() {
     b.addEventListener('click', () => answerGame(v, correct, b));
     box.appendChild(b);
   });
-  // Start timer
   gameStartTime = Date.now();
   clearInterval(gameTimer);
   gameTimer = setInterval(() => {
@@ -777,7 +760,6 @@ function answerGame(picked, correct, btn) {
 const gameNextBtn = document.getElementById('game-next');
 if (gameNextBtn) gameNextBtn.addEventListener('click', newRound);
 
-// ---- Spell It ----
 const SPELL_WORDS = {
   simple: ['apple','tiger','house','water','happy','green','chair','smile','bread','cloud','train','light','music','dance','beach','stone','flame','grape','lemon','magic','north','ocean','piano','queen','river','sunny','table','uncle','ivory','joker'],
   medium: ['beautiful','rhythm','chocolate','elephant','purple','enough','people','because','friend','school','answer','break','catch','doubt','earth','faith','ghost','honor','image','jungle','knife','layer','night','oasis','proud','quiet','rough','storm','taste','window'],
@@ -855,8 +837,6 @@ function startSpellRound() {
   if (timer) timer.classList.add('hidden');
   const start = document.getElementById('spell-start');
   if (start) start.classList.add('hidden');
-  // Show + focus the input immediately (inside the tap gesture) so iOS
-  // opens the keyboard right away; preventScroll keeps the word visible.
   const row = document.getElementById('spell-input-row');
   if (row) row.classList.remove('hidden');
   const input0 = document.getElementById('spell-input');
@@ -980,10 +960,6 @@ if (spellInputEl) spellInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') checkSpell();
 });
 
-// ---- Spelling Bee ----
-// Tap-the-tiles spelling game (NYT Spelling Bee style). No keyboard involved:
-// build words from 7 letters, every word must use the center letter, 4+ letters.
-// Find the pangram (all 7 letters) for a bonus. Ranks up to Queen Bee.
 const BEE_WORDS = "that this with from your have more will home about page search free other information time they site what which their news there only when contact here business also help view online first been would were services some these click like service than find price date back people list name just over state year into email health world next used work last most products music data make them should product system post city policy number such please available copyright support message after best software then good video well where info rights public books high school through each links review years order very privacy book items company read group need many user said does under general research university january mail full reviews program life know games days management part could great united hotel real item international center ebay must store travel comments made development report member details line terms before hotels send right type because local those using results office education national design take posted internet address community within states area want phone shipping reserved subject between forum family long based code show even black check special prices website index being women much sign file link open today technology south case project same pages version section found sports house related security both county american photo game members power while care network down computer systems three total place following download without access think north resources current posts media control water history pictures size personal since including guide shop directory board location change white text small rating rate government children during return students shopping account times sites level digital profile previous form events love john main call hours image department title description insurance another shall property class still money quality every listing content country private little visit save tools reply customer december compare movies include college value article york card jobs provide food source author different press learn sale around print course canada process teen room stock training credit point join science categories advanced west sales look english left team estate conditions select windows photos thread week category note live large gallery table register however june october november market library really action start series model features industry plan human provided required second accessories cost movie forums march september better questions july yahoo going medical test friend come server study application cart staff articles feedback again play looking issues april never users complete street topic comment financial things working against standard person below mobile less blog party payment equipment login student programs offers legal above recent park stores side problem give memory performance social august quote language story sell options experience rates create body young america important field east paper single activities club example girls additional password latest something road gift question changes night hard texas four poker status browse issue range building seller court february always result audio light write offer blue groups easy given files event release analysis request china making picture needs possible might professional month major star areas future space committee hand cards problems london washington meeting become interest child keep enter california share similar garden schools million added reference companies listed baby learning energy delivery popular term film stories computers journal reports welcome central images president notice original head radio until cell color self council away includes track australia discussion archive once others entertainment agreement format least society months safety friends sure trade edition cars messages marketing tell further updated association able having provides david already green studies close common drive specific several gold living collection called short arts display limited powered solutions means director daily beach past natural whether electronics five upon period planning database says official weather land average done technical window france region island record direct microsoft conference environment records district calendar costs style front statement update parts ever downloads early miles sound resource present applications either document word works material bill written talk federal hosting rules final adult tickets thing centre requirements cheap kids finance true minutes else mark third rock gifts europe reading topics individual tips plus auto cover usually edit together videos percent fast function fact unit getting global tech meet economic player projects lyrics often subscribe submit germany amount watch included feel though bank risk thanks everything deals various words linux production commercial james weight town heart advertising received choose treatment newsletter archives points knowledge magazine error camera girl currently construction toys registered clear golf receive domain methods chapter makes protection policies loan wide beauty manager india position taken sort listings models michael known half cases step engineering florida simple quick none wireless license paul friday lake whole annual published later basic sony shows corporate google church method purchase customers active response practice hardware figure materials fire holiday chat enough designed along among death writing speed html countries loss face brand discount higher effects created remember standards yellow political increase advertise kingdom base near environmental thought stuff french storage japan doing loans shoes entry stay nature orders availability africa summary turn mean growth notes agency king monday european activity copy although drug pics western income force cash employment overall river commission package contents seen players engine port album regional stop supplies started administration institute views plans double build screen exchange types soon sponsored lines electronic continue across benefits needed season apply someone held anything printer condition effective believe organization effect asked mind sunday selection casino lost tour menu volume cross anyone mortgage hope silver corporation wish inside solution mature role rather weeks addition came supply nothing certain executive running lower necessary union jewelry according clothing particular fine names robert homepage hour skills bush islands advice career military rental decision leave british teens huge woman facilities kind sellers middle move cable opportunities taking values division coming tuesday object lesbian appropriate machine logo length actually nice score statistics client returns capital follow sample investment sent shown saturday christmas england culture band flash lead george choice went starting registration thursday courses consumer airport foreign artist outside furniture levels channel letter mode phones ideas wednesday structure fund summer allow degree contract button releases homes super male matter custom virginia almost took located multiple asian distribution editor industrial cause potential song cnet focus late fall featured idea rooms female responsible communications associated thomas primary cancer numbers reason tool browser spring foundation answer voice friendly schedule documents communication purpose feature comes police everyone independent approach cameras brown physical operating hill maps medicine deal hold ratings chicago forms glass happy smith wanted developed thank safe unique survey prior telephone sport ready feed animal sources mexico population regular secure navigation operations therefore simply evidence station christian round paypal favorite understand option master valley recently probably rentals built publications blood worldwide improve connection publisher hall larger anti networks earth parents nokia impact transfer introduction kitchen strong carolina wedding properties hospital ground overview ship accommodation owners disease excellent paid italy perfect hair opportunity classic basis command cities william express award distance tree peter assessment ensure thus wall involved extra especially interface partners budget rated guides success maximum operation existing quite selected amazon patients restaurants beautiful warning wine locations horse vote forward flowers stars significant lists technologies owner retail animals useful directly manufacturer ways providing rule housing takes bring catalog searches trying mother authority considered told traffic programme joined input strategy feet agent valid modern senior ireland teaching door grand testing trial charge units instead canadian cool normal wrote enterprise ships entire educational leading metal positive fitness chinese opinion asia football abstract uses output funds greater likely develop employees artists alternative processing responsibility resolution java guest seems publication pass relations trust contains session multi photography republic fees components vacation century academic assistance completed skin graphics indian prev mary expected ring grade dating pacific mountain organizations filter mailing vehicle longer consider northern behind panel floor german buying match proposed default require iraq boys outdoor deep morning otherwise allows rest protein plant reported transportation pool mini politics partner disclaimer authors boards faculty parties fish membership mission string sense modified pack released stage internal goods recommended born unless richard detailed japanese race approved background target except character maintenance ability maybe functions moving brands places pretty trademarks phentermine spain southern yourself winter battery youth pressure submitted boston debt keywords medium television interested core break purposes throughout sets dance wood itself defined papers playing awards studio reader virtual device established answers rent remote dark programming external apple regarding instructions offered theory enjoy remove surface minimum visual host variety teachers isbn martin manual block subjects agents increased repair fair civil steel understanding songs fixed wrong beginning hands associates finally updates desktop classes paris ohio gets sector capacity requires jersey fully father electric instruments quotes officer driver businesses dead respect unknown specified restaurant mike trip worth procedures poor teacher eyes relationship workers farm georgia peace traditional campus showing creative coast benefit progress funding devices lord grant agree fiction hear sometimes watches careers beyond goes families museum themselves transport interesting blogs wife evaluation accepted former implementation hits zone complex galleries references presented jack flat flow agencies literature respective parent spanish michigan columbia setting scale stand economy highest helpful monthly critical frame musical definition secretary angeles networking path australian employee chief gives bottom magazines packages detail francisco laws changed heard begin individuals colorado royal clean switch russian largest african titles relevant guidelines justice connect bible basket applied weekly installation described demand suite vegas square chris attention advance skip diet army auction gear difference allowed correct charles nation selling lots piece sheet firm seven older illinois regulations elements species jump cells module resort facility random pricing dvds certificate minister motion looks fashion directions visitors documentation monitor trading forest calls whose coverage couple giving chance vision ball ending clients actions listen discuss accept automotive naked goal successful sold wind communities clinical situation sciences markets lowest highly publishing appear emergency developing lives currency leather determine temperature palm announcements patient actual historical stone commerce ringtones perhaps persons difficult scientific satellite tests village accounts amateur pain xbox particularly factors coffee settings buyer cultural steve easily oral ford poster edge functional root closed holidays pink zealand balance monitoring graduate replies shot architecture initial label thinking scott recommend canon league waste minute provider optional dictionary cold accounting manufacturing sections chair fishing effort phase fields fantasy letters motor professor context install shirt apparel generally continued foot mass crime count breast techniques johnson quickly dollars websites religion claim driving permission surgery patch heat wild measures generation kansas miss chemical doctor task reduce brought himself component enable exercise santa guarantee leader diamond israel processes soft servers alone meetings seconds jones arizona keyword interests flight congress fuel username walk produced italian paperback classifieds wait supported pocket saint rose freedom argument competition creating drugs joint premium providers fresh characters attorney upgrade factor growing thousands stream apartments pick hearing eastern auctions therapy entries dates generated signed upper administrative serious prime samsung limit began louis steps errors shops efforts informed thoughts creek worked quantity urban practices sorted reporting essential myself tours platform load affiliate labor immediately admin nursing defense machines designated tags heavy covered recovery guys integrated configuration merchant comprehensive expert universal protect drop solid presentation languages became orange compliance vehicles prevent theme rich campaign marine improvement guitar finding pennsylvania examples ipod saying spirit claims challenge motorola acceptance strategies seem affairs touch intended towards goals hire election suggest branch charges serve affiliates reasons magic mount smart talking gave ones latin multimedia avoid certified manage corner rank computing oregon element birth virus abuse interactive requests separate quarter procedure leadership tables define racing religious facts breakfast kong column plants faith chain developer identify avenue missing died approximately domestic sitemap recommendations moved houston reach comparison mental viewed moment extended sequence inch attack sorry centers opening damage reserve recipes gamma plastic produce snow placed truth counter failure follows weekend dollar camp ontario automatically minnesota films bridge native fill williams movement printing baseball owned approval draft chart played contacts jesus readers clubs jackson equal adventure matching offering shirts profit leaders posters institutions assistant variable advertisement expect parking headlines yesterday compared determined wholesale workshop russia gone codes kinds extension seattle statements golden completely teams fort lighting senate forces funny brother gene turned portable tried electrical applicable disc returned pattern boat named theatre laser earlier manufacturers sponsor classical icon warranty dedicated indiana direction harry basketball objects ends delete evening assembly nuclear taxes mouse signal criminal issued brain sexual wisconsin powerful dream obtained false cast flower felt personnel passed supplied identified falls soul aids opinions promote stated stats hawaii professionals appears carry flag decided covers advantage hello designs maintain tourism priority newsletters adults clips savings graphic atom payments estimated binding brief ended winning eight anonymous iron straight script served wants miscellaneous prepared void dining alert integration atlanta dakota interview framework disk installed queen credits clearly handle sweet desk criteria pubmed dave massachusetts diego hong vice associate truck behavior enlarge frequently revenue measure changing votes duty looked discussions bear gain festival laboratory ocean flights experts signs lack depth iowa whatever logged laptop vintage train exactly explore maryland concept nearly eligible checkout reality forgot handling origin knew gaming feeds billion destination scotland faster intelligence dallas bought nations route followed specifications broken tripadvisor frank alaska zoom blow battle residential anime speak decisions industries protocol query clip partnership editorial expression equity provisions speech wire principles suggestions rural shared sounds replacement tape strategic judge spam economics acid bytes cent forced compatible fight apartment height null zero speaker filed netherlands obtain consulting recreation offices designer remain managed failed marriage roll korea banks participants secret bath kelly leads negative austin favorites toronto theater springs missouri andrew perform healthy translation estimates font assets injury joseph ministry drivers lawyer figures married protected proposal sharing philadelphia portal waiting birthday beta fail gratis banking officials brian toward slightly assist conduct contained lingerie legislation calling parameters jazz serving bags profiles miami comics matters houses postal relationships tennessee wear controls breaking combined ultimate wales representative frequency introduced minor finish departments residents noted displayed reduced physics rare spent performed extreme samples davis daniel bars reviewed forecast removed helps singles administrator cycle amounts contain accuracy dual rise sleep bird pharmacy brazil creation static scene hunter addresses lady crystal famous writer chairman violence fans oklahoma speakers drink academy dynamic gender permanent agriculture dell cleaning constitutes portfolio practical delivered collectibles infrastructure exclusive seat concerns vendor originally intel utilities philosophy regulation officers reduction bids referred supports nutrition recording regions junior toll cape rings meaning secondary wonderful mine ladies henry ticket announced guess agreed prevention whom soccer math import posting presence instant mentioned".split(" ");
 const BEE_SEEDS = BEE_WORDS.filter(w => new Set(w).size === 7);
 const BEE_RANKS = [[0,'Beginner'],[0.02,'Good Start'],[0.05,'Moving Up'],[0.08,'Good'],[0.15,'Solid'],[0.25,'Nice'],[0.40,'Great'],[0.50,'Amazing'],[0.70,'Genius'],[1,'Queen Bee']];
@@ -1146,12 +1122,8 @@ function initBee() {
   }
 }
 
-// ---- Grammar Quiz ----
-// 60-second timed quiz (Johnny Grammar's Word Challenge style). Tap answers only -
-// no keyboard. Question bank: [question, [4 options], correctIndex].
 const GRAMMAR_TIME = 60;
 function gramBank() {
-  // question bank loads from /grammar.js before this script; fall back to empty
   return (typeof GRAMMAR_QS !== 'undefined') ? GRAMMAR_QS : {simple: [], medium: [], complex: []};
 }
 let gramDiff = 'medium', gramScore = 0, gramStreak = 0, gramBest = 0;
@@ -1290,8 +1262,6 @@ document.querySelectorAll('[data-gram-diff]').forEach((b) => {
   });
 });
 
-
-/* ---------- view switching + hash routing ---------- */
 async function switchView(name, push = true) {
   if (!VIEWS.includes(name)) name = 'tasks';
   currentView = name;
@@ -1334,7 +1304,6 @@ window.addEventListener('hashchange', () => {
 document.querySelectorAll('#menu .view-link').forEach((b) =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
 
-// ---- Home dashboard ----
 document.querySelectorAll('#view-home [data-go]').forEach((b) =>
   b.addEventListener('click', () => switchView(b.dataset.go)));
 document.querySelectorAll('#view-home [data-add]').forEach((b) =>
@@ -1373,7 +1342,7 @@ function renderHome() {
         up.innerHTML = upcoming.map((r) => {
           const at = new Date(remEventAt(r));
           const when = at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
-            at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
           return '<button type="button" class="home-up-item"><span class="home-up-title">' +
             escHtml(r.title || '(untitled)') + '</span><span class="home-up-when">' +
             escHtml(when) + '</span></button>';
@@ -1382,7 +1351,7 @@ function renderHome() {
           b.addEventListener('click', () => switchView('reminders')));
       }
     }
-  } catch (e) { /* home render is non-fatal */ }
+  } catch (e) {  }
 }
 
 const profileBtn = document.getElementById('profile-btn');
@@ -1399,13 +1368,11 @@ if (profileBtn && profileMenu) {
   });
 }
 
-/* ---------- about ---------- */
 function renderAbout() {
   document.getElementById('about-version').textContent = APP_VERSION;
   document.getElementById('about-build').textContent = BUILD_DATE;
 }
 
-/* ---------- badges ---------- */
 function setBadge(id, n, hot) {
   const el = document.getElementById(id);
   el.textContent = n;
@@ -1430,15 +1397,16 @@ async function updateBadges() {
     inboxCount = ib.count || 0;
     setBadge('badge-tasks', nowCount, false);
     setBadge('badge-reminders', due, due > 0);
+    const pb = document.getElementById('badge-profile-due');
+    if (pb) { pb.textContent = due > 99 ? '99+' : String(due); pb.classList.toggle('show', due > 0); }
     setBadge('badge-links', lks.length, false);
     setBadge('badge-inbox', ib.count, ib.count > 0);
     const dot = document.getElementById('menu-dot');
     dot.textContent = ib.count > 99 ? '99+' : String(ib.count);
     dot.classList.toggle('hidden', ib.count === 0);
-  } catch (e) { /* badges are non-fatal */ }
+  } catch (e) {  }
 }
 
-/* ---------- Reminders ---------- */
 function rruleLabel(rrule) {
   if (!rrule) return '';
   const p = {};
@@ -1511,7 +1479,7 @@ function remRow(r) {
   const label = rruleLabel(r.recurrence);
   const at = new Date(remEventAt(r));
   const dateStr = at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const timeStr = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const timeStr = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
   const metaBits = [label, r.status === 'snoozed' ? 'Snoozed' : '']
     .filter(Boolean).join(' · ');
   el.innerHTML =
@@ -1529,7 +1497,6 @@ function remRow(r) {
   return el;
 }
 
-// One icon per reminder row opens a shared popup menu.
 let remMenuFor = null;
 function closeRemMenu() {
   const m = document.getElementById('rem-menu');
@@ -1566,6 +1533,8 @@ async function remAct(id, a) {
         action: 'snooze', minutes: mins,
       });
     } else if (a === 'complete') {
+      const rc = reminders.find((x) => x.id === id);
+      if (rc) { rc.status = 'completed'; renderReminders(); }
       await api('POST', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id), { action: 'complete' });
     } else if (a === 'delete') {
       const r = reminders.find((x) => x.id === id);
@@ -1607,6 +1576,17 @@ function openReminderModal(r) {
   const ab2=document.querySelector('[data-dtdate="r-at"]'); ab2.textContent=fmtDtButtonLabel(dv,ab2);
   const rv = r ? (r.recurrence || '') : '';
   setDropdown('r-rrule', rv);
+  const endsV = r && r.recurrence_end_date ? 'ondate' : (r && r.recurrence_end_after ? 'after' : 'never');
+  setDropdown('r-ends', endsV);
+  if (r && r.recurrence_end_date) {
+    document.getElementById('r-end-date').value = toLocalInput(new Date(r.recurrence_end_date)).split('T')[0];
+    const db = document.querySelector('[data-dtdate="r-end-date"]');
+    if (db) db.textContent = fmtDtButtonLabel(document.getElementById('r-end-date').value, db);
+  } else {
+    document.getElementById('r-end-date').value = '';
+  }
+  document.getElementById('r-end-after').value = r && r.recurrence_end_after ? r.recurrence_end_after : '';
+  updateEndsVisibility();
   setDropdown('r-tag', r && r.tag ? r.tag : '');
   setDropdown('r-status', r ? r.status : 'active');
   document.getElementById('reminder-backdrop').classList.remove('hidden');
@@ -1618,7 +1598,6 @@ function closeReminderModal() {
   closeDropdown();
 }
 
-/* ---------- Custom date/time picker (replaces native datetime-local/date) ---------- */
 let dtState = null; // { y, m (0-11), d, hh (24h), mm }
 let dtCtx = null;   // { mode: 'datetime'|'date', onDone }
 
@@ -1721,7 +1700,6 @@ document.getElementById('dt-backdrop').addEventListener('click', (e) => {
   if (e.target.id === 'dt-backdrop') closeDtPicker();
 });
 
-/* ---------- Custom dropdown (replaces native select) ---------- */
 const DD_DEFS = {
   'f-tag': () => allTags.length ? allTags.map(t => [t.name, t.name]) : [['work', 'Work'], ['personal', 'Personal']],
   'f-priority': () => [['high', 'Big rock'], ['normal', 'Medium'], ['low', 'Small']],
@@ -1729,6 +1707,7 @@ const DD_DEFS = {
   'r-tag': () => [['', 'None'], ['work', 'Work'], ['personal', 'Personal']],
   'r-status': () => [['active', 'Active'], ['snoozed', 'Snoozed'], ['dismissed', 'Dismissed'], ['completed', 'Completed']],
   'r-rrule': () => rruleItems(),
+  'r-ends': () => [['never','Never'],['ondate','On a date'],['after','After N occurrences']],
   't-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
   't-tag': () => [['work', 'Work'], ['personal', 'Personal']],
   't-rrule': () => rruleItems(),
@@ -1821,7 +1800,6 @@ document.addEventListener('click', (e) => {
   });
 });
 
-/* ---------- Snooze picker (replaces native prompt) ---------- */
 function askSnooze() {
   return new Promise((resolve) => {
     const bd = document.getElementById('snooze-backdrop');
@@ -1837,7 +1815,6 @@ function askSnooze() {
   });
 }
 
-/* ---------- Toast (replaces native alert) ---------- */
 let toastTimer = null;
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -1871,6 +1848,14 @@ document.getElementById('r-event-btn').addEventListener('click', (e) => {
     } } });
 });
 document.getElementById('r-at-btn').addEventListener('click', () => { remTimeTouched = true; });
+function updateEndsVisibility(){const h=document.getElementById('r-rrule').value!=='';document.getElementById('r-ends-wrap').classList.toggle('hidden',!h);updateEndsFields();}
+function updateEndsFields(){const v=document.getElementById('r-ends').value||'never';document.getElementById('r-end-date-wrap').classList.toggle('hidden',v!=='ondate');document.getElementById('r-end-after-wrap').classList.toggle('hidden',v!=='after');}
+document.getElementById('r-rrule-btn').addEventListener('click', () => {
+  setTimeout(updateEndsVisibility, 50);
+});
+document.getElementById('r-ends-btn').addEventListener('click', () => {
+  setTimeout(updateEndsFields, 50);
+});
 
 document.getElementById('reminder-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1883,6 +1868,8 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
     event_at: evAt || null,
     remind_at: at,
     recurrence: document.getElementById('r-rrule').value.trim() || null,
+    recurrence_end_date: document.getElementById('r-ends').value==='ondate'&&document.getElementById('r-end-date').value?new Date(document.getElementById('r-end-date').value+'T23:59:59').toISOString():null,
+    recurrence_end_after: document.getElementById('r-ends').value==='after'?Math.max(1,parseInt(document.getElementById('r-end-after').value,10)||0)||null:null,
     tag: document.getElementById('r-tag').value || null,
     tags: pickedTags(document.getElementById('r-tags')),
     status: document.getElementById('r-status').value,
@@ -1902,7 +1889,6 @@ document.getElementById('reminder-form').addEventListener('submit', async (e) =>
   }
 });
 
-/* ---------- Journal ---------- */
 let journalFilter = 'all';
 let journalTagFilter = '';
 let journalEntries = [];
@@ -1983,7 +1969,6 @@ async function openJournalDetail(id) {
     document.getElementById('j-detail-date').innerHTML =
       escHtml(f.date) + '<span class="w">' + escHtml(f.weekday) + '</span>';
     const card = document.querySelector('#j-detail-screen .soft-card');
-    // remove any previous title/mood/tags/attachments blocks
     card.querySelectorAll('.detail-title,.detail-mood,.detail-tags,.detail-attach').forEach((n) => n.remove());
     if (e && e.title) {
       const t = document.createElement('div');
@@ -2033,7 +2018,6 @@ function openJournalForm(id, date) {
   loadJournalForm();
 }
 
-// Back-compat: opening the form for a date with no id creates a new entry.
 function openJournalDay(date) {
   openJournalForm(null, date);
 }
@@ -2085,7 +2069,6 @@ document.getElementById('journal-search').addEventListener('input', (e) => {
 });
 document.getElementById('j-back').addEventListener('click', showJournalList);
 
-/* ---------- Rich journal entry form ---------- */
 let journalAttachments = [];
 let journalMood = '';
 
@@ -2109,7 +2092,6 @@ function renderMoodRow() {
   });
 }
 
-// Downscale large images (e.g. phone photos) before embedding.
 function resizeImage(file) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
@@ -2133,7 +2115,6 @@ function resizeImage(file) {
   });
 }
 
-// Allowlist HTML sanitizer for journal bodies (pasted HTML + images).
 function sanitizeHtml(html) {
   const doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
   const allowed = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE',
@@ -2216,10 +2197,9 @@ async function loadJournalForm() {
       journalAttachments = Array.isArray(e.attachments) ? e.attachments : [];
       renderAttachList();
     }
-  } catch (err) { /* treat as new */ }
+  } catch (err) {  }
 }
 
-// Insert an image data URL at the cursor in the rich area.
 function insertImageAtCursor(dataUrl, name) {
   const img = document.createElement('img');
   img.src = dataUrl;
@@ -2239,7 +2219,6 @@ function insertImageAtCursor(dataUrl, name) {
     rich.appendChild(img);
   }
 }
-// Downscale any oversized inline images (catches HTML-paste from iOS etc).
 function downscaleInlineImages() {
   const rich = document.getElementById('j-rich');
   rich.querySelectorAll('img:not([data-rs])').forEach((img) => {
@@ -2276,11 +2255,9 @@ document.getElementById('j-rich').addEventListener('paste', (e) => {
     });
     return;
   }
-  // HTML paste (iOS often pastes <img> tags): let it land, then downscale.
   setTimeout(downscaleInlineImages, 50);
 });
 
-// File attachments -> base64 data URLs.
 document.getElementById('j-attach-btn').addEventListener('click', () => {
   document.getElementById('j-file').click();
 });
@@ -2302,7 +2279,6 @@ document.getElementById('j-file').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-// Date picker for the form.
 document.getElementById('j-date-btn').addEventListener('click', () => {
   openDtPicker({
     initial: document.getElementById('j-date-hid').value,
@@ -2335,8 +2311,6 @@ document.getElementById('j-save').addEventListener('click', async () => {
   }
 });
 
-
-/* ---------- Links ---------- */
 async function loadLinks() {
   const p = new URLSearchParams();
   if (linkSearch) p.set('q', linkSearch);
@@ -2367,7 +2341,7 @@ function linkRow(l) {
   el.className = 'link-row';
   el.dataset.id = l.id;
   let host = l.url;
-  try { host = new URL(l.url).host; } catch (e) { /* keep raw url */ }
+  try { host = new URL(l.url).host; } catch (e) {  }
   const tags = Array.isArray(l.tags) ? l.tags : [];
   const date = l.captured_at ? new Date(l.captured_at).toLocaleDateString() : '';
   const metaBits = [host, l.source, date].filter(Boolean).join(' \u00b7 ');
@@ -2390,7 +2364,6 @@ function linkRow(l) {
     toggleLinkMenu(l.id, e.currentTarget);
   });
 
-// One icon per link row opens a shared popup menu.
 let linkMenuFor = null;
 function closeLinkMenu() {
   const m = document.getElementById('link-menu');
@@ -2535,8 +2508,6 @@ document.getElementById('link-search').addEventListener('input', (e) => {
   }, 300);
 });
 
-
-/* ---------- Inbox ---------- */
 async function loadInbox() {
   inboxItems = await api('GET', '/api/app?r=daybook&view=inbox&triaged=' + (inboxShowTriaged ? 'all' : 'false'));
   renderInbox();
@@ -2641,7 +2612,6 @@ async function discardInbox(id) {
   }
 }
 
-/* ---------- Triage modal ---------- */
 function triageField(label, html) {
   return `<label>${label}${html}</label>`;
 }
