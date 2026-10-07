@@ -38,6 +38,8 @@ function cleanReminder(b) {
     out.recurrence_end_after = (isNaN(n) || n < 1) ? null : n;
   }
   if (b.tag === null || TAGS.includes(b.tag)) out.tag = b.tag;
+  const PRIS = ['high','medium','low','none'];
+  if (b.priority !== undefined) out.priority = PRIS.includes(b.priority) ? b.priority : 'none';
   if (STATUSES.includes(b.status)) out.status = b.status;
   out.updated_at = new Date().toISOString();
   return out;
@@ -147,15 +149,22 @@ module.exports = async (req, res) => {
           const pastEndCount = cur.recurrence_end_after && occurred >= cur.recurrence_end_after;
           patch = (next && !pastEndDate && !pastEndCount)
             ? { remind_at: next, status: 'active', last_fired_at: now, updated_at: now, recurrence_occurred: occurred }
-            : { status: 'completed', last_fired_at: now, updated_at: now, recurrence_occurred: occurred };
+            : { status: 'completed', last_fired_at: now, updated_at: now, completed_at: now, recurrence_occurred: occurred };
         } else {
-          patch = { status: 'completed', last_fired_at: now, updated_at: now };
+          patch = { status: 'completed', last_fired_at: now, updated_at: now, completed_at: now };
         }
         const updated = await sb('PATCH', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`, patch);
         if (!updated || !updated.length) {
           console.error('complete: PATCH matched 0 rows for id', id);
           return send(500, { ok: false, error: 'update failed: no rows matched' });
         }
+        return send(200, updated[0]);
+      }
+      if (action === 'restore') {
+        const updated = await sb('PATCH', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`, {
+          status: 'active', completed_at: null, updated_at: now,
+        });
+        if (!updated || !updated.length) return send(500, { ok: false, error: 'restore failed' });
         return send(200, updated[0]);
       }
       if (action === 'snooze') {
