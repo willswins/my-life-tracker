@@ -836,3 +836,18 @@ pre#ingest-docs {
   background: none; border: none; color: #94a3b8; font-size: 20px;
   cursor: pointer; padding: 0 4px; line-height: 1;
 }
+
+/* Priority indicators */
+.pri-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.pri-high { background:#dc2626; }
+.pri-medium { background:#f59e0b; }
+.pri-low { background:#3b82f6; }
+.pri-none { background:#d1d5db; }
+/* Overdue */
+.rem-overdue { border-left:3px solid #dc2626; background:#fef2f2; }
+.rem-overdue .rem-title { color:#991b1b; font-weight:600; }
+/* Completed view */
+.rem-view-toggle { text-align:right; padding:4px 12px; }
+.link-btn { background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; text-decoration:underline; }
+.rem-completed-row { opacity:0.65; }
+.rem-completed-row .rem-title { text-decoration:line-through; }
