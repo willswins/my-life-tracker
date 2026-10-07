@@ -1,7 +1,12 @@
-// Menu tweaks: Games submenu toggle, profile Refresh button.
+// Menu tweaks: Games submenu toggle, profile menu buttons.
 // Loads after app.js.
 (function() {
 'use strict';
+
+function closeProfileMenu() {
+  var pm = document.getElementById('profile-menu');
+  if (pm) pm.classList.add('hidden');
+}
 
 function wireMenuTweaks() {
   // Games submenu toggle
@@ -21,11 +26,19 @@ function wireMenuTweaks() {
   if (pr && !pr.dataset.wired) {
     pr.dataset.wired = '1';
     pr.addEventListener('click', function() {
-      var pm = document.getElementById('profile-menu');
-      if (pm) pm.classList.add('hidden');
+      closeProfileMenu();
       if (mr) mr.click();
     });
   }
+  // Invite & Connectors now live in the profile menu — close it when clicked
+  // (app.js handlers still run via getElementById and open their modals)
+  ['menu-invite', 'menu-connectors'].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (b && !b.dataset.pmWired) {
+      b.dataset.pmWired = '1';
+      b.addEventListener('click', closeProfileMenu);
+    }
+  });
 }
 
 if (document.readyState === 'loading') {
