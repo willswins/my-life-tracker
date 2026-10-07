@@ -1,11 +1,29 @@
 // Cross-move: copy/move items between My Board and Reminders.
 // Loads after app.js and reminder-views.js.
+//
+// NOTE: app.js declares `cards`, `reminders`, `detailId` with top-level `let`,
+// so they are global lexical bindings — NOT window properties. Access them as
+// bare identifiers (they resolve through the scope chain), never window.cards.
 (function() {
 'use strict';
 
-// --- Reminder -> Board ---
+function getReminders() {
+  try { return (typeof reminders !== 'undefined') ? reminders : []; }
+  catch (e) { return []; }
+}
+function getCards() {
+  try { return (typeof cards !== 'undefined') ? cards : []; }
+  catch (e) { return []; }
+}
+function getDetailId() {
+  try { return (typeof detailId !== 'undefined') ? detailId : null; }
+  catch (e) { return null; }
+}
+
+// --- Reminder -> Board (lands in NOW column) ---
 async function reminderToBoard(id, move) {
-  const r = (window.reminders || []).find((x) => String(x.id) === String(id));
+  const list = getReminders();
+  const r = list.find((x) => String(x.id) === String(id));
   if (!r) { toast('Reminder not found.'); return; }
   try {
     const data = {
@@ -21,24 +39,24 @@ async function reminderToBoard(id, move) {
     await api('POST', '/api/app?r=cards', data);
     if (move) {
       await api('DELETE', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id));
-      const idx = window.reminders.findIndex((x) => String(x.id) === String(id));
-      if (idx >= 0) window.reminders.splice(idx, 1);
-      renderReminders();
+      const idx = list.findIndex((x) => String(x.id) === String(id));
+      if (idx >= 0) list.splice(idx, 1);
+      if (typeof renderReminders === 'function') renderReminders();
     }
-    // Refresh board data if the function exists
     if (typeof loadCards === 'function') { await loadCards(); }
+    else if (typeof render === 'function') { render(); }
     toast(move ? 'Moved to Board (Now).' : 'Copied to Board (Now).');
   } catch (e) {
     toast('Could not move to Board. Please try again.');
   }
 }
 
-// --- Card -> Reminder ---
+// --- Card -> Reminder (defaults to tomorrow, alert 1h before) ---
 async function cardToReminder(cardId, move) {
-  const c = (window.cards || []).find((x) => String(x.id) === String(cardId));
+  const list = getCards();
+  const c = list.find((x) => String(x.id) === String(cardId));
   if (!c) { toast('Card not found.'); return; }
   try {
-    // Default: tomorrow, same time; reminder 1 hour before (standing rule)
     const ev = new Date(Date.now() + 24 * 3600 * 1000);
     const remindAt = new Date(ev.getTime() - 3600 * 1000);
     const data = {
@@ -54,13 +72,12 @@ async function cardToReminder(cardId, move) {
     await api('POST', '/api/app?r=daybook&view=reminders', data);
     if (move) {
       await api('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(cardId));
-      const idx = window.cards.findIndex((x) => String(x.id) === String(cardId));
-      if (idx >= 0) window.cards.splice(idx, 1);
+      const idx = list.findIndex((x) => String(x.id) === String(cardId));
+      if (idx >= 0) list.splice(idx, 1);
       if (typeof render === 'function') render();
     }
     if (typeof updateBadges === 'function') { await updateBadges(); }
     if (typeof renderReminders === 'function') { renderReminders(); }
-    // Close the detail modal
     const bd = document.getElementById('detail-backdrop');
     if (bd) bd.classList.add('hidden');
     toast(move ? 'Moved to Reminders (tomorrow).' : 'Copied to Reminders (tomorrow).');
@@ -70,6 +87,7 @@ async function cardToReminder(cardId, move) {
 }
 
 // --- Wire into remAct (reminder ⋮ menu) ---
+// remAct is a function declaration in app.js -> available as window.remAct.
 const origRemAct = window.remAct;
 window.remAct = async function(id, a) {
   if (a === 'copy-to-board') { await reminderToBoard(id, false); return; }
@@ -81,29 +99,26 @@ window.remAct = async function(id, a) {
 function wireCardDetailButtons() {
   const copyBtn = document.getElementById('d-copy-rem');
   const moveBtn = document.getElementById('d-move-rem');
-  // detailId is the global set by openDetail()
   if (copyBtn && !copyBtn.dataset.wired) {
     copyBtn.dataset.wired = '1';
     copyBtn.addEventListener('click', () => {
-      const cid = (typeof detailId !== 'undefined') ? detailId : null;
-      if (cid) cardToReminder(cid, false);
+      const cid = getDetailId();
+      if (cid != null) cardToReminder(cid, false);
     });
   }
   if (moveBtn && !moveBtn.dataset.wired) {
     moveBtn.dataset.wired = '1';
     moveBtn.addEventListener('click', () => {
-      const cid = (typeof detailId !== 'undefined') ? detailId : null;
-      if (cid) cardToReminder(cid, true);
+      const cid = getDetailId();
+      if (cid != null) cardToReminder(cid, true);
     });
   }
 }
-// Wire on load and re-wire when detail opens (in case DOM was re-rendered)
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', wireCardDetailButtons);
 } else {
   wireCardDetailButtons();
 }
-// Also hook openDetail to re-wire
 const origOpenDetail = window.openDetail;
 if (origOpenDetail) {
   window.openDetail = async function(id) {
