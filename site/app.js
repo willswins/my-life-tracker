@@ -140,6 +140,7 @@ function render() {
     const list = cards.filter((c) => c.lane === lane &&
       !(c.tags || []).includes('news') &&
       !(c.tags || []).includes('mood') &&
+      !(c.tags || []).includes('longterm') &&
       (!boardTagFilter || (c.tags || []).includes(boardTagFilter)) &&
       (!q || (c.title + ' ' + (c.details || '') + ' ' + (c.owner || '')).toLowerCase().includes(q)));
     laneEl.querySelector('h2').innerHTML =
@@ -584,7 +585,7 @@ init();
 
 'use strict';
 
-const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'mood', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'mood', 'longterm', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
   home: 'view-home',
   tasks: 'board',
@@ -1283,6 +1284,7 @@ async function switchView(name, push = true) {
     else if (name === 'inbox') await loadInbox();
     else if (name === 'news') renderNews();
     else if (name === 'mood') renderMood();
+    else if (name === 'longterm') renderLongTerm();
     else if (name === 'game') initGame();
     else if (name === 'spell') initSpell();
     else if (name === 'bee') initBee();
