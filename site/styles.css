@@ -948,3 +948,59 @@ pre#ingest-docs {
   }
 }
 
+
+/* === Menu tweaks (added 2026-10-07) === */
+.games-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.games-caret {
+  font-size: 0.8em;
+  transition: transform 0.15s ease;
+  color: var(--muted);
+}
+.games-toggle.open .games-caret {
+  transform: rotate(90deg);
+}
+.games-submenu {
+  display: flex;
+  flex-direction: column;
+}
+.games-submenu.hidden {
+  display: none;
+}
+.games-submenu .view-link.sub {
+  padding-left: 1.75rem;
+  font-size: 0.92em;
+  color: var(--muted);
+}
+.games-submenu .view-link.sub.active {
+  color: var(--ink);
+}
+#profile-menu .profile-logout {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+}
+#profile-menu .profile-logout:hover {
+  background: var(--hover, #f3f4f6);
+}
+#profile-menu button.profile-logout {
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 768px) {
+  #profile-menu .profile-logout {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+}
