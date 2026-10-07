@@ -24,6 +24,7 @@
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
         <button data-view="news" class="view-link">News</button>
         <button data-view="mood" class="view-link">Mood</button>
+        <button data-view="longterm" class="view-link">Long Term</button>
         <button id="games-toggle" class="games-toggle">Games <span class="games-caret">▸</span></button>
         <div id="games-submenu" class="games-submenu hidden">
           <button data-view="game" class="view-link sub">Sum It Up</button>
@@ -245,6 +246,14 @@
   <div id="news-list"></div>
 </main>
 <main id="view-mood" class="view hidden"></main>
+
+<main id="view-longterm" class="view hidden">
+  <div class="lt-header">
+    <p class="lt-sub">The big things. Glance daily, never forget.</p>
+    <button id="lt-add" class="btn-primary">+ Add</button>
+  </div>
+  <div id="lt-grid" class="lt-grid"></div>
+</main>
 
 <main id="view-game" class="view hidden">
   <div class="game-container">
@@ -615,5 +624,6 @@
 <script src="/reminder-views.js"></script>
   <script src="/cross-move.js"></script>
   <script src="/menu-tweaks.js"></script>
+<script src="/longterm.js"></script>
 </body>
 </html>
