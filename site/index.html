@@ -39,7 +39,7 @@
     <h1 id="view-title">DayBook</h1>
   </div>
   <div class="header-right">
-    <button id="profile-btn" aria-label="Account"><span id="profile-initial">?</span></button>
+    <button id="profile-btn" aria-label="Account"><span id="profile-initial">?</span><span class="badge-red" id="badge-profile-due"></span></button>
     <div id="profile-menu" class="hidden">
       <div class="profile-email" id="profile-email"></div>
       <a href="/api/auth?action=logout" class="profile-logout">Logout</a>
@@ -469,6 +469,19 @@
       <input id="r-rrule" type="hidden">
       <button type="button" id="r-rrule-btn" class="dd-field fit" data-dd="r-rrule">None</button>
     </label>
+    <div id="r-ends-wrap" class="hidden">
+      <label>Ends
+        <input id="r-ends" type="hidden" value="never">
+        <button type="button" id="r-ends-btn" class="dd-field fit" data-dd="r-ends">Never</button>
+      </label>
+      <label id="r-end-date-wrap" class="hidden">End date
+        <input id="r-end-date" type="hidden">
+        <button type="button" class="dd-field" data-dtdate="r-end-date" data-dtmode="date" data-dtempty="Pick end date">Pick end date</button>
+      </label>
+      <label id="r-end-after-wrap" class="hidden">After
+        <input id="r-end-after" type="number" min="1" max="999" placeholder="occurrences" style="width:110px">
+      </label>
+    </div>
     <div class="row">
       <label>Tag
         <input type="hidden" id="r-tag">
