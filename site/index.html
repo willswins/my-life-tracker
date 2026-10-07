@@ -24,7 +24,7 @@
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
         <button data-view="news" class="view-link">News</button>
         <button data-view="mood" class="view-link">Mood</button>
-        <button id="games-toggle" class="view-link games-toggle">Games <span class="games-caret">▸</span></button>
+        <button id="games-toggle" class="games-toggle">Games <span class="games-caret">▸</span></button>
         <div id="games-submenu" class="games-submenu hidden">
           <button data-view="game" class="view-link sub">Sum It Up</button>
           <button data-view="spell" class="view-link sub">Spell It</button>
@@ -33,8 +33,6 @@
         </div>
         <button data-view="about" class="view-link">About</button>
         <hr class="menu-sep">
-        <button id="menu-invite">Invite</button>
-        <button id="menu-connectors">Connectors</button>
         <button id="menu-refresh" class="hidden">Refresh</button>
               </div>
     </div>
@@ -45,6 +43,8 @@
     <button id="profile-btn" aria-label="Account"><span id="profile-initial">?</span><span class="badge-red" id="badge-profile-due"></span></button>
     <div id="profile-menu" class="hidden">
       <div class="profile-email" id="profile-email"></div>
+      <button id="menu-invite" class="profile-logout">Invite</button>
+      <button id="menu-connectors" class="profile-logout">Connectors</button>
       <button id="profile-refresh" class="profile-logout">Refresh</button>
       <a href="/api/auth?action=logout" class="profile-logout">Logout</a>
     </div>
