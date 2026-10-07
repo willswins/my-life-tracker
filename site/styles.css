@@ -851,3 +851,100 @@ pre#ingest-docs {
 .link-btn { background:none; border:none; color:#3b82f6; font-size:13px; cursor:pointer; text-decoration:underline; }
 .rem-completed-row { opacity:0.65; }
 .rem-completed-row .rem-title { text-decoration:line-through; }
+
+/* === iPhone 16 Pro Max optimization (added 2026-10-07) ===
+ * Targets 6.9" display (2868x1320, 460ppi), Dynamic Island, iOS Safari.
+ * All shared UI — per the common-CSS rule, no page-specific styles.
+ */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll from overflowing elements */
+  html, body { overflow-x: hidden; }
+
+  /* Safe area: Dynamic Island (top) and home indicator (bottom) */
+  header, .app-header, #topbar {
+    padding-top: max(0.6rem, env(safe-area-inset-top));
+  }
+  main, #view, .view {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  /* Bottom nav / tab bar if present */
+  nav.bottom-nav, #bottomnav, .tabbar {
+    padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+  }
+
+  /* 44px minimum touch targets (Apple HIG) */
+  button, .btn, [role="button"] {
+    min-height: 44px;
+  }
+  .card .actions button {
+    min-height: 44px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+  }
+  /* Reminder ⋮ menu items */
+  #rem-menu button, .popup-menu button {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  /* Hamburger and header icon buttons */
+  #menu-btn, .icon-btn, header button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* 16px inputs — prevents iOS auto-zoom on focus */
+  .modal input, .modal textarea, .modal select,
+  input, textarea, select {
+    font-size: 16px;
+  }
+  .modal input, .modal textarea, .modal select {
+    padding: 0.75rem;
+  }
+
+  /* Modals: full-width sheet on phone */
+  .modal, #modal-backdrop .modal, #reminder-backdrop .modal,
+  #detail-backdrop .modal {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100dvh - 4rem);
+    margin-top: max(1rem, env(safe-area-inset-top));
+    margin-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .modal-actions {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-actions button {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  /* Cards: roomier on the big phone screen */
+  .card {
+    padding: 0.9rem 1rem;
+  }
+  .card h3 {
+    font-size: 1.05rem;
+  }
+  .card .details {
+    font-size: 0.92rem;
+  }
+
+  /* Reminder rows: larger tap area */
+  .rem-row, .reminder-item {
+    padding: 0.8rem 0.9rem;
+    min-height: 56px;
+  }
+
+  /* Dropdown menus: easier to tap */
+  .dropdown-menu button, [data-dd-menu] button {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  /* Date/time picker: fit the phone screen */
+  #dt-backdrop .modal {
+    width: calc(100vw - 2rem);
+  }
+}
+
