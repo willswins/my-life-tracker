@@ -46,13 +46,18 @@ window.renderReminders = function() {
     });
   box.innerHTML = '';
   let any = false;
+  // Spell out dates for Today/Tomorrow so the user doesn't have to figure them out
+  const todayLabel = 'Today \u00b7 ' + now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const tmrDate = addDaysLocal(now, 1);
+  const tmrLabel = 'Tomorrow \u00b7 ' + tmrDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   Object.entries(groups).forEach(([name, list]) => {
     if (!list.length) return;
     any = true;
     const g = document.createElement('div');
     g.className = 'tl-group';
     const h = document.createElement('h3');
-    h.textContent = name + ' (' + list.length + ')';
+    const label = name === 'Today' ? todayLabel : name === 'Tomorrow' ? tmrLabel : name;
+    h.textContent = label + ' (' + list.length + ')';
     g.appendChild(h);
     list.forEach((r) => g.appendChild(remRow(r)));
     box.appendChild(g);
