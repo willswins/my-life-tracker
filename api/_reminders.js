@@ -152,6 +152,10 @@ module.exports = async (req, res) => {
           patch = { status: 'completed', last_fired_at: now, updated_at: now };
         }
         const updated = await sb('PATCH', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`, patch);
+        if (!updated || !updated.length) {
+          console.error('complete: PATCH matched 0 rows for id', id);
+          return send(500, { ok: false, error: 'update failed: no rows matched' });
+        }
         return send(200, updated[0]);
       }
       if (action === 'snooze') {
@@ -178,7 +182,11 @@ module.exports = async (req, res) => {
       return send(200, updated[0]);
     }
     if (req.method === 'DELETE' && id) {
-      await sb('DELETE', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`);
+      const deleted = await sb('DELETE', `/rest/v1/reminders?id=eq.${encodeURIComponent(id)}&${scope}`);
+      if (!deleted || !deleted.length) {
+        console.error('delete: DELETE matched 0 rows for id', id);
+        return send(500, { ok: false, error: 'delete failed: no rows matched' });
+      }
       res.writeHead(204, { 'Cache-Control': 'no-store' });
       res.end();
       return;
