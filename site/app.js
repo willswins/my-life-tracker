@@ -1544,7 +1544,16 @@ async function remAct(id, a) {
         confirmLabel: 'Delete',
       });
       if (!yes) return;
-      await api('DELETE', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id));
+      const idx = reminders.findIndex((x) => x.id === id);
+      const removed = idx >= 0 ? reminders.splice(idx, 1)[0] : null;
+      renderReminders();
+      try {
+        await api('DELETE', '/api/app?r=daybook&view=reminders&id=' + encodeURIComponent(id));
+      } catch (e) {
+        if (removed) reminders.splice(idx, 0, removed);
+        renderReminders();
+        throw e;
+      }
     } else if (a === 'dismiss') {
       const yes = await confirmAction({
         title: 'Dismiss this reminder?',
