@@ -585,7 +585,7 @@ init();
 
 'use strict';
 
-const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'news', 'mood', 'longterm', 'game', 'spell', 'bee', 'grammar', 'about'];
+const VIEWS = ['home', 'tasks', 'reminders', 'journal', 'links', 'inbox', 'mood', 'longterm', 'game', 'spell', 'bee', 'grammar', 'about'];
 const VIEW_IDS = {
   home: 'view-home',
   tasks: 'board',
@@ -593,7 +593,6 @@ const VIEW_IDS = {
   journal: 'view-journal',
   links: 'view-links',
   inbox: 'view-inbox',
-  news: 'view-news',
   mood: 'view-mood',
   longterm: 'view-longterm',
   game: 'view-game',
@@ -609,7 +608,6 @@ const VIEW_TITLES = {
   journal: 'Journal',
   links: 'Links',
   inbox: 'Inbox',
-  news: 'News',
   mood: 'Mood',
   longterm: 'Long Term',
   game: 'Sum It Up',
@@ -1284,7 +1282,6 @@ async function switchView(name, push = true) {
     else if (name === 'journal') await showJournalList();
     else if (name === 'links') await loadLinks();
     else if (name === 'inbox') await loadInbox();
-    else if (name === 'news') renderNews();
     else if (name === 'mood') renderMood();
     else if (name === 'longterm') renderLongTerm();
     else if (name === 'game') initGame();
