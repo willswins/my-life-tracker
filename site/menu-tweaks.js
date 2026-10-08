@@ -58,32 +58,34 @@ function wireMenuTweaks() {
       if (typeof switchView === 'function') switchView('about');
     });
   }
-  // iOS Safari: click events don't bubble to document from non-interactive
-  // elements, so popup menus (rem-menu, link-menu, dd-menu) stay open on tap.
-  // Use touchstart (passive) as well — close only when the tap is outside
-  // the open popup and outside its toggle button.
-  if (!document.dataset.popupTouchWired) {
-    document.dataset.popupTouchWired = '1';
-    document.addEventListener('touchstart', function(e) {
-      var t = e.target;
-      var inRem = t.closest && (t.closest('#rem-menu') || t.closest('.link-menu-btn'));
-      var inLink = t.closest && (t.closest('#link-menu') || t.closest('.link-menu-btn'));
-      var inDd = t.closest && (t.closest('#dd-menu') || t.closest('.dd-field'));
-      var inProfile = t.closest && (t.closest('#profile-menu') || t.closest('#profile-btn'));
-      if (!inRem) {
-        var rm = document.getElementById('rem-menu');
-        if (rm && !rm.classList.contains('hidden') && typeof closeRemMenu === 'function') closeRemMenu();
-      }
-      if (!inLink) {
-        var lm = document.getElementById('link-menu');
-        if (lm && !lm.classList.contains('hidden') && typeof closeLinkMenu === 'function') closeLinkMenu();
-      }
-      if (!inDd) {
-        var dd = document.getElementById('dd-menu');
-        if (dd && !dd.classList.contains('hidden') && typeof closeDropdown === 'function') closeDropdown();
-      }
-      if (!inProfile) closeProfileMenu();
-    }, { passive: true });
+  // Dismiss popup menus (rem-menu, link-menu, dd-menu, profile-menu) when
+  // tapping/clicking outside them. iOS Safari doesn't bubble click events to
+  // document from non-interactive elements, so we listen for touchstart too.
+  // Both handlers share dismissPopups(); each is idempotent.
+  function dismissPopups(e) {
+    var t = e.target;
+    var inRem = t.closest && (t.closest('#rem-menu') || t.closest('.link-menu-btn'));
+    var inLink = t.closest && (t.closest('#link-menu') || t.closest('.link-menu-btn'));
+    var inDd = t.closest && (t.closest('#dd-menu') || t.closest('.dd-field'));
+    var inProfile = t.closest && (t.closest('#profile-menu') || t.closest('#profile-btn'));
+    if (!inRem) {
+      var rm = document.getElementById('rem-menu');
+      if (rm && !rm.classList.contains('hidden') && typeof closeRemMenu === 'function') closeRemMenu();
+    }
+    if (!inLink) {
+      var lm = document.getElementById('link-menu');
+      if (lm && !lm.classList.contains('hidden') && typeof closeLinkMenu === 'function') closeLinkMenu();
+    }
+    if (!inDd) {
+      var dd = document.getElementById('dd-menu');
+      if (dd && !dd.classList.contains('hidden') && typeof closeDropdown === 'function') closeDropdown();
+    }
+    if (!inProfile) closeProfileMenu();
+  }
+  if (!document.dataset.popupDismissWired) {
+    document.dataset.popupDismissWired = '1';
+    document.addEventListener('touchstart', dismissPopups, { passive: true });
+    document.addEventListener('click', dismissPopups);
   }
 }
 
