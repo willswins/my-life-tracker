@@ -1130,3 +1130,9 @@ pre#ingest-docs {
 .lt-to-task { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; cursor: pointer; margin-top: 0.5rem; color: var(--muted); }
 .lt-to-task:hover { background: var(--hover, #f3f4f6); color: var(--ink); }
 [data-act="to-longterm"] { font-size: 0.8rem; }
+
+.wm-word { font-size: 2rem; font-weight: 700; text-align: center; margin: 0.75rem 0 0.1rem; letter-spacing: 0.02em; }
+.wm-pos { text-align: center; color: #888; font-style: italic; margin-bottom: 0.5rem; }
+.wm-sentence { font-size: 1.05rem; line-height: 1.5; }
+.review-sent { color: #666; font-style: italic; }
+.review-exp { color: #555; font-size: 0.9em; }
