@@ -10,6 +10,20 @@ function initRegistrations() {
   if (typeof VIEW_IDS !== 'undefined') VIEW_IDS['wordmean'] = 'view-wordmean';
   if (typeof VIEW_TITLES !== 'undefined') VIEW_TITLES['wordmean'] = 'Word Meaning';
   
+  // Add timer toggle button
+  const diffRow = document.querySelector('#view-wordmean .spell-difficulty');
+  if (diffRow && !document.getElementById('wm-timer-toggle')) {
+    const tgl = document.createElement('button');
+    tgl.id = 'wm-timer-toggle';
+    tgl.textContent = '\u23f1 Timer: On';
+    tgl.addEventListener('click', () => {
+      wmTimed = !wmTimed;
+      tgl.textContent = wmTimed ? '\u23f1 Timer: On' : '\u23f1 Timer: Off';
+      tgl.classList.toggle('active', !wmTimed);
+      initWordMean();
+    });
+    diffRow.appendChild(tgl);
+  }
   // Hook the menu button to init our game after view switches
   const menuBtn = document.querySelector('[data-view="wordmean"]');
   if (menuBtn && !menuBtn._wmHooked) {
@@ -46,13 +60,14 @@ const WORDMEAN_TIME = 60;
 function wordMeanBank() { return (typeof WORD_MEANING_QS !== 'undefined') ? WORD_MEANING_QS : {simple: [], medium: [], complex: []}; }
 let wmDiff = 'medium', wmScore = 0, wmStreak = 0, wmBest = 0;
 let wmLeft = WORDMEAN_TIME, wmTimer = null, wmQs = [], wmQi = 0, wmLock = false, wmPlaying = false;
+let wmTimed = true;
 let wmHistory = [];
 function wmSet(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 function wmShuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function wmStats() {
   wmSet('wm-score', String(wmScore));
   wmSet('wm-streak', String(wmStreak));
-  wmSet('wm-time', wmLeft + 's');
+  wmSet('wm-time', wmTimed ? wmLeft + 's' : '\u221e');
   wmSet('wm-best', String(wmBest));
   const fill = document.getElementById('wm-timer-fill');
   if (fill) fill.style.width = Math.max(0, (wmLeft / WORDMEAN_TIME) * 100) + '%';
@@ -129,14 +144,35 @@ function wmStart() {
   if (rb) rb.classList.add('hidden');
   const rv = document.getElementById('wm-review');
   if (rv) { rv.classList.add('hidden'); rv.innerHTML = ''; }
+  const eb = document.getElementById('wm-end');
+  if (eb) eb.classList.add('hidden');
   wmStats();
   wmRenderQ();
   clearInterval(wmTimer);
-  wmTimer = setInterval(() => {
-    wmLeft--;
-    wmStats();
-    if (wmLeft <= 0) wordMeanEnd();
-  }, 1000);
+  if (wmTimed) {
+    wmTimer = setInterval(() => {
+      wmLeft--;
+      wmStats();
+      if (wmLeft <= 0) wordMeanEnd();
+    }, 1000);
+  }
+  // Show End button in untimed mode
+  let endBtn = document.getElementById('wm-end');
+  if (!wmTimed) {
+    if (!endBtn && sb && sb.parentNode) {
+      endBtn = document.createElement('button');
+      endBtn.id = 'wm-end';
+      endBtn.className = 'game-next';
+      endBtn.style.display = 'block';
+      endBtn.style.margin = '0.75rem auto 0';
+      endBtn.textContent = 'End Game';
+      endBtn.addEventListener('click', () => wordMeanEnd());
+      sb.parentNode.insertBefore(endBtn, sb.nextSibling);
+    }
+    if (endBtn) endBtn.classList.remove('hidden');
+  } else if (endBtn) {
+    endBtn.classList.add('hidden');
+  }
 }
 function wordMeanEnd() {
   wmPlaying = false;
@@ -216,6 +252,8 @@ function initWordMean() {
   if (rb) rb.classList.add('hidden');
   const rv = document.getElementById('wm-review');
   if (rv) { rv.classList.add('hidden'); rv.innerHTML = ''; }
+  const eb = document.getElementById('wm-end');
+  if (eb) eb.classList.add('hidden');
   const bind = (id, fn) => {
     const el = document.getElementById(id);
     if (el && !el._wmBound) { el._wmBound = true; el.addEventListener('click', fn); }
