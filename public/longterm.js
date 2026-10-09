@@ -168,5 +168,18 @@ async function deleteLt() {
 
 // Expose moveToTasks for task board integration
 window.ltMoveToTasks = moveToTasks;
+// Expose modal opener for the + Add button
+window.ltOpenAdd = function() { openLtModal(null); };
+
+// Wire up the + Add button
+function wireLtAdd() {
+  var btn = document.getElementById('lt-add');
+  if (btn && !btn.hasAttribute('data-lt-wired')) {
+    btn.setAttribute('data-lt-wired', '1');
+    btn.addEventListener('click', function() { openLtModal(null); });
+  }
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireLtAdd);
+else wireLtAdd();
 
 })();
