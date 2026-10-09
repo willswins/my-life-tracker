@@ -991,6 +991,7 @@ pre#ingest-docs {
   border: none;
   padding: 0.6rem 1rem;
   font-size: 0.95rem;
+  font-weight: 400;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
@@ -1005,7 +1006,8 @@ pre#ingest-docs {
 @media (max-width: 768px) {
   #profile-menu .profile-logout {
     min-height: 48px;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 400;
   }
 }
 
