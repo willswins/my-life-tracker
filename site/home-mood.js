@@ -44,7 +44,7 @@ function init() {
     '<div id="home-mood-status" class="home-mood-status"></div>';
 
   if (quickAdd && quickAdd.parentNode) {
-    quickAdd.parentNode.insertBefore(widget, quickAdd.nextSibling);
+    quickAdd.parentNode.insertBefore(widget, quickAdd);
   } else {
     home.querySelector('.home-wrap').appendChild(widget);
   }
