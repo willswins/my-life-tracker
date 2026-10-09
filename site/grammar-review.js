@@ -3,28 +3,44 @@
   let gramReview = [];
 
   function initReview() {
-    if (typeof gramAnswer === 'undefined') { setTimeout(initReview, 200); return; }
+    if (typeof gramAnswer === 'undefined' || typeof gramStart === 'undefined' || typeof gramEnd === 'undefined') {
+      setTimeout(initReview, 200);
+      return;
+    }
 
     const _answer = gramAnswer, _start = gramStart, _end = gramEnd;
 
-    gramAnswer = function(oi, btn) {
+    // Use a wrapper that captures the question BEFORE the original runs
+    window.gramAnswer = function(oi, btn) {
       try {
-        const q = gramQs[gramQi];
-        if (q) gramReview.push({prompt: q[0], options: q[1].slice(), correct: q[2], userIdx: oi, source: q[3] || 'seed'});
+        // Capture at call time — gramQi is the current question index
+        const qi = (typeof gramQi !== 'undefined') ? gramQi : -1;
+        const qs = (typeof gramQs !== 'undefined') ? gramQs : [];
+        const q = (qi >= 0 && qi < qs.length) ? qs[qi] : null;
+        if (q && q.length >= 3) {
+          gramReview.push({
+            prompt: q[0],
+            options: q[1].slice(),
+            correct: q[2],
+            userIdx: oi,
+            source: q[3] || 'seed'
+          });
+        }
       } catch (e) {}
       return _answer.call(this, oi, btn);
     };
 
-    gramStart = function() {
+    window.gramStart = function() {
       gramReview = [];
       const rv = document.getElementById('gram-review');
       if (rv) { rv.innerHTML = ''; rv.classList.add('hidden'); }
       return _start.call(this);
     };
 
-    gramEnd = function() {
+    window.gramEnd = function() {
       const r = _end.call(this);
-      showReview();
+      // Delay slightly to ensure DOM is updated
+      setTimeout(showReview, 100);
       return r;
     };
 
@@ -32,8 +48,12 @@
       const rv = document.getElementById('gram-review');
       if (!rv) return;
       rv.classList.remove('hidden');
-      if (!gramReview.length) { rv.innerHTML = '<p class="game-hint">No questions answered this round.</p>'; return; }
-      let html = '<h3>Review — ' + gramReview.length + ' questions</h3>';
+      if (!gramReview.length) {
+        rv.innerHTML = '<p class="game-hint">No questions answered this round.</p>';
+        return;
+      }
+      const qWord = gramReview.length === 1 ? 'question' : 'questions';
+      let html = '<h3>Review — ' + gramReview.length + ' ' + qWord + '</h3>';
       gramReview.forEach((it, i) => {
         const ok = it.userIdx === it.correct;
         const src = it.source === 'luttu' ? 'From your messages' : 'Starter set';
