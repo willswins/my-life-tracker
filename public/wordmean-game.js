@@ -63,13 +63,21 @@ function wmRenderQ() {
   wmSet('wm-word', q[0]);
   wmSet('wm-pos', q[1]);
   wmSet('wm-sentence', '\u201c' + q[2] + '\u201d');
+  // Shuffle options so the correct answer isn't always first
+  const opts = q[3].map((text, idx) => ({ text: text, isCorrect: idx === q[4] }));
+  for (let i = opts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [opts[i], opts[j]] = [opts[j], opts[i]];
+  }
+  // Store the shuffled correct index for answer checking
+  q._shuffledCorrect = opts.findIndex(o => o.isCorrect);
   const box = document.getElementById('wm-options');
   if (box) {
     box.innerHTML = '';
-    q[3].forEach((opt, i) => {
+    opts.forEach((opt, i) => {
       const b = document.createElement('button');
       b.className = 'game-opt';
-      b.textContent = opt;
+      b.textContent = opt.text;
       b.addEventListener('click', () => wmAnswer(i, b));
       box.appendChild(b);
     });
@@ -81,11 +89,12 @@ function wmAnswer(oi, btn) {
   if (wmLock || !wmPlaying) return;
   wmLock = true;
   const q = wmQs[wmQi];
-  const correct = q[4];
+  const correct = (typeof q._shuffledCorrect === 'number') ? q._shuffledCorrect : q[4];
   const box = document.getElementById('wm-options');
   const fb = document.getElementById('wm-feedback');
   const isRight = oi === correct;
-  wmHistory.push({ word: q[0], pos: q[1], sentence: q[2], options: q[3], correct: correct, picked: oi, ok: isRight, explanation: q[6] });
+  const pickedText = btn ? btn.textContent : '';
+  wmHistory.push({ word: q[0], pos: q[1], sentence: q[2], options: q[3], correct: q[4], pickedText: pickedText, ok: isRight, explanation: q[6] });
   if (isRight) {
     const pts = 10 + Math.min(wmStreak, 5) * 2;
     wmScore += pts;
@@ -97,11 +106,9 @@ function wmAnswer(oi, btn) {
     if (btn) btn.classList.add('wrong');
     if (box) {
       const kids = box.children;
-      for (let i = 0; i < kids.length; i++) {
-        if (kids[i].textContent === q[3][correct]) kids[i].classList.add('correct');
-      }
+      if (kids[correct]) kids[correct].classList.add('correct');
     }
-    if (fb) { fb.textContent = 'Answer: ' + q[3][correct]; fb.className = 'game-feedback bad'; }
+    if (fb) { fb.textContent = 'Answer: ' + q[3][q[4]]; fb.className = 'game-feedback bad'; }
   }
   wmStats();
   setTimeout(() => {
@@ -175,7 +182,7 @@ function wmToggleReview() {
       h += '<strong>' + it.word + '</strong> <em>(' + it.pos + ')</em><br>';
       h += '<span class="review-sent">\u201c' + it.sentence + '\u201d</span><br>';
       h += 'Meaning: ' + it.options[it.correct];
-      if (!it.ok) h += '<br>You picked: \u201c' + it.options[it.picked] + '\u201d';
+      if (!it.ok) h += '<br>You picked: \u201c' + it.pickedText + '\u201d';
       if (it.explanation) h += '<br><span class="review-exp">' + it.explanation + '</span>';
       h += '</div>';
     });
