@@ -1714,7 +1714,7 @@ const DD_DEFS = {
   'f-tag': () => allTags.length ? allTags.map(t => [t.name, t.name]) : [['work', 'Work'], ['personal', 'Personal']],
   'f-priority': () => [['high', 'Big rock'], ['normal', 'Medium'], ['low', 'Small']],
   'f-lane': () => [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting on others'], ['done', 'Done']],
-  'r-tag': () => [['', 'None'], ['work', 'Work'], ['personal', 'Personal']],
+  'r-tag': () => [['', 'None'], ...allTags.map(t => [t.name, t.name])],
   'r-status': () => [['active', 'Active'], ['snoozed', 'Snoozed'], ['dismissed', 'Dismissed'], ['completed', 'Completed']],
   'r-rrule': () => rruleItems(),
   'r-ends': () => [['never','Never'],['ondate','On a date'],['after','After N occurrences']],
