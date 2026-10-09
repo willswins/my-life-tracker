@@ -178,6 +178,7 @@ button.primary {
 .modal-actions .spacer { flex: 1; }
 .modal-actions { align-items: center; }
 #reminder-form .modal-actions { flex-direction: column; align-items: stretch; }
+.modal-actions button { width: 100%; min-width: 0; white-space: normal; word-break: break-word; }
 #reminder-form .modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
 
 button.danger-btn { color: #b91c1c; }
