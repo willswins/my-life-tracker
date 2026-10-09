@@ -497,7 +497,7 @@ document.getElementById('menu-connectors').addEventListener('click', () => {
 });
 document.getElementById('menu-refresh').addEventListener('click', async () => {
   menuEl.classList.add('hidden');
-  try { await loadCards(); await switchView(currentView, false); }
+  try { await loadCards(); await switchView(currentView, false); toast('Refreshed'); }
   catch (e) { toast('Could not refresh. Please try again.'); }
 });
 
