@@ -1163,3 +1163,23 @@ pre#ingest-docs {
 .home-mood-face:hover { transform: scale(1.15); }
 .home-mood-face.selected { border-color: var(--ink); background: var(--lane); transform: scale(1.1); }
 .home-mood-status { text-align: center; font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+
+/* Recall game styles */
+.rc-mode-tabs { display: flex; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; flex-wrap: wrap; }
+.rc-tab { padding: 0.5rem 1rem; border: 2px solid var(--line); background: var(--card); border-radius: 999px; cursor: pointer; font-size: 0.85rem; }
+.rc-tab.active { border-color: var(--ink); background: var(--ink); color: #fff; }
+.rc-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem; margin: 1rem auto; max-width: 600px; text-align: center; }
+.rc-theme { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--lane); padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+.rc-def { font-size: 1.15rem; font-style: italic; margin: 0.5rem 0; color: var(--ink); }
+.rc-ctx { font-size: 1.05rem; margin: 0.75rem 0; }
+.rc-ctx-guess { font-size: 1.15rem; margin: 0.75rem 0; font-weight: 500; }
+.rc-word-big { font-size: 1.8rem; font-weight: 700; margin: 0.5rem 0; color: var(--ink); }
+.rc-prompt { font-size: 0.9rem; color: var(--muted); margin: 0.75rem 0 0.5rem; }
+.rc-input { width: 100%; max-width: 300px; padding: 0.6rem; font-size: 1.1rem; border: 2px solid var(--line); border-radius: 8px; text-align: center; margin: 0.5rem auto; display: block; }
+.rc-textarea { width: 100%; padding: 0.6rem; font-size: 1rem; border: 2px solid var(--line); border-radius: 8px; font-family: inherit; resize: vertical; }
+.rc-feedback { margin-top: 0.75rem; }
+.rc-ok { color: #059669; font-weight: 700; font-size: 1.1rem; }
+.rc-miss { color: #dc2626; font-size: 1.05rem; }
+.rc-model-sent { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; margin-top: 0.5rem; text-align: left; }
+.rc-controls { text-align: center; margin: 1rem 0; }
+.rc-done { text-align: center; padding: 2rem 0; }
