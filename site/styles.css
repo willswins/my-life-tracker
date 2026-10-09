@@ -1137,4 +1137,22 @@ pre#ingest-docs {
 .review-sent { color: #666; font-style: italic; }
 .review-exp { color: #555; font-size: 0.9em; }
 
-
+/* Say It Right game styles */
+.sir-mode-tabs { display: flex; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; }
+.sir-tab { padding: 0.5rem 1.25rem; border: 2px solid var(--line); background: var(--card); border-radius: 999px; cursor: pointer; font-size: 0.9rem; }
+.sir-tab.active { border-color: var(--ink); background: var(--ink); color: #fff; }
+.sir-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem; margin: 1rem auto; max-width: 600px; text-align: center; }
+.sir-pattern { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--lane); padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.75rem; }
+.sir-flawed { font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0; color: #dc2626; }
+.sir-prompt { font-size: 0.9rem; color: var(--muted); margin: 0.75rem 0; }
+.sir-answer { margin-top: 1rem; text-align: left; }
+.sir-correct { font-size: 1.1rem; font-weight: 600; color: #059669; margin-bottom: 0.5rem; }
+.sir-why { font-size: 0.9rem; background: #fef9e7; border-left: 3px solid #f59e0b; padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; }
+.sir-controls { text-align: center; margin: 1rem 0; }
+.sir-score-btn { padding: 0.6rem 1.5rem; border-radius: 8px; border: 2px solid var(--line); background: var(--card); cursor: pointer; font-size: 1rem; margin: 0 0.5rem; }
+.sir-score-btn.yes { border-color: #059669; color: #059669; }
+.sir-score-btn.no { border-color: #dc2626; color: #dc2626; }
+.sir-frame { font-size: 1.2rem; font-weight: 600; margin: 0.5rem 0; font-style: italic; }
+.sir-frame-subs { text-align: left; margin-top: 1rem; }
+.sir-frame-sub { padding: 0.5rem; border-bottom: 1px solid var(--line); font-size: 1rem; }
+.sir-done { text-align: center; padding: 2rem 0; }
