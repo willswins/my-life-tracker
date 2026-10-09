@@ -356,6 +356,10 @@ pre#ingest-docs {
   display: block; font-size: 0.95rem; font-weight: 600; color: var(--ink); text-decoration: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* Reminder rows: let titles wrap instead of truncating */
+.rem-main .link-title {
+  white-space: normal; overflow: visible; text-overflow: clip;
+}
 .link-title:hover { text-decoration: underline; }
 .link-line2 {
   font-size: 0.78rem; color: var(--muted);
@@ -987,6 +991,7 @@ pre#ingest-docs {
   border: none;
   padding: 0.6rem 1rem;
   font-size: 0.95rem;
+  font-weight: 400;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
@@ -1001,7 +1006,8 @@ pre#ingest-docs {
 @media (max-width: 768px) {
   #profile-menu .profile-logout {
     min-height: 48px;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 400;
   }
 }
 
@@ -1106,3 +1112,14 @@ pre#ingest-docs {
 .ltm-spacer {
   flex: 1;
 }
+
+/* Grammar Quiz review */
+.gram-review { margin-top: 1rem; text-align: left; }
+.gram-review h3 { font-size: 1rem; margin: 0 0 0.75rem; }
+.gram-review-item { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.6rem; }
+.gram-review-item.ok { border-left: 3px solid #10b981; }
+.gram-review-item.miss { border-left: 3px solid #ef4444; }
+.gram-review-q { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.gram-review-a { font-size: 0.88rem; }
+.gram-review-c { font-size: 0.88rem; color: #10b981; font-weight: 600; }
+.gram-review-src { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; font-style: italic; }
