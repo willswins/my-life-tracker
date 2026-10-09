@@ -10,10 +10,8 @@
 
     const _answer = gramAnswer, _start = gramStart, _end = gramEnd;
 
-    // Use a wrapper that captures the question BEFORE the original runs
     window.gramAnswer = function(oi, btn) {
       try {
-        // Capture at call time — gramQi is the current question index
         const qi = (typeof gramQi !== 'undefined') ? gramQi : -1;
         const qs = (typeof gramQs !== 'undefined') ? gramQs : [];
         const q = (qi >= 0 && qi < qs.length) ? qs[qi] : null;
@@ -23,7 +21,8 @@
             options: q[1].slice(),
             correct: q[2],
             userIdx: oi,
-            source: q[3] || 'seed'
+            source: q[3] || 'seed',
+            explanation: q[4] || ''
           });
         }
       } catch (e) {}
@@ -39,7 +38,6 @@
 
     window.gramEnd = function() {
       const r = _end.call(this);
-      // Delay slightly to ensure DOM is updated
       setTimeout(showReview, 100);
       return r;
     };
@@ -60,7 +58,10 @@
         html += '<div class="gram-review-item' + (ok ? ' ok' : ' miss') + '">';
         html += '<div class="gram-review-q">' + (i+1) + '. ' + escHtml(it.prompt) + '</div>';
         html += '<div class="gram-review-a">You: ' + escHtml(it.options[it.userIdx]) + (ok ? ' ✓' : ' ✗') + '</div>';
-        if (!ok) html += '<div class="gram-review-c">Correct: ' + escHtml(it.options[it.correct]) + '</div>';
+        if (!ok) {
+          html += '<div class="gram-review-c">Correct: ' + escHtml(it.options[it.correct]) + '</div>';
+          if (it.explanation) html += '<div class="gram-review-why">' + escHtml(it.explanation) + '</div>';
+        }
         html += '<div class="gram-review-src">' + src + '</div>';
         html += '</div>';
       });
