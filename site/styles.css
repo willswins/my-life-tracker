@@ -1156,3 +1156,10 @@ pre#ingest-docs {
 .sir-frame-subs { text-align: left; margin-top: 1rem; }
 .sir-frame-sub { padding: 0.5rem; border-bottom: 1px solid var(--line); font-size: 1rem; }
 .sir-done { text-align: center; padding: 2rem 0; }
+
+/* Home mood widget */
+.home-mood-row { display: flex; gap: 0.5rem; justify-content: center; padding: 0.5rem 0; }
+.home-mood-face { font-size: 2rem; background: none; border: 2px solid transparent; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+.home-mood-face:hover { transform: scale(1.15); }
+.home-mood-face.selected { border-color: var(--ink); background: var(--lane); transform: scale(1.1); }
+.home-mood-status { text-align: center; font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
