@@ -1137,8 +1137,4 @@ pre#ingest-docs {
 .review-sent { color: #666; font-style: italic; }
 .review-exp { color: #555; font-size: 0.9em; }
 
-/* GeoDash game styles */
-.gd-level-select { display: flex; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; }
-.gd-lvl-btn { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); font-size: 1.1rem; font-weight: 700; cursor: pointer; }
-.gd-lvl-btn.active { border-color: #00ff88; background: #0a2a1a; color: #00ff88; }
-#gd-canvas { display: block; margin: 0 auto; border-radius: 12px; border: 2px solid var(--line); background: #0a0a1a; touch-action: none; }
+
