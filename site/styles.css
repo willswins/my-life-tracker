@@ -1123,3 +1123,4 @@ pre#ingest-docs {
 .gram-review-a { font-size: 0.88rem; }
 .gram-review-c { font-size: 0.88rem; color: #10b981; font-weight: 600; }
 .gram-review-src { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; font-style: italic; }
+.gram-review-why { font-size: 0.85rem; color: var(--ink); background: #fef9e7; border-left: 3px solid #f59e0b; padding: 0.4rem 0.6rem; margin-top: 0.4rem; border-radius: 0 6px 6px 0; }
