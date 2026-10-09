@@ -1124,3 +1124,8 @@ pre#ingest-docs {
 .gram-review-c { font-size: 0.88rem; color: #10b981; font-weight: 600; }
 .gram-review-src { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; font-style: italic; }
 .gram-review-why { font-size: 0.85rem; color: var(--ink); background: #fef9e7; border-left: 3px solid #f59e0b; padding: 0.4rem 0.6rem; margin-top: 0.4rem; border-radius: 0 6px 6px 0; }
+
+/* Long Term move buttons */
+.lt-to-task { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; cursor: pointer; margin-top: 0.5rem; color: var(--muted); }
+.lt-to-task:hover { background: var(--hover, #f3f4f6); color: var(--ink); }
+[data-act="to-longterm"] { font-size: 0.8rem; }
