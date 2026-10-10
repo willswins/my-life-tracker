@@ -97,6 +97,22 @@ const SIR_QS = [
     "'Through' is the correct spelling. 'Thru' is informal shorthand.", "spelling"],
   ["Use some these sentence corrections", "Use some of these sentence corrections",
     "Need 'of' before 'these': 'some of these'.", "preposition"],
+  ["I am going to market", "I am going to the market",
+    "Use 'the' for a specific place you go regularly.", "articles"],
+  ["She don't like coffee", "She doesn't like coffee",
+    "Third person singular takes 'doesn't', not 'don't'.", "agreement"],
+  ["I have seen him yesterday", "I saw him yesterday",
+    "With 'yesterday', use simple past 'saw', not present perfect.", "tense"],
+  ["The movie was very bored", "The movie was very boring",
+    "'Bored' describes people; 'boring' describes things.", "adjectives"],
+  ["I am interested for music", "I am interested in music",
+    "'Interested in', not 'interested for'.", "preposition"],
+  ["We arrived to the airport late", "We arrived at the airport late",
+    "'Arrive at' for specific places; 'arrive in' for cities/countries.", "preposition"],
+  ["This soup tastes deliciously", "This soup tastes delicious",
+    "After 'taste', use an adjective ('delicious'), not an adverb.", "adjectives"],
+  ["He cooks good", "He cooks well",
+    "'Well' (adverb) describes how he cooks; 'good' is an adjective.", "adverbs"],
 ];
 
 const SIR_FRAMES = [
