@@ -24,16 +24,8 @@ function init() {
   // Don't inject twice
   if (document.getElementById('home-mood-widget')) return;
 
-  // Find the Quick add section to insert after
-  var quickAdd = null;
-  var sections = home.querySelectorAll('.home-section');
-  for (var i = 0; i < sections.length; i++) {
-    var title = sections[i].querySelector('.home-section-title');
-    if (title && title.textContent.trim() === 'Quick add') {
-      quickAdd = sections[i];
-      break;
-    }
-  }
+  // Insert right below the greeting (Good evening) section
+  var greet = home.querySelector('.home-greet');
 
   var widget = document.createElement('div');
   widget.id = 'home-mood-widget';
@@ -43,8 +35,8 @@ function init() {
     '<div id="home-mood-row" class="home-mood-row"></div>' +
     '<div id="home-mood-status" class="home-mood-status"></div>';
 
-  if (quickAdd && quickAdd.parentNode) {
-    quickAdd.parentNode.insertBefore(widget, quickAdd);
+  if (greet && greet.parentNode) {
+    greet.parentNode.insertBefore(widget, greet.nextSibling);
   } else {
     home.querySelector('.home-wrap').appendChild(widget);
   }
