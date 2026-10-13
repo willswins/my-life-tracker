@@ -78,7 +78,11 @@ async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }
     .replace(/[^a-zA-Z0-9._-]/g, '_')
     .slice(0, 80) || 'upload';
   const stamp = Date.now();
-  const storagePath = `${encodeURIComponent(userEmail)}/${encodeURIComponent(cardId)}/${stamp}_${safe}`;
+  // URL-safe path segments: no encoding needed, avoids double-encoding bugs
+  // between the upload and sign endpoints.
+  const safeEmail = String(userEmail).toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const safeCard = String(cardId).replace(/[^a-zA-Z0-9-]/g, '');
+  const storagePath = `${safeEmail}/${safeCard}/${stamp}_${safe}`;
   await uploadFile(storagePath, buf, contentType);
   return signedUrl(storagePath);
 }
