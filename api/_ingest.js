@@ -43,6 +43,24 @@ module.exports = async (req, res) => {
       // Attachment upload: { action:'upload', card_id, filename, content_type, data (base64) }
       // Stores the image in private Supabase Storage and appends a signed-URL
       // markdown image to the card's details.
+      // Attachment removal: { action:'remove-upload', card_id, filename }
+      if (body.action === 'remove-upload') {
+        const cardId = String(body.card_id || '').trim();
+        const filename = String(body.filename || '').replace(/[\[\]]/g, '');
+        if (!cardId || !filename) return send(400, { ok: false, error: 'card_id and filename are required' });
+        const rows = await sb(
+          'GET',
+          `/rest/v1/cards?id=eq.${encodeURIComponent(cardId)}&user_email=eq.${email}&deleted_at=is.null&select=id,details`
+        );
+        if (!rows.length) return send(404, { ok: false, error: 'card not found' });
+        const pat = new RegExp('\\n*!\\[' + filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]\\([^)]+\\)', 'g');
+        const next = (rows[0].details || '').replace(pat, '').trim();
+        await sb('PATCH', `/rest/v1/cards?id=eq.${encodeURIComponent(cardId)}&user_email=eq.${email}`, {
+          details: next.slice(-2000),
+          updated_at: new Date().toISOString(),
+        });
+        return send(200, { ok: true, card_id: cardId, removed: filename });
+      }
       if (body.action === 'upload') {
         const cardId = String(body.card_id || '').trim();
         const filename = String(body.filename || 'receipt').slice(0, 120);
