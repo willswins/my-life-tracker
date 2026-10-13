@@ -122,6 +122,14 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// Render card details as safe HTML, turning markdown images ![alt](url)
+// (used for receipt/bill attachments) into clickable thumbnails.
+function renderDetails(text) {
+  const esc = escHtml(text);
+  return esc.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, (m, alt, url) =>
+    `<a href="${url}" target="_blank" rel="noopener"><img class="receipt-img" src="${url}" alt="${alt}" loading="lazy"></a>`);
+}
+
 function isOverdue(c) {
   if (!c.due_date || c.lane === 'done') return false;
   const today = new Date().toISOString().slice(0, 10);
@@ -190,7 +198,7 @@ function cardEl(c) {
     `<span class="pill size-${c.priority}">${escHtml(SIZE_LABELS[c.priority] || c.priority)}</span>` +
     (showDeleted ? `<span class="pill size-low">Deleted</span>` : '') + `</div>` +
     `<h3>${escHtml(c.title)}</h3>` +
-    (c.details ? `<p class="details">${escHtml(c.details)}</p>` : '') +
+    (c.details ? `<p class="details">${renderDetails(c.details)}</p>` : '') +
     due +
     tagBubblesHtml(c.tags) +
     (showDeleted
@@ -309,7 +317,7 @@ async function openDetail(id) {
     '';
   document.getElementById('d-title').textContent = c.title;
   document.getElementById('d-meta').innerHTML = metaLine(c);
-  document.getElementById('d-details').textContent = c.details || '';
+  document.getElementById('d-details').innerHTML = renderDetails(c.details || '');
   const isDel = !!c.deleted_at;
   document.getElementById('d-edit').classList.toggle('hidden', isDel);
   document.getElementById('d-delete').classList.toggle('hidden', isDel);
