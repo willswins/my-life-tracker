@@ -45,10 +45,14 @@ module.exports = async (req, res) => {
         if (!rows.length) return send(404, { ok: false, error: 'card not found' });
         try {
           const url = await uploadBase64({ userEmail: email, cardId, filename, contentType, base64: data });
+          const altText = filename.replace(/[\[\]]/g, '');
           const cur = rows[0].details || '';
-          const line = `\n\n![${filename.replace(/[\[\]]/g, '')}](${url})`;
+          // Dedupe: replace any existing attachment with the same filename
+          const pat = new RegExp('\\n*!\\[' + altText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]\\([^)]+\\)', 'g');
+          const deduped = cur.replace(pat, '').trim();
+          const next = (deduped ? deduped + '\n\n' : '') + `![${altText}](${url})`;
           await sb('PATCH', `/rest/v1/cards?id=eq.${encodeURIComponent(cardId)}&${scope}`, {
-            details: (cur + line).slice(-2000),
+            details: next.slice(-2000),
             updated_at: new Date().toISOString(),
           });
           return send(200, { ok: true, card_id: cardId, url });
