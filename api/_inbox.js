@@ -1,1 +1,165 @@
-Ly8gSW5ib3ggQVBJLCBiYWNrZWQgYnkgU3VwYWJhc2UgUG9zdGdyZXMuIFRoZSBzaW5nbGUgaW5nZXN0aW9uIHBhdGg6IGV2ZXJ5Ci8vIGNhcHR1cmUgbGFuZHMgaGVyZSB1bnRyaWFnZWQsIHRoZW4gb25lIHRhcCBmaWxlcyBpdCBhcyBhIHRhc2ssIHJlbWluZGVyLAovLyBqb3VybmFsIGVudHJ5LCBvciBsaW5rLiBTY29wZWQgdG8gdGhlIHNpZ25lZC1pbiB1c2VyJ3MgZW1haWwuCmNvbnN0IHsgZ2V0U2Vzc2lvbkVtYWlsIH0gPSByZXF1aXJlKCcuL19zZXNzaW9uJyk7CmNvbnN0IHsgcmVhZEJvZHksIHNiLCBjbGVhbkNhcmQgfSA9IHJlcXVpcmUoJy4vX2RiJyk7Cgpjb25zdCBTT1VSQ0VTID0gWydtYW51YWwnLCAnZW1haWwnLCAnY2hhdCddOwpjb25zdCBERVNUUyA9IFsndGFzaycsICdyZW1pbmRlcicsICdqb3VybmFsJywgJ2xpbmsnXTsKY29uc3QgVEFHUyA9IFsnd29yaycsICdwZXJzb25hbCddOwpjb25zdCBEQVRFX1JFID0gL15cZHs0fS1cZHsyfS1cZHsyfSQvOwoKZnVuY3Rpb24gY2xlYW5UcmlhZ2VSZW1pbmRlcihiKSB7CiAgY29uc3Qgb3V0ID0ge307CiAgaWYgKHR5cGVvZiBiLnRpdGxlID09PSAnc3RyaW5nJyAmJiBiLnRpdGxlLnRyaW0oKSkgb3V0LnRpdGxlID0gYi50aXRsZS50cmltKCkuc2xpY2UoMCwgMTYwKTsKICBpZiAodHlwZW9mIGIuZGV0YWlsID09PSAnc3RyaW5nJykgb3V0LmRldGFpbCA9IGIuZGV0YWlsLnNsaWNlKDAsIDIwMDApOwogIGlmIChiLnJlbWluZF9hdCAhPT0gdW5kZWZpbmVkKSB7CiAgICBjb25zdCBkID0gbmV3IERhdGUoYi5yZW1pbmRfYXQpOwogICAgaWYgKGlzTmFOKGQpKSB0aHJvdyBuZXcgRXJyb3IoJ2JhZCByZW1pbmRfYXQnKTsKICAgIG91dC5yZW1pbmRfYXQgPSBkLnRvSVNPU3RyaW5nKCk7CiAgfQogIGlmIChiLnJlY3VycmVuY2UgPT09IG51bGwgfHwgdHlwZW9mIGIucmVjdXJyZW5jZSA9PT0gJ3N0cmluZycpIHsKICAgIG91dC5yZWN1cnJlbmNlID0gYi5yZWN1cnJlbmNlID8gYi5yZWN1cnJlbmNlLnRyaW0oKS5zbGljZSgwLCAxMjApIDogbnVsbDsKICB9CiAgaWYgKGIudGFnID09PSBudWxsIHx8IFRBR1MuaW5jbHVkZXMoYi50YWcpKSBvdXQudGFnID0gYi50YWc7CiAgb3V0LnN0YXR1cyA9ICdhY3RpdmUnOwogIG91dC51cGRhdGVkX2F0ID0gbmV3IERhdGUoKS50b0lTT1N0cmluZygpOwogIHJldHVybiBvdXQ7Cn0KCmFzeW5jIGZ1bmN0aW9uIGNyZWF0ZURlc3RpbmF0aW9uKGVtYWlsLCB0bywgZGF0YSkgewogIGNvbnN0IG5vdyA9IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKTsKICBpZiAodG8gPT09ICd0YXNrJykgewogICAgY29uc3Qgcm93ID0gY2xlYW5DYXJkKGRhdGEgfHwge30pOwogICAgaWYgKCFyb3cudGl0bGUpIHRocm93IE9iamVjdC5hc3NpZ24obmV3IEVycm9yKCd0aXRsZSByZXF1aXJlZCcpLCB7IHN0YXR1czogNDAwIH0pOwogICAgcm93LnVzZXJfZW1haWwgPSBlbWFpbDsKICAgIGlmICghcm93LmxhbmUpIHJvdy5sYW5lID0gJ25leHQnOwogICAgaWYgKCFyb3cudGFnKSByb3cudGFnID0gJ3dvcmsnOwogICAgaWYgKCFyb3cucHJpb3JpdHkpIHJvdy5wcmlvcml0eSA9ICdub3JtYWwnOwogICAgY29uc3QgaW5zID0gYXdhaXQgc2IoJ1BPU1QnLCAnL3Jlc3QvdjEvY2FyZHMnLCByb3cpOwogICAgcmV0dXJuIGluc1swXS5pZDsKICB9CiAgaWYgKHRvID09PSAncmVtaW5kZXInKSB7CiAgICBsZXQgcm93OwogICAgdHJ5IHsKICAgICAgcm93ID0gY2xlYW5UcmlhZ2VSZW1pbmRlcihkYXRhIHx8IHt9KTsKICAgIH0gY2F0Y2ggewogICAgICB0aHJvdyBPYmplY3QuYXNzaWduKG5ldyBFcnJvcignYmFkIHJlbWluZF9hdCcpLCB7IHN0YXR1czogNDAwIH0pOwogICAgfQogICAgaWYgKCFyb3cudGl0bGUgfHwgIXJvdy5yZW1pbmRfYXQpIHsKICAgICAgdGhyb3cgT2JqZWN0LmFzc2lnbihuZXcgRXJyb3IoJ3RpdGxlIGFuZCByZW1pbmRfYXQgcmVxdWlyZWQnKSwgeyBzdGF0dXM6IDQwMCB9KTsKICAgIH0KICAgIHJvdy51c2VyX2VtYWlsID0gZW1haWw7CiAgICBjb25zdCBpbnMgPSBhd2FpdCBzYignUE9TVCcsICcvcmVzdC92MS9yZW1pbmRlcnMnLCByb3cpOwogICAgcmV0dXJuIGluc1swXS5pZDsKICB9CiAgaWYgKHRvID09PSAnam91cm5hbCcpIHsKICAgIGNvbnN0IGQgPSBkYXRhICYmIGRhdGEuZGF0ZTsKICAgIGlmICghZCB8fCAhREFURV9SRS50ZXN0KGQpKSB0aHJvdyBPYmplY3QuYXNzaWduKG5ldyBFcnJvcignZGF0ZSByZXF1aXJlZCAoWVlZWS1NTS1ERCknKSwgeyBzdGF0dXM6IDQwMCB9KTsKICAgIGNvbnN0IHRleHQgPSB0eXBlb2YgZGF0YS50ZXh0ID09PSAnc3RyaW5nJyA/IGRhdGEudGV4dCA6ICcnOwogICAgY29uc3Qgc2NvcGUgPSBgdXNlcl9lbWFpbD1lcS4ke2VuY29kZVVSSUNvbXBvbmVudChlbWFpbCl9YDsKICAgIGNvbnN0IGV4aXN0aW5nID0gYXdhaXQgc2IoJ0dFVCcsIGAvcmVzdC92MS9qb3VybmFsX2VudHJpZXM/JHtzY29wZX0mZGF0ZT1lcS4ke2R9YCk7CiAgICBjb25zdCBib2R5ID0gKGV4aXN0aW5nWzBdICYmIGV4aXN0aW5nWzBdLmJvZHkgPyBleGlzdGluZ1swXS5ib2R5ICsgJ1xuXG4nIDogJycpICsgdGV4dDsKICAgIGxldCByb3c7CiAgICBpZiAoZXhpc3RpbmdbMF0pIHsKICAgICAgY29uc3QgcCA9IGF3YWl0IHNiKCdQQVRDSCcsIGAvcmVzdC92MS9qb3VybmFsX2VudHJpZXM/JHtzY29wZX0mZGF0ZT1lcS4ke2R9YCwgeyBib2R5LCB1cGRhdGVkX2F0OiBub3cgfSk7CiAgICAgIHJvdyA9IHBbMF07CiAgICB9IGVsc2UgewogICAgICBjb25zdCBpbnMgPSBhd2FpdCBzYignUE9TVCcsICcvcmVzdC92MS9qb3VybmFsX2VudHJpZXMnLCB7IHVzZXJfZW1haWw6IGVtYWlsLCBkYXRlOiBkLCBib2R5IH0pOwogICAgICByb3cgPSBpbnNbMF07CiAgICB9CiAgICByZXR1cm4gcm93LmlkOwogIH0KICBpZiAodG8gPT09ICdsaW5rJykgewogICAgY29uc3QgdSA9IGRhdGEgJiYgdHlwZW9mIGRhdGEudXJsID09PSAnc3RyaW5nJyA/IGRhdGEudXJsLnRyaW0oKSA6ICcnOwogICAgaWYgKCF1KSB0aHJvdyBPYmplY3QuYXNzaWduKG5ldyBFcnJvcigndXJsIHJlcXVpcmVkJyksIHsgc3RhdHVzOiA0MDAgfSk7CiAgICBjb25zdCBzY29wZSA9IGB1c2VyX2VtYWlsPWVxLiR7ZW5jb2RlVVJJQ29tcG9uZW50KGVtYWlsKX1gOwogICAgY29uc3QgZm91bmQgPSBhd2FpdCBzYignR0VUJywgYC9yZXN0L3YxL2xpbmtzPyR7c2NvcGV9JnVybD1lcS4ke2VuY29kZVVSSUNvbXBvbmVudCh1KX1gKTsKICAgIGlmIChmb3VuZFswXSkgcmV0dXJuIGZvdW5kWzBdLmlkOwogICAgY29uc3QgaW5zID0gYXdhaXQgc2IoJ1BPU1QnLCAnL3Jlc3QvdjEvbGlua3MnLCB7CiAgICAgIHVzZXJfZW1haWw6IGVtYWlsLAogICAgICB1cmw6IHUuc2xpY2UoMCwgMjAwMCksCiAgICAgIHRpdGxlOiAodHlwZW9mIGRhdGEudGl0bGUgPT09ICdzdHJpbmcnICYmIGRhdGEudGl0bGUudHJpbSgpID8gZGF0YS50aXRsZS50cmltKCkgOiB1KS5zbGljZSgwLCAyMDApLAogICAgICBzb3VyY2U6IHR5cGVvZiBkYXRhLnNvdXJjZSA9PT0gJ3N0cmluZycgPyBkYXRhLnNvdXJjZS5zbGljZSgwLCAzMDApIDogbnVsbCwKICAgICAgdGFnczogdHlwZW9mIGRhdGEudGFncyA9PT0gJ3N0cmluZycgPyBkYXRhLnRhZ3Muc2xpY2UoMCwgNTAwKSA6ICcnLAogICAgICBub3RlczogdHlwZW9mIGRhdGEubm90ZXMgPT09ICdzdHJpbmcnID8gZGF0YS5ub3Rlcy5zbGljZSgwLCAyMDAwKSA6ICcnLAogICAgfSk7CiAgICByZXR1cm4gaW5zWzBdLmlkOwogIH0KICB0aHJvdyBPYmplY3QuYXNzaWduKG5ldyBFcnJvcigndW5rbm93biBkZXN0aW5hdGlvbicpLCB7IHN0YXR1czogNDAwIH0pOwp9Cgptb2R1bGUuZXhwb3J0cyA9IGFzeW5jIChyZXEsIHJlcykgPT4gewogIGNvbnN0IGVtYWlsID0gZ2V0U2Vzc2lvbkVtYWlsKHJlcSwgcHJvY2Vzcy5lbnYuU0VTU0lPTl9TRUNSRVQgfHwgJycpOwogIGlmICghZW1haWwpIHsKICAgIHJlcy53cml0ZUhlYWQoNDAxLCB7ICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicsICdDYWNoZS1Db250cm9sJzogJ25vLXN0b3JlJyB9KTsKICAgIHJlcy5lbmQoSlNPTi5zdHJpbmdpZnkoeyBvazogZmFsc2UgfSkpOwogICAgcmV0dXJuOwogIH0KICBjb25zdCBzZW5kID0gKHN0YXR1cywgZGF0YSkgPT4gewogICAgcmVzLndyaXRlSGVhZChzdGF0dXMsIHsgJ0NvbnRlbnQtVHlwZSc6ICdhcHBsaWNhdGlvbi9qc29uJywgJ0NhY2hlLUNvbnRyb2wnOiAnbm8tc3RvcmUnIH0pOwogICAgcmVzLmVuZChkYXRhID09PSBudWxsID8gJycgOiBKU09OLnN0cmluZ2lmeShkYXRhKSk7CiAgfTsKICB0cnkgewogICAgY29uc3QgdXJsID0gbmV3IFVSTChyZXEudXJsLCAnaHR0cHM6Ly9sb2NhbGhvc3QnKTsKICAgIGNvbnN0IGlkID0gdXJsLnNlYXJjaFBhcmFtcy5nZXQoJ2lkJyk7CiAgICBjb25zdCBzY29wZSA9IGB1c2VyX2VtYWlsPWVxLiR7ZW5jb2RlVVJJQ29tcG9uZW50KGVtYWlsKX1gOwoKICAgIGlmIChyZXEubWV0aG9kID09PSAnR0VUJyAmJiB1cmwuc2VhcmNoUGFyYW1zLmdldCgnYmFkZ2UnKSA9PT0gJzEnKSB7CiAgICAgIGNvbnN0IHJvd3MgPSBhd2FpdCBzYignR0VUJywgYC9yZXN0L3YxL2luYm94X2l0ZW1zPyR7c2NvcGV9JnRyaWFnZWQ9ZXEuZmFsc2Umc2VsZWN0PWlkYCk7CiAgICAgIHJldHVybiBzZW5kKDIwMCwgeyBjb3VudDogcm93cy5sZW5ndGggfSk7CiAgICB9CiAgICBpZiAocmVxLm1ldGhvZCA9PT0gJ0dFVCcpIHsKICAgICAgY29uc3QgdCA9IHVybC5zZWFyY2hQYXJhbXMuZ2V0KCd0cmlhZ2VkJykgfHwgJ2ZhbHNlJzsKICAgICAgY29uc3QgZiA9IHQgPT09ICdhbGwnID8gJycgOiBgJnRyaWFnZWQ9ZXEuJHt0ID09PSAndHJ1ZSd9YDsKICAgICAgY29uc3Qgcm93cyA9IGF3YWl0IHNiKCdHRVQnLCBgL3Jlc3QvdjEvaW5ib3hfaXRlbXM/JHtzY29wZX0ke2Z9Jm9yZGVyPWNyZWF0ZWRfYXQuZGVzY2ApOwogICAgICByZXR1cm4gc2VuZCgyMDAsIHJvd3MpOwogICAgfQogICAgaWYgKHJlcS5tZXRob2QgPT09ICdQT1NUJyAmJiAhaWQpIHsKICAgICAgY29uc3QgYm9keSA9IGF3YWl0IHJlYWRCb2R5KHJlcSk7CiAgICAgIGNvbnN0IHRleHQgPSB0eXBlb2YgYm9keS50ZXh0ID09PSAnc3RyaW5nJyA/IGJvZHkudGV4dC50cmltKCkgOiAnJzsKICAgICAgaWYgKCF0ZXh0KSByZXR1cm4gc2VuZCg0MDAsIHsgb2s6IGZhbHNlLCBlcnJvcjogJ3RleHQgcmVxdWlyZWQnIH0pOwogICAgICBjb25zdCBzb3VyY2UgPSBTT1VSQ0VTLmluY2x1ZGVzKGJvZHkuc291cmNlKSA/IGJvZHkuc291cmNlIDogJ21hbnVhbCc7CiAgICAgIGNvbnN0IGluc2VydGVkID0gYXdhaXQgc2IoJ1BPU1QnLCAnL3Jlc3QvdjEvaW5ib3hfaXRlbXMnLCB7CiAgICAgICAgdXNlcl9lbWFpbDogZW1haWwsCiAgICAgICAgdGV4dDogdGV4dC5zbGljZSgwLCA1MDAwKSwKICAgICAgICBzb3VyY2UsCiAgICAgICAgc291cmNlX3JlZjogdHlwZW9mIGJvZHkuc291cmNlX3JlZiA9PT0gJ3N0cmluZycgPyBib2R5LnNvdXJjZV9yZWYuc2xpY2UoMCwgMzAwKSA6IG51bGwsCiAgICAgIH0pOwogICAgICByZXR1cm4gc2VuZCgyMDEsIGluc2VydGVkWzBdKTsKICAgIH0KICAgIGlmIChyZXEubWV0aG9kID09PSAnUE9TVCcgJiYgaWQpIHsKICAgICAgY29uc3QgYm9keSA9IGF3YWl0IHJlYWRCb2R5KHJlcSk7CiAgICAgIGNvbnN0IHRvID0gYm9keS50bzsKICAgICAgaWYgKCFERVNUUy5pbmNsdWRlcyh0bykpIHJldHVybiBzZW5kKDQwMCwgeyBvazogZmFsc2UsIGVycm9yOiAndG8gbXVzdCBiZSB0YXNrfHJlbWluZGVyfGpvdXJuYWx8bGluaycgfSk7CiAgICAgIGNvbnN0IGl0ZW1zID0gYXdhaXQgc2IoJ0dFVCcsIGAvcmVzdC92MS9pbmJveF9pdGVtcz9pZD1lcS4ke2VuY29kZVVSSUNvbXBvbmVudChpZCl9JiR7c2NvcGV9JnRyaWFnZWQ9ZXEuZmFsc2VgKTsKICAgICAgaWYgKCFpdGVtc1swXSkgcmV0dXJuIHNlbmQoNDA0LCB7IG9rOiBmYWxzZSwgZXJyb3I6ICdpdGVtIG5vdCBmb3VuZCBvciBhbHJlYWR5IHRyaWFnZWQnIH0pOwogICAgICBsZXQgZGVzdElkOwogICAgICB0cnkgewogICAgICAgIGRlc3RJZCA9IGF3YWl0IGNyZWF0ZURlc3RpbmF0aW9uKGVtYWlsLCB0bywgYm9keS5kYXRhKTsKICAgICAgfSBjYXRjaCAoZSkgewogICAgICAgIHJldHVybiBzZW5kKGUuc3RhdHVzIHx8IDUwMCwgeyBvazogZmFsc2UsIGVycm9yOiBlLnN0YXR1cyA/IGUubWVzc2FnZSA6IHVuZGVmaW5lZCB9KTsKICAgICAgfQogICAgICAvLyBTZXF1ZW50aWFsIGNhbGxzIGFyZSBmaW5lIGhlcmU7IHRoZSB0cmlhZ2VkPWVxLmZhbHNlIGd1YXJkIGtlZXBzIGl0IHNhZmUuCiAgICAgIGNvbnN0IG5vdyA9IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKTsKICAgICAgYXdhaXQgc2IoJ1BBVENIJywgYC9yZXN0L3YxL2luYm94X2l0ZW1zP2lkPWVxLiR7ZW5jb2RlVVJJQ29tcG9uZW50KGlkKX0mJHtzY29wZX0mdHJpYWdlZD1lcS5mYWxzZWAsIHsKICAgICAgICB0cmlhZ2VkOiB0cnVlLAogICAgICAgIHRyaWFnZWRfdG9fdHlwZTogdG8sCiAgICAgICAgdHJpYWdlZF90b19pZDogZGVzdElkLAogICAgICAgIHRyaWFnZWRfYXQ6IG5vdywKICAgICAgICB1cGRhdGVkX2F0OiBub3csCiAgICAgIH0pOwogICAgICByZXR1cm4gc2VuZCgyMDAsIHsgb2s6IHRydWUsIHRvLCBpZDogZGVzdElkIH0pOwogICAgfQogICAgaWYgKHJlcS5tZXRob2QgPT09ICdERUxFVEUnICYmIGlkKSB7CiAgICAgIGF3YWl0IHNiKCdERUxFVEUnLCBgL3Jlc3QvdjEvaW5ib3hfaXRlbXM/aWQ9ZXEuJHtlbmNvZGVVUklDb21wb25lbnQoaWQpfSYke3Njb3BlfWApOwogICAgICByZXMud3JpdGVIZWFkKDIwNCwgeyAnQ2FjaGUtQ29udHJvbCc6ICduby1zdG9yZScgfSk7CiAgICAgIHJlcy5lbmQoKTsKICAgICAgcmV0dXJuOwogICAgfQogICAgcmV0dXJuIHNlbmQoNDA1LCB7IG9rOiBmYWxzZSB9KTsKICB9IGNhdGNoIChlKSB7CiAgICBjb25zb2xlLmVycm9yKCdpbmJveCBhcGkgZmFpbGVkOicsIGUubWVzc2FnZSk7CiAgICByZXR1cm4gc2VuZCg1MDAsIHsgb2s6IGZhbHNlIH0pOwogIH0KfTsK
+// Inbox API, backed by Supabase Postgres. The single ingestion path: every
+// capture lands here untriaged, then one tap files it as a task, reminder,
+// journal entry, or link. Scoped to the signed-in user's email.
+const { getSessionEmail } = require('./_session');
+const { readBody, sb, cleanCard } = require('./_db');
+
+const SOURCES = ['manual', 'email', 'chat'];
+const DESTS = ['task', 'reminder', 'journal', 'link'];
+const TAGS = ['work', 'personal'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function cleanTriageReminder(b) {
+  const out = {};
+  if (typeof b.title === 'string' && b.title.trim()) out.title = b.title.trim().slice(0, 160);
+  if (typeof b.detail === 'string') out.detail = b.detail.slice(0, 2000);
+  if (b.remind_at !== undefined) {
+    const d = new Date(b.remind_at);
+    if (isNaN(d)) throw new Error('bad remind_at');
+    out.remind_at = d.toISOString();
+  }
+  if (b.recurrence === null || typeof b.recurrence === 'string') {
+    out.recurrence = b.recurrence ? b.recurrence.trim().slice(0, 120) : null;
+  }
+  if (b.tag === null || TAGS.includes(b.tag)) out.tag = b.tag;
+  out.status = 'active';
+  out.updated_at = new Date().toISOString();
+  return out;
+}
+
+async function createDestination(email, to, data) {
+  const now = new Date().toISOString();
+  if (to === 'task') {
+    const row = cleanCard(data || {});
+    if (!row.title) throw Object.assign(new Error('title required'), { status: 400 });
+    row.user_email = email;
+    if (!row.lane) row.lane = 'next';
+    if (!row.tag) row.tag = 'work';
+    if (!row.priority) row.priority = 'normal';
+    const ins = await sb('POST', '/rest/v1/cards', row);
+    return ins[0].id;
+  }
+  if (to === 'reminder') {
+    let row;
+    try {
+      row = cleanTriageReminder(data || {});
+    } catch {
+      throw Object.assign(new Error('bad remind_at'), { status: 400 });
+    }
+    if (!row.title || !row.remind_at) {
+      throw Object.assign(new Error('title and remind_at required'), { status: 400 });
+    }
+    row.user_email = email;
+    const ins = await sb('POST', '/rest/v1/reminders', row);
+    return ins[0].id;
+  }
+  if (to === 'journal') {
+    const d = data && data.date;
+    if (!d || !DATE_RE.test(d)) throw Object.assign(new Error('date required (YYYY-MM-DD)'), { status: 400 });
+    const text = typeof data.text === 'string' ? data.text : '';
+    const scope = `user_email=eq.${encodeURIComponent(email)}`;
+    const existing = await sb('GET', `/rest/v1/journal_entries?${scope}&date=eq.${d}`);
+    const body = (existing[0] && existing[0].body ? existing[0].body + '\n\n' : '') + text;
+    let row;
+    if (existing[0]) {
+      const p = await sb('PATCH', `/rest/v1/journal_entries?${scope}&date=eq.${d}`, { body, updated_at: now });
+      row = p[0];
+    } else {
+      const ins = await sb('POST', '/rest/v1/journal_entries', { user_email: email, date: d, body });
+      row = ins[0];
+    }
+    return row.id;
+  }
+  if (to === 'link') {
+    const u = data && typeof data.url === 'string' ? data.url.trim() : '';
+    if (!u) throw Object.assign(new Error('url required'), { status: 400 });
+    const scope = `user_email=eq.${encodeURIComponent(email)}`;
+    const found = await sb('GET', `/rest/v1/links?${scope}&url=eq.${encodeURIComponent(u)}`);
+    if (found[0]) return found[0].id;
+    const ins = await sb('POST', '/rest/v1/links', {
+      user_email: email,
+      url: u.slice(0, 2000),
+      title: (typeof data.title === 'string' && data.title.trim() ? data.title.trim() : u).slice(0, 200),
+      source: typeof data.source === 'string' ? data.source.slice(0, 300) : null,
+      tags: typeof data.tags === 'string' ? data.tags.slice(0, 500) : '',
+      notes: typeof data.notes === 'string' ? data.notes.slice(0, 2000) : '',
+    });
+    return ins[0].id;
+  }
+  throw Object.assign(new Error('unknown destination'), { status: 400 });
+}
+
+module.exports = async (req, res) => {
+  const email = getSessionEmail(req, process.env.SESSION_SECRET || '');
+  if (!email) {
+    res.writeHead(401, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ ok: false }));
+    return;
+  }
+  const send = (status, data) => {
+    res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(data === null ? '' : JSON.stringify(data));
+  };
+  try {
+    const url = new URL(req.url, 'https://localhost');
+    const id = url.searchParams.get('id');
+    const scope = `user_email=eq.${encodeURIComponent(email)}`;
+
+    if (req.method === 'GET' && url.searchParams.get('badge') === '1') {
+      const rows = await sb('GET', `/rest/v1/inbox_items?${scope}&triaged=eq.false&select=id`);
+      return send(200, { count: rows.length });
+    }
+    if (req.method === 'GET') {
+      const t = url.searchParams.get('triaged') || 'false';
+      const f = t === 'all' ? '' : `&triaged=eq.${t === 'true'}`;
+      const rows = await sb('GET', `/rest/v1/inbox_items?${scope}${f}&order=created_at.desc`);
+      return send(200, rows);
+    }
+    if (req.method === 'POST' && !id) {
+      const body = await readBody(req);
+      const text = typeof body.text === 'string' ? body.text.trim() : '';
+      if (!text) return send(400, { ok: false, error: 'text required' });
+      const source = SOURCES.includes(body.source) ? body.source : 'manual';
+      const inserted = await sb('POST', '/rest/v1/inbox_items', {
+        user_email: email,
+        text: text.slice(0, 5000),
+        source,
+        source_ref: typeof body.source_ref === 'string' ? body.source_ref.slice(0, 300) : null,
+      });
+      return send(201, inserted[0]);
+    }
+    if (req.method === 'POST' && id) {
+      const body = await readBody(req);
+      const to = body.to;
+      if (!DESTS.includes(to)) return send(400, { ok: false, error: 'to must be task|reminder|journal|link' });
+      const items = await sb('GET', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&triaged=eq.false`);
+      if (!items[0]) return send(404, { ok: false, error: 'item not found or already triaged' });
+      let destId;
+      try {
+        destId = await createDestination(email, to, body.data);
+      } catch (e) {
+        return send(e.status || 500, { ok: false, error: e.status ? e.message : undefined });
+      }
+      // Sequential calls are fine here; the triaged=eq.false guard keeps it safe.
+      const now = new Date().toISOString();
+      await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&triaged=eq.false`, {
+        triaged: true,
+        triaged_to_type: to,
+        triaged_to_id: destId,
+        triaged_at: now,
+        updated_at: now,
+      });
+      return send(200, { ok: true, to, id: destId });
+    }
+    if (req.method === 'DELETE' && id) {
+      await sb('DELETE', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`);
+      res.writeHead(204, { 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+    return send(405, { ok: false });
+  } catch (e) {
+    console.error('inbox api failed:', e.message);
+    return send(500, { ok: false });
+  }
+};
