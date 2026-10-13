@@ -9,6 +9,7 @@
 // Auth:  Authorization: Bearer mlt_...   (or X-API-Key: mlt_...)
 const { keyAuth } = require('./_keyauth');
 const { readBody, sb, cleanCard } = require('./_db');
+const { uploadBase64 } = require('./_storage');
 
 module.exports = async (req, res) => {
   const send = (status, data) => {
@@ -39,6 +40,34 @@ module.exports = async (req, res) => {
     }
     if (req.method === 'POST') {
       const body = await readBody(req);
+      // Attachment upload: { action:'upload', card_id, filename, content_type, data (base64) }
+      // Stores the image in private Supabase Storage and appends a signed-URL
+      // markdown image to the card's details.
+      if (body.action === 'upload') {
+        const cardId = String(body.card_id || '').trim();
+        const filename = String(body.filename || 'receipt').slice(0, 120);
+        const contentType = String(body.content_type || '');
+        const data = String(body.data || '');
+        if (!cardId || !data) return send(400, { ok: false, error: 'card_id and data (base64) are required' });
+        const rows = await sb(
+          'GET',
+          `/rest/v1/cards?id=eq.${encodeURIComponent(cardId)}&user_email=eq.${email}&deleted_at=is.null&select=id,details`
+        );
+        if (!rows.length) return send(404, { ok: false, error: 'card not found' });
+        try {
+          const url = await uploadBase64({ userEmail: k.user_email, cardId, filename, contentType, base64: data });
+          const cur = rows[0].details || '';
+          const line = `\n\n![${filename.replace(/[\[\]]/g, '')}](${url})`;
+          await sb('PATCH', `/rest/v1/cards?id=eq.${encodeURIComponent(cardId)}&user_email=eq.${email}`, {
+            details: (cur + line).slice(-2000),
+            updated_at: new Date().toISOString(),
+          });
+          return send(200, { ok: true, card_id: cardId, url });
+        } catch (e) {
+          console.error('upload failed:', e.message);
+          return send(400, { ok: false, error: e.message });
+        }
+      }
       const row = cleanCard(body);
       if (!row.title) return send(400, { ok: false, error: 'title is required' });
       row.user_email = k.user_email;
