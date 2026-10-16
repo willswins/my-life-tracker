@@ -517,8 +517,10 @@
     </label>
     <div class="row">
       <label>Frequency
-        <input type="hidden" id="h-frequency" value="daily">
-        <button type="button" class="dd-field" data-dd="h-frequency">Daily</button>
+        <select id="h-frequency">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
       </label>
       <label>Icon
         <input id="h-icon" maxlength="4" placeholder="💪" value="✅">
@@ -534,6 +536,17 @@
       <button type="submit" class="primary">Save</button>
     </div>
   </form>
+</div>
+
+<div id="habit-delete-backdrop" class="hidden">
+  <div class="modal">
+    <h3>Delete Habit?</h3>
+    <p id="habit-delete-msg">Delete this habit and all its history?</p>
+    <div class="modal-actions">
+      <button type="button" id="habit-delete-cancel">Cancel</button>
+      <button type="button" id="habit-delete-confirm" class="primary danger">Delete</button>
+    </div>
+  </div>
 </div>
 
 <div id="reminder-backdrop" class="hidden">
