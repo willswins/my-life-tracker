@@ -23,6 +23,7 @@
         <button data-view="links" class="view-link">Links <span class="badge" id="badge-links"></span></button>
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
         <button data-view="mood" class="view-link">Mood</button>
+        <button data-view="habits" class="view-link">Habits</button>
         <button data-view="longterm" class="view-link">Long Term</button>
         <button id="games-toggle" class="games-toggle">Games <span class="games-caret">▸</span></button>
         <div id="games-submenu" class="games-submenu hidden">
@@ -366,6 +367,17 @@
   </div>
 </main>
 
+<main id="view-habits" class="view hidden">
+  <div class="view-head">
+    <h2>Habits</h2>
+    <button id="habit-add" class="primary">+ New Habit</button>
+  </div>
+  <div id="habit-list" class="habit-list"></div>
+  <div id="habit-empty" class="empty-note hidden">
+    <p>No habits yet. Tap "+ New Habit" to start building a streak!</p>
+  </div>
+</main>
+
 <main id="view-about" class="view hidden">
   <div class="about-card">
     <img src="/icon.png" alt="DayBook icon" class="about-icon">
@@ -495,6 +507,33 @@
       <button type="button" id="d-close" class="primary">Close</button>
     </div>
   </div>
+</div>
+
+<div id="habit-backdrop" class="hidden">
+  <form id="habit-form" class="modal">
+    <h3 id="habit-modal-title">New Habit</h3>
+    <label>Name
+      <input id="h-name" required maxlength="60" placeholder="e.g., Gym, Read, Meditate">
+    </label>
+    <div class="row">
+      <label>Frequency
+        <input type="hidden" id="h-frequency" value="daily">
+        <button type="button" class="dd-field" data-dd="h-frequency">Daily</button>
+      </label>
+      <label>Icon
+        <input id="h-icon" maxlength="4" placeholder="💪" value="✅">
+      </label>
+    </div>
+    <div class="row">
+      <label>Color
+        <input type="color" id="h-color" value="#4CAF50">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="habit-cancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
 </div>
 
 <div id="reminder-backdrop" class="hidden">
@@ -646,6 +685,8 @@
 <script src="/grammar-pro.js"></script>
 <script src="/word-meaning.js"></script>
 <script src="/wordmean-game.js"></script>
+<script src="/habits.js"></script>
+<script src="/habit-ui.js"></script>
 <script src="/spell-pro.js"></script>
 <script src="/mood.js"></script>
 <script src="/home-mood.js"></script>
