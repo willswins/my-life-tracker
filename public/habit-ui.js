@@ -168,16 +168,29 @@ function createHabitCard(habit) {
   const gridEl = card.querySelector('.habit-grid');
   renderStreakGrid(gridEl, habit);
 
-  // Bind check-in button
+  // Bind check-in button (look up fresh habit from cache at click time
+  // to avoid stale closures if the list re-rendered)
   const checkBtn = card.querySelector('.habit-check');
+  const habitId = habit.id;
   checkBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    await toggleCheckIn(habit.id);
+    await toggleCheckIn(habitId);
   });
 
-  // Bind edit/delete
-  card.querySelector('.habit-edit').addEventListener('click', () => openHabitModal(habit));
-  card.querySelector('.habit-delete').addEventListener('click', () => deleteHabit(habit));
+  // Bind edit/delete (fresh lookup by id at click time)
+  card.querySelector('.habit-edit').addEventListener('click', () => {
+    const fresh = habitsCache.find(h => String(h.id) === String(habitId));
+    openHabitModal(fresh || habit);
+  });
+  card.querySelector('.habit-delete').addEventListener('click', () => {
+    const fresh = habitsCache.find(h => String(h.id) === String(habitId));
+    if (!fresh) {
+      // Habit no longer exists (deleted elsewhere) — refresh the list
+      renderHabits();
+      return;
+    }
+    deleteHabit(fresh);
+  });
 
   return card;
 }
@@ -291,11 +304,19 @@ async function saveHabit(e) {
 }
 
 async function deleteHabit(habit) {
-  // Use custom modal instead of native confirm() for UX consistency and testability
+  // Use custom modal instead of native confirm() for UX consistency and testability.
+  // Defensive: verify modal elements exist (logs to console if the DOM is unexpected).
+  const backdrop = document.getElementById('habit-delete-backdrop');
+  const msg = document.getElementById('habit-delete-msg');
+  if (!backdrop || !msg) {
+    console.error('[Habits] Delete modal elements missing from DOM');
+    if (typeof toast === 'function') toast('Could not open delete dialog. Please reload.');
+    return;
+  }
   pendingDeleteId = habit.id;
-  document.getElementById('habit-delete-msg').textContent =
+  msg.textContent =
     `Delete "${habit.name}" and all its history? This cannot be undone.`;
-  document.getElementById('habit-delete-backdrop').classList.remove('hidden');
+  backdrop.classList.remove('hidden');
 }
 
 async function confirmDeleteHabit() {
