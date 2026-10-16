@@ -1,0 +1,301 @@
+// Habit Tracker — UI Layer
+// View registration, rendering, and interactions.
+// IIFE wrapper to avoid global collisions.
+(function() {
+'use strict';
+
+// ---------------------------------------------------------------------------
+// View registration
+// ---------------------------------------------------------------------------
+
+function initRegistrations() {
+  if (typeof VIEWS !== 'undefined' && VIEWS.indexOf('habits') === -1) {
+    VIEWS.push('habits');
+  }
+  if (typeof VIEW_IDS !== 'undefined') VIEW_IDS['habits'] = 'view-habits';
+  if (typeof VIEW_TITLES !== 'undefined') VIEW_TITLES['habits'] = 'Habits';
+
+  // Hook menu button
+  const menuBtn = document.querySelector('[data-view="habits"]');
+  if (menuBtn && !menuBtn._habitHooked) {
+    menuBtn._habitHooked = true;
+    menuBtn.addEventListener('click', () => {
+      setTimeout(() => { renderHabits(); }, 50);
+    });
+  }
+
+  // Handle hash navigation
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#/habits') {
+      setTimeout(() => { renderHabits(); }, 50);
+    }
+  });
+
+  if (location.hash === '#/habits') {
+    setTimeout(() => { renderHabits(); }, 500);
+  }
+
+  // Bind add button
+  const addBtn = document.getElementById('habit-add');
+  if (addBtn && !addBtn._habitBound) {
+    addBtn._habitBound = true;
+    addBtn.addEventListener('click', () => openHabitModal(null));
+  }
+
+  // Bind modal
+  const cancelBtn = document.getElementById('habit-cancel');
+  if (cancelBtn && !cancelBtn._habitBound) {
+    cancelBtn._habitBound = true;
+    cancelBtn.addEventListener('click', closeHabitModal);
+  }
+  const backdrop = document.getElementById('habit-backdrop');
+  if (backdrop && !backdrop._habitBound) {
+    backdrop._habitBound = true;
+    backdrop.addEventListener('click', (e) => {
+      if (e.target.id === 'habit-backdrop') closeHabitModal();
+    });
+  }
+  const form = document.getElementById('habit-form');
+  if (form && !form._habitBound) {
+    form._habitBound = true;
+    form.addEventListener('submit', saveHabit);
+  }
+}
+
+function tryInit() {
+  if (typeof VIEWS === 'undefined' || typeof window.Habits === 'undefined') {
+    setTimeout(tryInit, 200);
+    return;
+  }
+  initRegistrations();
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+let habitsCache = [];
+let editingHabitId = null;
+
+async function renderHabits() {
+  const listEl = document.getElementById('habit-list');
+  const emptyEl = document.getElementById('habit-empty');
+  if (!listEl) return;
+
+  try {
+    habitsCache = await window.Habits.list();
+  } catch (e) {
+    listEl.innerHTML = '<p class="empty-note">Could not load habits. Please try again.</p>';
+    return;
+  }
+
+  if (habitsCache.length === 0) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    return;
+  }
+  if (emptyEl) emptyEl.classList.add('hidden');
+
+  listEl.innerHTML = '';
+  habitsCache.forEach(habit => {
+    listEl.appendChild(createHabitCard(habit));
+  });
+}
+
+function createHabitCard(habit) {
+  const streak = window.Habits._calculateStreak(habit.checkins, habit.frequency);
+  const rate = window.Habits._completionRate(habit.checkins, 30);
+  const today = window.Habits._todayStr();
+  const isDone = window.Habits.isCheckedIn(habit, today);
+
+  const card = document.createElement('div');
+  card.className = 'habit-card';
+  card.style.borderLeftColor = habit.color;
+
+  card.innerHTML = `
+    <div class="habit-header">
+      <span class="habit-icon">${escapeHtml(habit.icon)}</span>
+      <div class="habit-title-wrap">
+        <h3 class="habit-name">${escapeHtml(habit.name)}</h3>
+        <span class="habit-freq">${habit.frequency}</span>
+      </div>
+      <button class="habit-check ${isDone ? 'done' : ''}" data-habit-id="${habit.id}" aria-label="Check in">
+        ${isDone ? '✓' : '○'}
+      </button>
+    </div>
+    <div class="habit-stats">
+      <div class="habit-stat">
+        <span class="habit-stat-val">${streak.current}</span>
+        <span class="habit-stat-label">day streak</span>
+      </div>
+      <div class="habit-stat">
+        <span class="habit-stat-val">${streak.longest}</span>
+        <span class="habit-stat-label">best</span>
+      </div>
+      <div class="habit-stat">
+        <span class="habit-stat-val">${rate}%</span>
+        <span class="habit-stat-label">30-day</span>
+      </div>
+    </div>
+    <div class="habit-grid" data-habit-id="${habit.id}"></div>
+    <div class="habit-actions">
+      <button class="habit-edit" data-habit-id="${habit.id}">Edit</button>
+      <button class="habit-delete danger" data-habit-id="${habit.id}">Delete</button>
+    </div>
+  `;
+
+  // Render streak grid
+  const gridEl = card.querySelector('.habit-grid');
+  renderStreakGrid(gridEl, habit);
+
+  // Bind check-in button
+  const checkBtn = card.querySelector('.habit-check');
+  checkBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleCheckIn(habit.id);
+  });
+
+  // Bind edit/delete
+  card.querySelector('.habit-edit').addEventListener('click', () => openHabitModal(habit));
+  card.querySelector('.habit-delete').addEventListener('click', () => deleteHabit(habit));
+
+  return card;
+}
+
+function renderStreakGrid(container, habit) {
+  if (!container) return;
+  
+  const weeks = 12;
+  const today = window.Habits._parseDate(window.Habits._todayStr());
+  // Start from 12 weeks ago, aligned to Sunday
+  const start = new Date(today);
+  start.setDate(start.getDate() - (weeks * 7) + 1);
+  // Align to Sunday
+  start.setDate(start.getDate() - start.getDay());
+
+  let html = '';
+  for (let w = 0; w < weeks; w++) {
+    html += '<div class="habit-week">';
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start);
+      date.setDate(date.getDate() + (w * 7) + d);
+      const ds = window.Habits._formatDate(date);
+      const isFuture = date > today;
+      const checked = habit.checkins[ds] === true;
+      
+      let cls = 'habit-day';
+      if (isFuture) cls += ' future';
+      else if (checked) cls += ' done';
+      
+      const style = checked ? `background:${habit.color};` : '';
+      html += `<div class="${cls}" style="${style}" title="${ds}"></div>`;
+    }
+    html += '</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ---------------------------------------------------------------------------
+// Interactions
+// ---------------------------------------------------------------------------
+
+async function toggleCheckIn(habitId) {
+  const habit = habitsCache.find(h => String(h.id) === String(habitId));
+  if (!habit) return;
+
+  const today = window.Habits._todayStr();
+  const isDone = window.Habits.isCheckedIn(habit, today);
+
+  try {
+    if (isDone) {
+      await window.Habits.checkOut(habitId, today);
+    } else {
+      await window.Habits.checkIn(habitId, today);
+    }
+    await renderHabits();
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not update. Please try again.');
+  }
+}
+
+function openHabitModal(habit) {
+  editingHabitId = habit ? habit.id : null;
+  document.getElementById('habit-modal-title').textContent = habit ? 'Edit Habit' : 'New Habit';
+  document.getElementById('h-name').value = habit ? habit.name : '';
+  document.getElementById('h-frequency').value = habit ? habit.frequency : 'daily';
+  document.getElementById('h-icon').value = habit ? habit.icon : '✅';
+  document.getElementById('h-color').value = habit ? habit.color : '#4CAF50';
+  
+  // Update frequency dropdown display
+  const freqBtn = document.querySelector('[data-dd="h-frequency"]');
+  if (freqBtn) freqBtn.textContent = habit && habit.frequency === 'weekly' ? 'Weekly' : 'Daily';
+  
+  document.getElementById('habit-backdrop').classList.remove('hidden');
+}
+
+function closeHabitModal() {
+  document.getElementById('habit-backdrop').classList.add('hidden');
+  editingHabitId = null;
+}
+
+async function saveHabit(e) {
+  e.preventDefault();
+  
+  const name = document.getElementById('h-name').value.trim();
+  if (!name) return;
+
+  const data = {
+    name: name,
+    frequency: document.getElementById('h-frequency').value || 'daily',
+    icon: document.getElementById('h-icon').value.trim() || '✅',
+    color: document.getElementById('h-color').value || '#4CAF50',
+  };
+
+  try {
+    if (editingHabitId) {
+      await window.Habits.update(editingHabitId, data);
+    } else {
+      await window.Habits.create(data);
+    }
+    closeHabitModal();
+    await renderHabits();
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not save. Please try again.');
+  }
+}
+
+async function deleteHabit(habit) {
+  const confirmed = confirm(`Delete "${habit.name}" and all its history?`);
+  if (!confirmed) return;
+
+  try {
+    await window.Habits.delete(habit.id);
+    await renderHabits();
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not delete. Please try again.');
+  }
+}
+
+// Expose for testing
+window.HabitUI = {
+  renderHabits,
+  calculateStreak: (c, f) => window.Habits._calculateStreak(c, f),
+};
+
+// Start
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', tryInit);
+} else {
+  tryInit();
+}
+
+})();
