@@ -60,6 +60,25 @@ function initRegistrations() {
     form._habitBound = true;
     form.addEventListener('submit', saveHabit);
   }
+
+  // Bind delete confirmation modal
+  const delCancel = document.getElementById('habit-delete-cancel');
+  if (delCancel && !delCancel._habitBound) {
+    delCancel._habitBound = true;
+    delCancel.addEventListener('click', cancelDeleteHabit);
+  }
+  const delConfirm = document.getElementById('habit-delete-confirm');
+  if (delConfirm && !delConfirm._habitBound) {
+    delConfirm._habitBound = true;
+    delConfirm.addEventListener('click', confirmDeleteHabit);
+  }
+  const delBackdrop = document.getElementById('habit-delete-backdrop');
+  if (delBackdrop && !delBackdrop._habitBound) {
+    delBackdrop._habitBound = true;
+    delBackdrop.addEventListener('click', (e) => {
+      if (e.target.id === 'habit-delete-backdrop') cancelDeleteHabit();
+    });
+  }
 }
 
 function tryInit() {
@@ -76,6 +95,7 @@ function tryInit() {
 
 let habitsCache = [];
 let editingHabitId = null;
+let pendingDeleteId = null;
 
 async function renderHabits() {
   const listEl = document.getElementById('habit-list');
@@ -167,11 +187,12 @@ function renderStreakGrid(container, habit) {
   
   const weeks = 12;
   const today = window.Habits._parseDate(window.Habits._todayStr());
-  // Start from 12 weeks ago, aligned to Sunday
-  const start = new Date(today);
-  start.setDate(start.getDate() - (weeks * 7) + 1);
-  // Align to Sunday
-  start.setDate(start.getDate() - start.getDay());
+  // Anchor the grid so the LAST column is the current week (Sun-Sat),
+  // ensuring today is always visible. Start 11 weeks before this Sunday.
+  const thisSunday = new Date(today);
+  thisSunday.setDate(thisSunday.getDate() - thisSunday.getDay());
+  const start = new Date(thisSunday);
+  start.setDate(start.getDate() - ((weeks - 1) * 7));
 
   let html = '';
   for (let w = 0; w < weeks; w++) {
@@ -235,10 +256,6 @@ function openHabitModal(habit) {
   document.getElementById('h-icon').value = habit ? habit.icon : '✅';
   document.getElementById('h-color').value = habit ? habit.color : '#4CAF50';
   
-  // Update frequency dropdown display
-  const freqBtn = document.querySelector('[data-dd="h-frequency"]');
-  if (freqBtn) freqBtn.textContent = habit && habit.frequency === 'weekly' ? 'Weekly' : 'Daily';
-  
   document.getElementById('habit-backdrop').classList.remove('hidden');
 }
 
@@ -274,15 +291,30 @@ async function saveHabit(e) {
 }
 
 async function deleteHabit(habit) {
-  const confirmed = confirm(`Delete "${habit.name}" and all its history?`);
-  if (!confirmed) return;
+  // Use custom modal instead of native confirm() for UX consistency and testability
+  pendingDeleteId = habit.id;
+  document.getElementById('habit-delete-msg').textContent =
+    `Delete "${habit.name}" and all its history? This cannot be undone.`;
+  document.getElementById('habit-delete-backdrop').classList.remove('hidden');
+}
+
+async function confirmDeleteHabit() {
+  const id = pendingDeleteId;
+  pendingDeleteId = null;
+  document.getElementById('habit-delete-backdrop').classList.add('hidden');
+  if (!id) return;
 
   try {
-    await window.Habits.delete(habit.id);
+    await window.Habits.delete(id);
     await renderHabits();
   } catch (e) {
     if (typeof toast === 'function') toast('Could not delete. Please try again.');
   }
+}
+
+function cancelDeleteHabit() {
+  pendingDeleteId = null;
+  document.getElementById('habit-delete-backdrop').classList.add('hidden');
 }
 
 // Expose for testing
