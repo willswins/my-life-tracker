@@ -139,7 +139,7 @@ function createHabitCard(habit) {
         <h3 class="habit-name">${escapeHtml(habit.name)}</h3>
         <span class="habit-freq">${habit.frequency}</span>
       </div>
-      <button class="habit-check ${isDone ? 'done' : ''}" data-habit-id="${habit.id}" aria-label="Check in">
+      <button class="habit-check ${isDone ? 'done' : ''}" data-habit-id="${habit.id}" aria-label="${isDone ? `Mark ${escapeHtml(habit.name)} as not done today` : `Check in ${escapeHtml(habit.name)} for today`}" aria-pressed="${isDone}">
         ${isDone ? '✓' : '○'}
       </button>
     </div>
@@ -207,9 +207,17 @@ function renderStreakGrid(container, habit) {
   const start = new Date(thisSunday);
   start.setDate(start.getDate() - ((weeks - 1) * 7));
 
+  // Accessibility: summarize the grid for screen readers
+  const streak = window.Habits._calculateStreak(habit.checkins, habit.frequency);
+  const totalChecked = Object.keys(habit.checkins).filter(d => habit.checkins[d]).length;
+  container.setAttribute('role', 'img');
+  container.setAttribute('aria-label',
+    `${habit.name}: ${totalChecked} days completed in the last ${weeks} weeks. ` +
+    `Current streak ${streak.current} days, longest streak ${streak.longest} days.`);
+
   let html = '';
   for (let w = 0; w < weeks; w++) {
-    html += '<div class="habit-week">';
+    html += '<div class="habit-week" role="presentation">';
     for (let d = 0; d < 7; d++) {
       const date = new Date(start);
       date.setDate(date.getDate() + (w * 7) + d);
@@ -220,9 +228,14 @@ function renderStreakGrid(container, habit) {
       let cls = 'habit-day';
       if (isFuture) cls += ' future';
       else if (checked) cls += ' done';
+
+      // Per-day accessible description
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const status = isFuture ? 'upcoming' : (checked ? 'completed' : 'missed');
+      const ariaLabel = `${dayName}: ${status}`;
       
       const style = checked ? `background:${habit.color};` : '';
-      html += `<div class="${cls}" style="${style}" title="${ds}"></div>`;
+      html += `<div class="${cls}" style="${style}" title="${ds}" role="img" aria-label="${ariaLabel}"></div>`;
     }
     html += '</div>';
   }
