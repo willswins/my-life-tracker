@@ -39,14 +39,18 @@ function wrapOpenModal() {
 }
 
 // Wrap api() to inject/remove the 'longterm' tag on card saves.
+// IMPORTANT: Only touch tags when the caller explicitly sent a tags array
+// (e.g. the card edit form). Habit check-ins PATCH only {details} — wiping
+// tags there would strip the 'habit' tag and make habits vanish.
 function wrapApi() {
   if (typeof window.api !== 'function' || window.api._ltPatched) return;
   const origApi = window.api;
   window.api = async function(method, path, body) {
-    if (body && typeof body === 'object' && /^\/api\/app\?r=cards/.test(path)) {
+    if (body && typeof body === 'object' && Array.isArray(body.tags) &&
+        /^\/api\/app\?r=cards/.test(path)) {
       const cb = document.getElementById('f-longterm');
       if (cb) {
-        const tags = Array.isArray(body.tags) ? body.tags.slice() : [];
+        const tags = body.tags.slice();
         const hasLt = tags.includes('longterm');
         if (cb.checked && !hasLt) tags.push('longterm');
         if (!cb.checked && hasLt) {
