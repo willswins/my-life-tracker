@@ -3,7 +3,7 @@
 const { getSessionEmail } = require('./_session');
 const { readBody, sb } = require('./_db');
 
-const TAGS = ['work', 'personal'];
+const TAGS = ['eben', 'Irwin', 'luttu', 'personal', 'Santhi', 'work'];
 const STATUSES = ['active', 'dismissed', 'snoozed', 'completed'];
 
 function cleanReminder(b) {
@@ -38,6 +38,7 @@ function cleanReminder(b) {
     out.recurrence_end_after = (isNaN(n) || n < 1) ? null : n;
   }
   if (b.tag === null || TAGS.includes(b.tag)) out.tag = b.tag;
+  if (Array.isArray(b.tags)) out.tags = b.tags.filter((t) => TAGS.includes(t));
   const PRIS = ['high','medium','low','none'];
   if (b.priority !== undefined) out.priority = PRIS.includes(b.priority) ? b.priority : 'none';
   if (STATUSES.includes(b.status)) out.status = b.status;
