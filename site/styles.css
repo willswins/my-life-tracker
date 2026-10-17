@@ -186,7 +186,7 @@ button.primary {
 .modal-actions .spacer { flex: 1; }
 .modal-actions { align-items: center; }
 #reminder-form .modal-actions { flex-direction: column; align-items: stretch; }
-.modal-actions button { width: 100%; min-width: 0; white-space: normal; word-break: break-word; }
+#reminder-form .modal-actions button { width: 100%; min-width: 0; white-space: normal; word-break: break-word; }
 #reminder-form .modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.95rem; }
 
 button.danger-btn { color: #b91c1c; }
@@ -1249,4 +1249,18 @@ pre#ingest-docs {
   .habit-freq { background: #333; color: #aaa; }
   .habit-check { background: #2d2d2d; border-color: #444; color: #fff; }
   .habit-actions button { background: #2d2d2d; border-color: #444; color: #fff; }
+}
+
+/* Detail modal: stack action buttons vertically on mobile (fixes cramped/misaligned row) */
+@media (max-width: 768px) {
+  #detail-backdrop .modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #detail-backdrop .modal-actions button {
+    width: 100%;
+  }
+  #detail-backdrop .modal-actions .spacer {
+    display: none;
+  }
 }
