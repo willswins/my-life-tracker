@@ -72,10 +72,27 @@ window.renderLongTerm = async function() {
 // Move a long-term card back to My Board (remove longterm tag)
 async function moveToTasks(id) {
   try {
-    var c = (window.cards || []).find(function(x) { return x.id === id; });
-    var tags = ((c && c.tags) || []).filter(function(t) { return t !== LT_TAG; });
+    var c = (window.cards || []).find(function(x) { return String(x.id) === String(id); });
+    var tags;
+    if (c && Array.isArray(c.tags)) {
+      tags = c.tags.filter(function(t) { return t !== LT_TAG; });
+    } else {
+      // window.cards may be stale/empty (app.js uses `let`, not window.cards):
+      // fetch the card to get its current tags instead of wiping them.
+      var all = await api('GET', '/api/app?r=cards');
+      var fresh = (all || []).find(function(x) { return String(x.id) === String(id); });
+      tags = ((fresh && fresh.tags) || []).filter(function(t) { return t !== LT_TAG; });
+      c = fresh || c;
+    }
     await api('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(id), { tags: tags });
     if (c) c.tags = tags;
+    // Also sync the app.js `cards` array if accessible (it's a global let)
+    try {
+      if (typeof cards !== 'undefined' && Array.isArray(cards)) {
+        var ac = cards.find(function(x) { return String(x.id) === String(id); });
+        if (ac) ac.tags = tags;
+      }
+    } catch (e) {}
     ltCardsCache = null;
     window.renderLongTerm();
     if (typeof toast === 'function') toast('Moved to My Board');
