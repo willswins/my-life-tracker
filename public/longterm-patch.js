@@ -42,14 +42,20 @@ function wrapOpenModal() {
 // IMPORTANT: Only touch tags when the caller explicitly sent a tags array
 // (e.g. the card edit form). Habit check-ins PATCH only {details} — wiping
 // tags there would strip the 'habit' tag and make habits vanish.
+// ALSO: Only apply when the card edit modal is actually open. The f-longterm
+// checkbox retains stale state when hidden; applying it to other operations
+// (like longterm.js moveToTasks which explicitly removes the tag) would
+// re-add 'longterm' and break the move.
 function wrapApi() {
   if (typeof window.api !== 'function' || window.api._ltPatched) return;
   const origApi = window.api;
   window.api = async function(method, path, body) {
     if (body && typeof body === 'object' && Array.isArray(body.tags) &&
         /^\/api\/app\?r=cards/.test(path)) {
+      const modal = document.getElementById('modal-backdrop');
+      const modalOpen = modal && !modal.classList.contains('hidden');
       const cb = document.getElementById('f-longterm');
-      if (cb) {
+      if (modalOpen && cb) {
         const tags = body.tags.slice();
         const hasLt = tags.includes('longterm');
         if (cb.checked && !hasLt) tags.push('longterm');
