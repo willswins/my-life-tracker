@@ -1305,3 +1305,30 @@ pre#ingest-docs {
 .she-zone-del { border: 0; background: transparent; color: #b91c1c; font-size: 1.2rem; cursor: pointer; padding: 0.3rem; flex: 0 0 auto; }
 .she-cat-row { display: flex !important; align-items: center; justify-content: space-between; gap: 0.6rem; font-weight: normal !important; }
 .she-cat-row select { padding: 0.45rem 0.5rem; border: 1px solid var(--line); border-radius: 8px; font-size: 0.95rem; background: #fff; max-width: 55%; }
+
+/* Shop on iPhone (<=768px, incl. 16 Pro Max 440px): stacked store bar,
+   two-row add form, full-width editor buttons, 44px tap targets,
+   16px inputs so Safari never auto-zooms on focus */
+@media (max-width: 768px) {
+  .shop-storebar { flex-wrap: wrap; }
+  .shop-store-sel { flex: 1 1 100%; min-height: 48px; }
+  .shop-storebar .shop-btn { flex: 1; }
+  .shop-add { flex-direction: row; }
+  #shop-new-name { flex: 1 1 100%; min-height: 48px; }
+  .shop-cat-sel { flex: 1 1 auto; min-height: 48px; }
+  #shop-new-qty { flex: 0 0 76px; width: 76px; min-height: 48px; }
+  .shop-add button[type="submit"] { min-height: 48px; padding: 0.55rem 1.1rem; }
+  .shop-item { padding: 0.7rem 0.4rem; min-height: 52px; }
+  .shop-item input[type="checkbox"] { width: 24px; height: 24px; }
+  .shop-del { min-width: 44px; min-height: 44px; }
+  .shop-actions .shop-btn { flex: 1; }
+  #shop-modal .modal-actions { flex-direction: column; align-items: stretch; }
+  #shop-modal .modal-actions button { width: 100%; min-height: 48px; }
+  #shop-modal .modal-actions .spacer { display: none; }
+  .she-move { width: 44px; height: 44px; }
+  .she-zone-name, .she-zone-aisle { font-size: 1rem; min-height: 44px; }
+  .she-zone-aisle { flex: 0 0 84px; }
+  .she-cat-row select { font-size: 1rem; min-height: 44px; }
+  .shop-modal label input[type="text"] { min-height: 48px; }
+  .shop-loc-row .shop-btn { width: 100%; }
+}
