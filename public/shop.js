@@ -704,16 +704,25 @@ async function deleteShopStore() {
 // ---------------------------------------------------------------------------
 
 var shopLoaded = false;
+var shopLoadPromise = null;
 
 async function openShop() {
   purgeGlobalCards();
   if (!shopLoaded) {
     var rootEl = document.getElementById('shop-root');
     if (rootEl) rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
+    // Single-flight: concurrent opens (menu click + hashchange) must share
+    // one load, or the first-run store seeding fires twice.
+    if (!shopLoadPromise) {
+      shopLoadPromise = (async function() {
+        await loadShopData();
+        shopLoaded = true;
+      })();
+    }
     try {
-      await loadShopData();
-      shopLoaded = true;
+      await shopLoadPromise;
     } catch (e) {
+      shopLoadPromise = null;
       if (rootEl) rootEl.innerHTML = '<p class="empty-note">Could not load your stores. Please try again.</p>';
       return;
     }
