@@ -24,6 +24,7 @@
         <button data-view="inbox" class="view-link">Inbox <span class="badge" id="badge-inbox"></span></button>
         <button data-view="mood" class="view-link">Mood</button>
         <button data-view="habits" class="view-link">Habits</button>
+        <button data-view="shop" class="view-link">Shop</button>
         <button data-view="longterm" class="view-link">Long Term</button>
         <button id="games-toggle" class="games-toggle">Games <span class="games-caret">▸</span></button>
         <div id="games-submenu" class="games-submenu hidden">
@@ -378,6 +379,13 @@
   </div>
 </main>
 
+<main id="view-shop" class="view hidden">
+  <div class="view-head">
+    <h2>Shop</h2>
+  </div>
+  <div id="shop-root"></div>
+</main>
+
 <main id="view-about" class="view hidden">
   <div class="about-card">
     <img src="/icon.png" alt="DayBook icon" class="about-icon">
@@ -700,6 +708,7 @@
 <script src="/wordmean-game.js"></script>
 <script src="/habits.js"></script>
 <script src="/habit-ui.js"></script>
+<script src="/shop.js"></script>
 <script src="/longterm-patch.js"></script>
 <script src="/spell-pro.js"></script>
 <script src="/mood.js"></script>
