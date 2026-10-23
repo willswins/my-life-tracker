@@ -1,10 +1,11 @@
 // Shop — grocery list with store-layout route optimization.
 // Pick a store (preferred, or nearest with a saved location), and your list
 // is re-sorted into the order you walk past everything — no backtracking.
-// Data: cards API only. Stores are cards tagged 'gstore' (layout JSON in
-// details); items are cards tagged 'gitem'. An api() wrapper strips shop
-// cards from every other view's GET r=cards response so they never pollute
-// My Board. Loads after app.js.
+// Data: dedicated DB tables — shop_stores / shop_items, via
+// /api/app?r=daybook&view=shop (migration-008). Items are database rows,
+// never code and never board cards. The api() wrapper below still strips
+// any legacy shop cards (gstore/gitem) from other views during transition.
+// Loads after app.js.
 (function() {
 'use strict';
 
@@ -12,8 +13,12 @@
 // Constants
 // ---------------------------------------------------------------------------
 
+// Legacy card tags — used only by the transition filter that keeps any
+// pre-migration shop cards off My Board. New data never writes cards.
 var STORE_TAG = 'gstore';
 var ITEM_TAG = 'gitem';
+
+var SHOP_API = '/api/app?r=daybook&view=shop';
 
 var CATEGORIES = [
   'Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry',
@@ -139,6 +144,10 @@ function buildRoute(store, items) {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// API layer — keep a raw reference so our own calls bypass the shop filter
+// ---------------------------------------------------------------------------
+
 // Turn Overpass API elements into a clean, deduped, distance-sorted
 // place list: [{name, addr, lat, lng, distMi}].
 function parsePlaces(elements, lat, lng) {
@@ -170,10 +179,6 @@ function parsePlaces(elements, lat, lng) {
   out.sort(function(a, b) { return a.distMi - b.distMi; });
   return out.slice(0, 15);
 }
-
-// ---------------------------------------------------------------------------
-// API layer — keep a raw reference so our own calls bypass the shop filter
-// ---------------------------------------------------------------------------
 
 var rawApi = null;
 
@@ -222,51 +227,39 @@ function purgeGlobalCards() {
 // Data
 // ---------------------------------------------------------------------------
 
-function parseDetails(card, fallback) {
-  try {
-    var d = JSON.parse(card.details || '');
-    return (d && typeof d === 'object') ? d : fallback;
-  } catch (e) { return fallback; }
-}
-
-function cardToStore(card) {
-  var d = parseDetails(card, {});
+function rowToStore(row) {
   return {
-    id: card.id,
-    name: card.title || 'Store',
-    zones: Array.isArray(d.z) && d.z.length ? d.z : TEMPLATE_ZONES.slice(),
-    map: (d.m && typeof d.m === 'object') ? d.m : Object.assign({}, TEMPLATE_MAP),
-    lat: (typeof d.lat === 'number') ? d.lat : null,
-    lng: (typeof d.lng === 'number') ? d.lng : null,
-    addr: d.a || '',
-    pref: !!d.pref
+    id: row.id,
+    name: row.name || 'Store',
+    zones: Array.isArray(row.zones) && row.zones.length ? row.zones : TEMPLATE_ZONES.slice(),
+    map: (row.category_map && typeof row.category_map === 'object') ? row.category_map : Object.assign({}, TEMPLATE_MAP),
+    lat: (typeof row.lat === 'number') ? row.lat : null,
+    lng: (typeof row.lng === 'number') ? row.lng : null,
+    pref: !!row.preferred
   };
 }
 
-function storeToDetails(store) {
-  var d = { z: store.zones, m: store.map };
-  if (store.lat != null && store.lng != null) { d.lat = store.lat; d.lng = store.lng; }
-  if (store.addr) d.a = store.addr;
-  if (store.pref) d.pref = true;
-  return JSON.stringify(d);
-}
-
-function cardToItem(card) {
-  var d = parseDetails(card, {});
+function storeToBody(store) {
   return {
-    id: card.id,
-    name: card.title || '',
-    cat: d.c || 'Other',
-    qty: d.q || '',
-    done: !!d.d,
-    storeId: d.s || null
+    kind: 'store',
+    name: store.name,
+    zones: store.zones,
+    category_map: store.map,
+    lat: store.lat != null ? store.lat : null,
+    lng: store.lng != null ? store.lng : null,
+    preferred: !!store.pref
   };
 }
 
-function itemToDetails(item) {
-  var d = { c: item.cat, d: item.done ? 1 : 0, s: item.storeId };
-  if (item.qty) d.q = item.qty;
-  return JSON.stringify(d);
+function rowToItem(row) {
+  return {
+    id: row.id,
+    name: row.name || '',
+    cat: row.category || 'Other',
+    qty: row.qty || '',
+    done: !!row.done,
+    storeId: row.store_id || null
+  };
 }
 
 var shopStores = [];
@@ -280,21 +273,17 @@ var navSkipped = {};
 var navWakeLock = null;
 
 async function loadShopData() {
-  var all = await shopApi('GET', '/api/app?r=cards');
-  all = Array.isArray(all) ? all : [];
-  shopStores = all.filter(function(c) { return (c.tags || []).indexOf(STORE_TAG) !== -1 && !c.deleted_at; }).map(cardToStore);
-  shopItems = all.filter(function(c) { return (c.tags || []).indexOf(ITEM_TAG) !== -1 && !c.deleted_at; }).map(cardToItem);
+  var data = await shopApi('GET', SHOP_API);
+  data = (data && typeof data === 'object') ? data : {};
+  shopStores = (Array.isArray(data.stores) ? data.stores : []).map(rowToStore);
+  shopItems = (Array.isArray(data.items) ? data.items : []).map(rowToItem);
   if (!shopStores.length) {
-    var created = await shopApi('POST', '/api/app?r=cards', {
-      title: 'My Store',
-      tags: [STORE_TAG],
-      details: storeToDetails({
-        zones: TEMPLATE_ZONES.slice(), map: Object.assign({}, TEMPLATE_MAP),
-        lat: null, lng: null, pref: true
-      })
-    });
-    var s = cardToStore(created);
-    shopStores = [s];
+    var created = await shopApi('POST', SHOP_API, storeToBody({
+      name: 'My Store',
+      zones: TEMPLATE_ZONES.slice(), map: Object.assign({}, TEMPLATE_MAP),
+      lat: null, lng: null, pref: true
+    }));
+    shopStores = [rowToStore(created)];
   }
   if (!currentStoreId || !shopStores.some(function(s) { return String(s.id) === String(currentStoreId); })) {
     pickInitialStore();
@@ -378,7 +367,6 @@ function renderShop() {
   h += '<button type="button" id="shop-add-store" class="shop-btn">+ Store</button>';
   h += '</div>';
   if (storeWhy) h += '<p class="shop-why">Using ' + esc(store.name) + ' — ' + esc(storeWhy) + '</p>';
-  else if (store.addr) h += '<p class="shop-why">' + esc(store.addr) + '</p>';
 
   h += '<form id="shop-add-form" class="shop-add">';
   h += '<input id="shop-new-name" type="text" maxlength="80" placeholder="Add an item…" autocomplete="off">';
@@ -417,16 +405,6 @@ function renderShop() {
   }
   rootEl.innerHTML = h;
   wireShop(rootEl);
-}
-
-async function toggleShopItem(id, done) {
-  var it = shopItems.find(function(x) { return String(x.id) === String(id); });
-  if (!it) return;
-  it.done = done;
-  try {
-    await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(it.id), { details: itemToDetails(it) });
-  } catch (e) { /* keep local state; next load resyncs */ }
-  renderShop();
 }
 
 function wireShop(rootEl) {
@@ -476,7 +454,7 @@ function wireShop(rootEl) {
       var id = btn.dataset.id;
       shopItems = shopItems.filter(function(x) { return String(x.id) !== String(id); });
       renderShop();
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(id)); } catch (err) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(id)); } catch (err) {}
     });
   });
   var clearDone = rootEl.querySelector('#shop-clear-done');
@@ -484,7 +462,7 @@ function wireShop(rootEl) {
     var store = currentStore();
     var done = shopItems.filter(function(it) { return it.done && String(it.storeId) === String(store.id); });
     for (var i = 0; i < done.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
     }
     shopItems = shopItems.filter(function(it) { return !(it.done && String(it.storeId) === String(store.id)); });
     renderShop();
@@ -496,21 +474,30 @@ function wireShop(rootEl) {
     var store = currentStore();
     var mine = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
     for (var i = 0; i < mine.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
     }
     shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(store.id); });
     renderShop();
   });
 }
 
+async function toggleShopItem(id, done) {
+  var it = shopItems.find(function(x) { return String(x.id) === String(id); });
+  if (!it) return;
+  it.done = done;
+  try {
+    await shopApi('PATCH', SHOP_API + '&kind=item&id=' + encodeURIComponent(it.id), { done: it.done });
+  } catch (e) { /* keep local state; next load resyncs */ }
+  renderShop();
+}
+
 async function addShopItem(name, cat, qty) {
   var store = currentStore();
   var item = { name: name, cat: cat || guessCategory(name), qty: qty || '', done: false, storeId: store.id };
   try {
-    var created = await shopApi('POST', '/api/app?r=cards', {
-      title: item.name,
-      tags: [ITEM_TAG],
-      details: itemToDetails(item)
+    var created = await shopApi('POST', SHOP_API, {
+      kind: 'item', store_id: store.id,
+      name: item.name, category: item.cat, qty: item.qty, done: false
     });
     item.id = created.id;
     shopItems.push(item);
@@ -803,8 +790,8 @@ function renderFinderResults(places) {
 }
 
 // Selecting a place: if we already have a store with this name, enrich it
-// with the address/coords (layout kept as-is); otherwise create the store
-// with a generated layout and cache it on the card.
+// with the location (layout kept as-is); otherwise create the store with a
+// generated layout and cache it in the shop_stores table.
 async function selectFoundStore(place) {
   var makePref = document.getElementById('sf-pref').checked;
   var existing = shopStores.find(function(s) {
@@ -815,12 +802,9 @@ async function selectFoundStore(place) {
     if (existing) {
       store = Object.assign({}, existing, {
         lat: place.lat, lng: place.lng,
-        addr: place.addr || existing.addr,
         pref: makePref ? true : existing.pref
       });
-      await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(store.id), {
-        details: storeToDetails(store)
-      });
+      await shopApi('PATCH', SHOP_API + '&kind=store&id=' + encodeURIComponent(store.id), storeToBody(store));
       var idx = shopStores.findIndex(function(s) { return String(s.id) === String(store.id); });
       if (idx >= 0) shopStores[idx] = store;
     } else {
@@ -829,27 +813,14 @@ async function selectFoundStore(place) {
         zones: TEMPLATE_ZONES.map(function(z) { return z.slice(); }),
         map: Object.assign({}, TEMPLATE_MAP),
         lat: place.lat, lng: place.lng,
-        addr: place.addr,
         pref: makePref
       };
-      var created = await shopApi('POST', '/api/app?r=cards', {
-        title: store.name, tags: [STORE_TAG], details: storeToDetails(store)
-      });
+      var created = await shopApi('POST', SHOP_API, storeToBody(store));
       store.id = created.id;
       shopStores.push(store);
     }
     if (makePref) {
-      for (var i = 0; i < shopStores.length; i++) {
-        var other = shopStores[i];
-        if (String(other.id) !== String(store.id) && other.pref) {
-          other.pref = false;
-          try {
-            await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(other.id), {
-              details: storeToDetails(other)
-            });
-          } catch (e) {}
-        }
-      }
+      shopStores.forEach(function(s) { if (String(s.id) !== String(store.id)) s.pref = false; });
       storeWhy = '★ your preferred store';
     }
     currentStoreId = store.id;
@@ -878,7 +849,6 @@ function ensureShopModal() {
     '<div class="modal shop-modal">' +
       '<h3 id="shop-modal-title">Store layout</h3>' +
       '<label>Store name<input id="she-name" type="text" maxlength="60"></label>' +
-      '<p id="she-addr" class="shop-hint"></p>' +
       '<label class="shop-check-label"><input type="checkbox" id="she-pref"> ★ Preferred store (always use this one)</label>' +
       '<h4>Walking order (top = first)</h4>' +
       '<div id="she-zones"></div>' +
@@ -921,13 +891,12 @@ function openLayoutEditor(which) {
       storeId: s.id, name: s.name,
       zones: s.zones.map(function(z) { return z.slice(); }),
       map: Object.assign({}, s.map),
-      lat: s.lat, lng: s.lng, addr: s.addr, pref: s.pref
+      lat: s.lat, lng: s.lng, pref: s.pref
     };
     document.getElementById('shop-modal-title').textContent = 'Store layout';
     document.getElementById('she-delete').style.display = shopStores.length > 1 ? '' : 'none';
   }
   document.getElementById('she-name').value = editorState.name;
-  document.getElementById('she-addr').textContent = editorState.addr || '';
   document.getElementById('she-pref').checked = !!editorState.pref;
   renderEditorZones();
   renderEditorCatmap();
@@ -1024,37 +993,22 @@ async function saveShopEditor() {
     map: editorState.map,
     lat: (editorState.lat != null) ? editorState.lat : null,
     lng: (editorState.lng != null) ? editorState.lng : null,
-    addr: editorState.addr || '',
     pref: document.getElementById('she-pref').checked
   };
   try {
     if (store.id) {
-      await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(store.id), {
-        title: store.name, details: storeToDetails(store)
-      });
+      await shopApi('PATCH', SHOP_API + '&kind=store&id=' + encodeURIComponent(store.id), storeToBody(store));
       var idx = shopStores.findIndex(function(s) { return String(s.id) === String(store.id); });
       if (idx >= 0) shopStores[idx] = store;
     } else {
-      var created = await shopApi('POST', '/api/app?r=cards', {
-        title: store.name, tags: [STORE_TAG], details: storeToDetails(store)
-      });
+      var created = await shopApi('POST', SHOP_API, storeToBody(store));
       store.id = created.id;
       shopStores.push(store);
       currentStoreId = store.id;
     }
-    // Preferred is exclusive: clear it on every other store.
+    // Preferred is exclusive — the API clears it on other stores.
     if (store.pref) {
-      for (var i = 0; i < shopStores.length; i++) {
-        var other = shopStores[i];
-        if (String(other.id) !== String(store.id) && other.pref) {
-          other.pref = false;
-          try {
-            await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(other.id), {
-              details: storeToDetails(other)
-            });
-          } catch (e) {}
-        }
-      }
+      shopStores.forEach(function(s) { if (String(s.id) !== String(store.id)) s.pref = false; });
       storeWhy = '★ your preferred store';
     }
     closeShopModal();
@@ -1070,11 +1024,7 @@ async function deleteShopStore() {
   if (!confirm('Delete this store and its shopping list?')) return;
   var id = editorState.storeId;
   try {
-    var mine = shopItems.filter(function(it) { return String(it.storeId) === String(id); });
-    for (var i = 0; i < mine.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
-    }
-    await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(id));
+    await shopApi('DELETE', SHOP_API + '&kind=store&id=' + encodeURIComponent(id));
     shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(id); });
     shopStores = shopStores.filter(function(s) { return String(s.id) !== String(id); });
     if (String(currentStoreId) === String(id)) { currentStoreId = null; pickInitialStore(); }
