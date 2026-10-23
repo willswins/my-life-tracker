@@ -353,7 +353,6 @@ function renderShop() {
   var spReady = specialsState.key === specialsItemKey() && !!specialsState.byItem;
   var route = buildRoute(store, items);
   var doneCount = items.filter(function(it) { return it.done; }).length;
-  var catOptions = CATEGORIES.map(function(c) { return '<option>' + c + '</option>'; }).join('');
 
   var h = '';
   h += '<div class="shop-storebar">';
@@ -376,7 +375,6 @@ function renderShop() {
 
   h += '<form id="shop-add-form" class="shop-add">';
   h += '<input id="shop-new-name" type="text" maxlength="80" placeholder="Add an item…" autocomplete="off">';
-  h += '<select id="shop-new-cat" class="shop-cat-sel">' + catOptions + '</select>';
   h += '<input id="shop-new-qty" type="text" maxlength="12" placeholder="Qty" autocomplete="off">';
   h += '<button type="submit" class="primary">Add</button>';
   h += '</form>';
@@ -467,15 +465,19 @@ function wireShop(rootEl) {
   var form = rootEl.querySelector('#shop-add-form');
   if (form) {
     var nameInput = form.querySelector('#shop-new-name');
-    var catSel = form.querySelector('#shop-new-cat');
-    nameInput.addEventListener('input', function() {
-      catSel.value = guessCategory(nameInput.value);
-    });
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (form.dataset.adding) return;
       var name = nameInput.value.trim();
       if (!name) return;
-      await addShopItem(name, catSel.value, form.querySelector('#shop-new-qty').value.trim());
+      form.dataset.adding = '1';
+      try {
+        await addShopItem(name, '', form.querySelector('#shop-new-qty').value.trim());
+      } finally {
+        delete form.dataset.adding;
+      }
+      var ni = document.getElementById('shop-new-name');
+      if (ni) ni.focus();
     });
   }
 
