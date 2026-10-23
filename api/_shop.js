@@ -26,6 +26,42 @@ function cleanItem(body) {
   return out;
 }
 
+const CATEGORIES = ['Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry', 'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Other'];
+const MAX_ZONES = 40;
+
+// Validate + normalize a store layout. Returns an error string, or null
+// after normalizing row.zones / row.category_map in place. Only touches
+// fields the caller actually sent.
+function validateStoreLayout(row, body) {
+  if (body.zones !== undefined) {
+    if (!Array.isArray(body.zones) || body.zones.length < 1 || body.zones.length > MAX_ZONES) {
+      return 'zones must be an array of 1-' + MAX_ZONES + ' zones';
+    }
+    const zones = [];
+    for (const z of body.zones) {
+      if (!Array.isArray(z) || typeof z[0] !== 'string' || !z[0].trim()) return 'each zone needs a name';
+      zones.push([z[0].trim().slice(0, 60), typeof z[1] === 'string' ? z[1].trim().slice(0, 30) : '']);
+    }
+    row.zones = zones;
+  }
+  if (body.category_map !== undefined && row.category_map) {
+    const zoneCount = Array.isArray(row.zones) ? row.zones.length : null;
+    const map = {};
+    for (const [cat, idx] of Object.entries(row.category_map)) {
+      if (!CATEGORIES.includes(cat)) return 'unknown category in category_map: ' + cat;
+      if (!Number.isInteger(idx)) return 'category_map values must be zone indexes';
+      // Clamp into the valid range when the zone count is known.
+      map[cat] = zoneCount ? Math.min(Math.max(idx, 0), zoneCount - 1) : idx;
+    }
+    row.category_map = map;
+  }
+  if ((body.lat !== undefined && body.lat !== null && typeof body.lat !== 'number') ||
+      (body.lng !== undefined && body.lng !== null && typeof body.lng !== 'number')) {
+    return 'lat/lng must be numbers';
+  }
+  return null;
+}
+
 module.exports = async (req, res) => {
   const email = getSessionEmail(req, process.env.SESSION_SECRET || '');
   if (!email) {
@@ -55,6 +91,8 @@ module.exports = async (req, res) => {
       if (body.kind === 'store') {
         const row = cleanStore(body);
         if (!row.name) return send(400, { ok: false, error: 'name required' });
+        const layoutErr = validateStoreLayout(row, body);
+        if (layoutErr) return send(400, { ok: false, error: layoutErr });
         row.user_email = email;
         const inserted = await sb('POST', '/rest/v1/shop_stores', row);
         if (row.preferred) {
@@ -65,10 +103,19 @@ module.exports = async (req, res) => {
       if (body.kind === 'item') {
         const row = cleanItem(body);
         if (!row.name) return send(400, { ok: false, error: 'name required' });
+        if (typeof body.name === 'string' && body.name.trim().length > 160) return send(400, { ok: false, error: 'name too long (max 160)' });
         if (!row.store_id) return send(400, { ok: false, error: 'store_id required' });
         const stores = await sb('GET', `/rest/v1/shop_stores?id=eq.${encodeURIComponent(row.store_id)}&${scope}&deleted_at=is.null&select=id`);
         if (!stores.length) return send(404, { ok: false, error: 'store not found' });
+        if (row.category && !CATEGORIES.includes(row.category)) return send(400, { ok: false, error: 'unknown category' });
         if (!row.category) row.category = 'Other';
+        // One unchecked row per item name per store — duplicates are a
+        // client bug; reject instead of silently stacking rows.
+        const existing = await sb('GET', `/rest/v1/shop_items?store_id=eq.${encodeURIComponent(row.store_id)}&${scope}&deleted_at=is.null&done=eq.false&select=name`);
+        const wanted = row.name.trim().toLowerCase();
+        if (existing.some((it) => (it.name || '').trim().toLowerCase() === wanted)) {
+          return send(409, { ok: false, error: 'already on the list' });
+        }
         if (!row.qty) row.qty = '';
         if (typeof row.done !== 'boolean') row.done = false;
         row.user_email = email;
@@ -82,6 +129,13 @@ module.exports = async (req, res) => {
       const body = await readBody(req);
       const table = kind === 'store' ? 'shop_stores' : 'shop_items';
       const row = kind === 'store' ? cleanStore(body) : cleanItem(body);
+      if (kind === 'store') {
+        const layoutErr = validateStoreLayout(row, body);
+        if (layoutErr) return send(400, { ok: false, error: layoutErr });
+      } else {
+        if (typeof body.name === 'string' && body.name.trim().length > 160) return send(400, { ok: false, error: 'name too long (max 160)' });
+        if (row.category && !CATEGORIES.includes(row.category)) return send(400, { ok: false, error: 'unknown category' });
+      }
       delete row.user_email;
       delete row.store_id;
       row.updated_at = now;
