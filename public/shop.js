@@ -357,11 +357,22 @@ function renderShop() {
 
   var h = '';
   h += '<div class="shop-storebar">';
-  h += '<select id="shop-store-sel" class="shop-store-sel">' + storeOptionsHtml() + '</select>';
-  h += '<button type="button" id="shop-edit-layout" class="shop-btn">Edit layout</button>';
-  h += '<button type="button" id="shop-add-store" class="shop-btn">+ Store</button>';
+  h += '<div class="shop-store-chip" id="shop-store-chip" role="button" title="Your store — tap to change">';
+  h += '<span class="shop-store-icon">\u{1F3EC}</span>';
+  h += '<span class="shop-store-meta"><span class="shop-store-name">' + esc(store.name) + (store.pref ? ' \u2605' : '') + '</span>';
+  h += '<span class="shop-store-addr" id="shop-store-addr"></span></span>';
+  h += '<span class="shop-store-change" aria-hidden="true">\u270E</span>';
   h += '</div>';
-  if (storeWhy) h += '<p class="shop-why">Using ' + esc(store.name) + ' — ' + esc(storeWhy) + '</p>';
+  h += '<div class="shop-store-menu" id="shop-store-menu" hidden>';
+  shopStores.forEach(function(s) {
+    var cur = String(s.id) === String(store.id);
+    h += '<button type="button" class="shop-store-opt' + (cur ? ' current' : '') + '" data-store-id="' + esc(s.id) + '">' +
+      (cur ? '\u2713 ' : '') + esc(s.name) + (s.pref ? ' \u2605' : '') + '</button>';
+  });
+  h += '<div class="shop-store-menu-actions">';
+  h += '<button type="button" id="shop-menu-finder" class="shop-store-opt">\uFF0B Find a store</button>';
+  h += '<button type="button" id="shop-menu-layout" class="shop-store-opt">\u270E Edit layout</button>';
+  h += '</div></div></div>';
 
   h += '<form id="shop-add-form" class="shop-add">';
   h += '<input id="shop-new-name" type="text" maxlength="80" placeholder="Add an item…" autocomplete="off">';
@@ -402,21 +413,56 @@ function renderShop() {
   }
   rootEl.innerHTML = h;
   wireShop(rootEl);
+  fillStoreAddress(store);
   updateSpecialsInline();
 }
 
+function fillStoreAddress(store) {
+  var el = document.getElementById('shop-store-addr');
+  if (!el) return;
+  if (!store.lat || !store.lng) { el.textContent = ''; return; }
+  var key = 'shopAddrV1:' + store.id + ':' + Number(store.lat).toFixed(4) + ',' + Number(store.lng).toFixed(4);
+  try { var c = localStorage.getItem(key); if (c) { el.textContent = c; return; } } catch (e) {}
+  fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + store.lat + '&lon=' + store.lng)
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      var a = (j && j.address) || {};
+      var line = ((a.house_number ? a.house_number + ' ' : '') + (a.road || '')).trim();
+      var city = a.city || a.town || a.village || '';
+      var text = line ? (line + (city ? ', ' + city : '')) :
+        (j && j.display_name ? j.display_name.split(',').slice(0, 2).join(',') : '');
+      if (text) {
+        try { localStorage.setItem(key, text); } catch (e) {}
+        var live = document.getElementById('shop-store-addr');
+        if (live) live.textContent = text;
+      }
+    }).catch(function() {});
+}
+
 function wireShop(rootEl) {
-  var sel = rootEl.querySelector('#shop-store-sel');
-  if (sel) sel.addEventListener('change', function() {
-    currentStoreId = sel.value;
-    var s = currentStore();
-    storeWhy = s && s.pref ? '★ your preferred store' : '';
-    renderShop();
-  });
-  var editBtn = rootEl.querySelector('#shop-edit-layout');
-  if (editBtn) editBtn.addEventListener('click', function() { openLayoutEditor(null); });
-  var addStoreBtn = rootEl.querySelector('#shop-add-store');
-  if (addStoreBtn) addStoreBtn.addEventListener('click', function() { openStoreFinder(); });
+  var chip = rootEl.querySelector('#shop-store-chip');
+  var menu = rootEl.querySelector('#shop-store-menu');
+  if (chip && menu) {
+    chip.addEventListener('click', function(e) { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    menu.querySelectorAll('[data-store-id]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        currentStoreId = b.getAttribute('data-store-id');
+        var s = currentStore();
+        storeWhy = s && s.pref ? '★ your preferred store' : '';
+        renderShop();
+      });
+    });
+    var fBtn = menu.querySelector('#shop-menu-finder');
+    if (fBtn) fBtn.addEventListener('click', function() { menu.hidden = true; openStoreFinder(); });
+    var lBtn = menu.querySelector('#shop-menu-layout');
+    if (lBtn) lBtn.addEventListener('click', function() { menu.hidden = true; openLayoutEditor(null); });
+    if (window.__shopMenuCloser) document.removeEventListener('click', window.__shopMenuCloser);
+    window.__shopMenuCloser = function(e) {
+      var m = document.getElementById('shop-store-menu');
+      if (m && !m.hidden && !(e.target.closest && e.target.closest('.shop-storebar'))) m.hidden = true;
+    };
+    document.addEventListener('click', window.__shopMenuCloser);
+  }
 
   var form = rootEl.querySelector('#shop-add-form');
   if (form) {
@@ -519,9 +565,14 @@ async function addShopItem(name, cat, qty) {
 // ---------------------------------------------------------------------------
 
 var SPECIALS_SOURCES = [
-  { store: 'Harris Teeter', site: 'www.southernsavers.com', search: 'harris teeter weekly ad', hint: 'harris-teeter-weekly-ad', mode: 'list', coverage: 'full ad list' },
+  { store: 'Harris Teeter', site: 'www.southernsavers.com', search: 'harris teeter', hint: 'harris-teeter-weekly-ad', mode: 'list', coverage: 'full ad list' },
   { store: 'Publix', site: 'www.iheartpublix.com', search: 'publix ad coupons', hint: 'publix-ad-coupons', mode: 'list', coverage: 'full ad list' },
-  { store: 'Publix', site: 'weeklyadguide.com', search: 'publix weekly ad', hint: 'publix-weekly-ad', mode: 'prose', coverage: 'highlights only', fallback: true }
+  { store: 'Publix', site: 'weeklyadguide.com', search: 'publix weekly ad', hint: 'publix-weekly-ad', mode: 'prose', coverage: 'highlights only', fallback: true },
+  { store: 'Food Lion', site: 'www.southernsavers.com', search: 'food lion', hint: 'food-lion-ad', mode: 'list', coverage: 'full ad list' },
+  { store: 'Lowes Foods', site: 'www.southernsavers.com', search: 'lowes foods', hint: 'lowes-foods-weekly-ad', mode: 'list', coverage: 'full ad list' },
+  { store: 'Target', site: 'www.southernsavers.com', search: 'target', hint: 'target-weekly-ad', mode: 'list', coverage: 'full ad list', sunday: true },
+  { store: 'Walmart', site: 'www.southernsavers.com', search: 'walmart', hint: 'walmart-ad-deals', mode: 'list', coverage: 'full ad list' },
+  { store: 'Aldi', site: 'weeklyadguide.com', search: 'aldi weekly ad', hint: 'aldi-weekly-ad', mode: 'prose', coverage: 'highlights only' }
 ];
 var specialsState = { key: '', byItem: null, loading: false };
 
@@ -570,7 +621,11 @@ function specialsParseDeals(contentHtml, mode) {
 }
 
 var SPECIALS_STOP = { fresh: 1, big: 1, pack: 1, set: 1, non: 1, white: 1, pkts: 1, pkt: 1, ct: 1, oz: 1, lb: 1, the: 1, for: 1, if: 1, available: 1 };
-var SPECIALS_GENERIC = { frozen: 1, canned: 1, organic: 1, snack: 1, snacks: 1, water: 1 };
+var SPECIALS_GENERIC = { frozen: 1, canned: 1, organic: 1, snack: 1, snacks: 1, water: 1, juice: 1, soda: 1 };
+var SPECIALS_DENY = [['orange', 'orange juice'], ['orange', 'bell pepper'], ['orange', 'pepper'],
+  ['bread', 'snack bar'], ['bread', 'bread pan'], ['bread', 'loaf pan'], ['bread', 'cast-iron'],
+  ['bread', 'bagel'], ['bread', 'muffin']];
+var SPECIALS_NONFOOD = { dog: 1, cat: 1, pet: 1, toothpaste: 1, medicine: 1, lego: 1, toy: 1, nail: 1, shampoo: 1, lotion: 1, vitamin: 1, book: 1 };
 
 function specialsSingular(tok) {
   if (tok.length > 4 && /ies$/.test(tok)) return tok.slice(0, -3) + 'y';
@@ -596,14 +651,22 @@ function specialsMatch(items, deals) {
     var scored = [];
     deals.forEach(function(d) {
       var dl = d.text.toLowerCase();
-      if (kw.strong.indexOf('orange') >= 0) {
-        if (dl.indexOf('orange juice') >= 0 && kw.all.indexOf('juice') < 0) return;
-        if (dl.indexOf('bell pepper') >= 0 && kw.all.indexOf('pepper') < 0) return;
+      var itoks = {};
+      kw.all.forEach(function(t) { itoks[t] = 1; });
+      for (var di = 0; di < SPECIALS_DENY.length; di++) {
+        var dTok = SPECIALS_DENY[di][0], dBad = SPECIALS_DENY[di][1];
+        if (kw.strong.indexOf(dTok) < 0 || dl.indexOf(dBad) < 0) continue;
+        var badInItem = dBad.split(' ').some(function(t) { return itoks[t]; });
+        if (!badInItem) return;
       }
       var dtoks = {};
       dl.replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).forEach(function(t) { dtoks[specialsSingular(t)] = 1; });
-      var score = kw.strong.filter(function(t) { return dtoks[t]; }).length;
-      if (kw.phrase && dl.indexOf(kw.phrase) >= 0) score += 2;
+      var nonfood = Object.keys(dtoks).some(function(t) { return SPECIALS_NONFOOD[t] && !itoks[t]; });
+      if (nonfood) return;
+      if (kw.all.indexOf('juice') >= 0 && dl.indexOf('juice') < 0 && dl.indexOf('cider') < 0) return;
+      var score;
+      if (kw.phrase) score = dl.indexOf(kw.phrase) >= 0 ? 2 : 0;
+      else score = kw.strong.filter(function(t) { return dtoks[t]; }).length;
       if (kw.all.indexOf('popsicle') >= 0 &&
           (dl.indexOf('bomb pops') >= 0 || dl.indexOf('ice pops') >= 0 || dl.indexOf('popsicles') >= 0)) score += 2;
       if (score) scored.push({ score: score, bogo: d.bogo ? 1 : 0, deal: d });
@@ -614,26 +677,70 @@ function specialsMatch(items, deals) {
   return out;
 }
 
-async function specialsFetchSource(src) {
-  var searchUrl = 'https://' + src.site + '/wp-json/wp/v2/posts?search=' +
-    encodeURIComponent(src.search) + '&per_page=8&_fields=slug,link';
-  var posts = await (await fetch(searchUrl)).json();
-  var post = null;
-  for (var i = 0; i < (posts || []).length; i++) {
-    if ((posts[i].slug || '').indexOf(src.hint) >= 0) { post = posts[i]; break; }
+function specialsTitleRange(title) {
+  var t = (title || '').replace(/&#8211;|&ndash;/g, '-').replace(/&#038;|&amp;/g, '&');
+  var m = /(\d{1,2})\/(\d{1,2})\s*[-]\s*(\d{1,2})\/(\d{1,2})/.exec(t);
+  if (!m) return null;
+  var y = new Date().getFullYear();
+  return [new Date(y, +m[1] - 1, +m[2]), new Date(y, +m[3] - 1, +m[4])];
+}
+
+function specialsPickPost(posts, hint) {
+  var cands = (posts || []).filter(function(p) { return (p.slug || '').indexOf(hint) >= 0; });
+  if (!cands.length) return (posts || [])[0] || null;
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var i, r;
+  for (i = 0; i < cands.length; i++) {
+    r = specialsTitleRange(cands[i].title && cands[i].title.rendered);
+    if (r && r[0] <= today && today <= r[1]) return cands[i];
   }
-  if (!post && posts && posts.length) post = posts[0];
+  var started = cands.filter(function(p) {
+    var rr = specialsTitleRange(p.title && p.title.rendered);
+    return rr && rr[0] <= today;
+  }).sort(function(a, b) {
+    return specialsTitleRange(b.title.rendered)[0] - specialsTitleRange(a.title.rendered)[0];
+  });
+  return started[0] || cands[0];
+}
+
+function specialsSundaySlugs(hint) {
+  var d = new Date(); d.setHours(0, 0, 0, 0);
+  var sun = new Date(d); sun.setDate(d.getDate() - d.getDay());
+  var f = function(x) { return (x.getMonth() + 1) + '-' + x.getDate(); };
+  var mk = function(s) { var e = new Date(s); e.setDate(s.getDate() + 6); return hint + '-' + f(s) + '-' + f(e); };
+  var prev = new Date(sun); prev.setDate(sun.getDate() - 7);
+  return [mk(sun), mk(prev)];
+}
+
+async function specialsFetchBySlug(site, slug) {
+  var full = await (await fetch('https://' + site + '/wp-json/wp/v2/posts?slug=' +
+    encodeURIComponent(slug) + '&_fields=content')).json();
+  return full && full[0] && full[0].content && full[0].content.rendered;
+}
+
+async function specialsFetchSource(src) {
+  if (src.sunday) {
+    var guesses = specialsSundaySlugs(src.hint);
+    for (var gi = 0; gi < guesses.length; gi++) {
+      try {
+        var gContent = await specialsFetchBySlug(src.site, guesses[gi]);
+        if (gContent) return { deals: specialsParseDeals(gContent, src.mode), coverage: src.coverage };
+      } catch (e) { /* try next guess */ }
+    }
+  }
+  var searchUrl = 'https://' + src.site + '/wp-json/wp/v2/posts?search=' +
+    encodeURIComponent(src.search) + '&per_page=20&orderby=date&order=desc&_fields=slug,link,title';
+  var posts = await (await fetch(searchUrl)).json();
+  var post = specialsPickPost(posts, src.hint);
   if (!post) throw new Error('no ad post');
-  var full = await (await fetch('https://' + src.site + '/wp-json/wp/v2/posts?slug=' +
-    encodeURIComponent(post.slug) + '&_fields=content')).json();
-  var content = full && full[0] && full[0].content && full[0].content.rendered;
+  var content = await specialsFetchBySlug(src.site, post.slug);
   if (!content) throw new Error('empty ad');
   return { deals: specialsParseDeals(content, src.mode), coverage: src.coverage };
 }
 
 async function specialsGetDeals() {
   var cache = null;
-  try { cache = JSON.parse(localStorage.getItem('shopAdsCacheV1') || 'null'); } catch (e) {}
+  try { cache = JSON.parse(localStorage.getItem('shopAdsCacheV2') || 'null'); } catch (e) {}
   if (cache && (Date.now() - cache.ts) < 12 * 3600 * 1000) return cache.sources;
   var sources = {};
   var done = {};
@@ -646,7 +753,7 @@ async function specialsGetDeals() {
     } catch (e) { /* source unreadable this time; fallbacks follow */ }
   }
   if (Object.keys(sources).length) {
-    try { localStorage.setItem('shopAdsCacheV1', JSON.stringify({ ts: Date.now(), sources: sources })); } catch (e) {}
+    try { localStorage.setItem('shopAdsCacheV2', JSON.stringify({ ts: Date.now(), sources: sources })); } catch (e) {}
   }
   return sources;
 }
@@ -668,7 +775,7 @@ function specialsLineFor(name) {
   if (!specialsState.byItem) return '';
   var entries = specialsState.byItem[name.trim().toLowerCase()];
   if (!entries || !entries.length) return '';
-  var parts = entries.map(function(e) {
+  var parts = entries.slice(0, 4).map(function(e) {
     var t = e.text.length > 90 ? e.text.slice(0, 90) + '…' : e.text;
     return esc(e.store) + ': ' + esc(t);
   });
