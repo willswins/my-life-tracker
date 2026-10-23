@@ -1333,30 +1333,8 @@ pre#ingest-docs {
   .shop-loc-row .shop-btn { width: 100%; }
 }
 
-/* Shop Navigator */
+/* Shop: big primary button (store finder) */
 .shop-nav-start { display: block; width: 100%; min-height: 52px; margin: 0 0 1rem; background: #2563eb; color: #fff; border: 0; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
-.nav-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 1.05rem; }
-.nav-map { width: 100%; height: auto; display: block; background: rgba(0,0,0,0.02); border: 1px solid var(--line); border-radius: 12px; }
-.nav-cell rect { fill: #fff; stroke: var(--line); stroke-width: 1.5; }
-.nav-cell-name { font-size: 11px; font-weight: 700; fill: var(--ink); }
-.nav-cell-aisle { font-size: 8.5px; fill: var(--muted); }
-.nav-cell .nav-badge { fill: #94a3b8; }
-.nav-badge-text { font-size: 10px; font-weight: 700; fill: #fff; }
-.nav-cell-empty { opacity: 0.45; }
-.nav-cell-done { opacity: 0.6; }
-.nav-cell-done .nav-badge { fill: #2e9e5b; }
-.nav-cell-current rect { stroke: #2563eb; stroke-width: 3.5; fill: rgba(37,99,235,0.07); }
-.nav-cell-current .nav-badge { fill: #2563eb; }
-.nav-entrance { font-size: 9px; fill: var(--muted); letter-spacing: 2px; }
-.nav-panel { border: 2px solid #2563eb; border-radius: 12px; padding: 0.8rem 0.9rem; margin-top: 0.6rem; }
-.nav-stop-label { color: var(--muted); font-size: 0.85rem; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
-.nav-stop-title { font-size: 1.35rem; font-weight: 700; margin: 0.15rem 0 0.5rem; }
-.nav-stop-aisle { font-size: 1rem; font-weight: 400; color: var(--muted); }
-.nav-actions { margin-top: 0.6rem; display: flex; gap: 0.5rem; }
-.nav-actions .shop-btn { flex: 1; min-height: 48px; }
-.nav-next { color: var(--muted); font-size: 0.9rem; margin: 0.7rem 0 0; }
-.nav-done { text-align: center; padding: 1.2rem 0.5rem; }
-.nav-done-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 0.3rem; }
 
 /* Shop store finder */
 .sf-or { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 0.2rem 0 0.6rem; }
