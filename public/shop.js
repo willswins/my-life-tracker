@@ -1,10 +1,11 @@
 // Shop — grocery list with store-layout route optimization.
 // Pick a store (preferred, or nearest with a saved location), and your list
 // is re-sorted into the order you walk past everything — no backtracking.
-// Data: cards API only. Stores are cards tagged 'gstore' (layout JSON in
-// details); items are cards tagged 'gitem'. An api() wrapper strips shop
-// cards from every other view's GET r=cards response so they never pollute
-// My Board. Loads after app.js.
+// Data: dedicated DB tables — shop_stores / shop_items, via
+// /api/app?r=daybook&view=shop (migration-008). Items are database rows,
+// never code and never board cards. The api() wrapper below still strips
+// any legacy shop cards (gstore/gitem) from other views during transition.
+// Loads after app.js.
 (function() {
 'use strict';
 
@@ -12,8 +13,12 @@
 // Constants
 // ---------------------------------------------------------------------------
 
+// Legacy card tags — used only by the transition filter that keeps any
+// pre-migration shop cards off My Board. New data never writes cards.
 var STORE_TAG = 'gstore';
 var ITEM_TAG = 'gitem';
+
+var SHOP_API = '/api/app?r=daybook&view=shop';
 
 var CATEGORIES = [
   'Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry',
@@ -190,49 +195,39 @@ function purgeGlobalCards() {
 // Data
 // ---------------------------------------------------------------------------
 
-function parseDetails(card, fallback) {
-  try {
-    var d = JSON.parse(card.details || '');
-    return (d && typeof d === 'object') ? d : fallback;
-  } catch (e) { return fallback; }
-}
-
-function cardToStore(card) {
-  var d = parseDetails(card, {});
+function rowToStore(row) {
   return {
-    id: card.id,
-    name: card.title || 'Store',
-    zones: Array.isArray(d.z) && d.z.length ? d.z : TEMPLATE_ZONES.slice(),
-    map: (d.m && typeof d.m === 'object') ? d.m : Object.assign({}, TEMPLATE_MAP),
-    lat: (typeof d.lat === 'number') ? d.lat : null,
-    lng: (typeof d.lng === 'number') ? d.lng : null,
-    pref: !!d.pref
+    id: row.id,
+    name: row.name || 'Store',
+    zones: Array.isArray(row.zones) && row.zones.length ? row.zones : TEMPLATE_ZONES.slice(),
+    map: (row.category_map && typeof row.category_map === 'object') ? row.category_map : Object.assign({}, TEMPLATE_MAP),
+    lat: (typeof row.lat === 'number') ? row.lat : null,
+    lng: (typeof row.lng === 'number') ? row.lng : null,
+    pref: !!row.preferred
   };
 }
 
-function storeToDetails(store) {
-  var d = { z: store.zones, m: store.map };
-  if (store.lat != null && store.lng != null) { d.lat = store.lat; d.lng = store.lng; }
-  if (store.pref) d.pref = true;
-  return JSON.stringify(d);
-}
-
-function cardToItem(card) {
-  var d = parseDetails(card, {});
+function storeToBody(store) {
   return {
-    id: card.id,
-    name: card.title || '',
-    cat: d.c || 'Other',
-    qty: d.q || '',
-    done: !!d.d,
-    storeId: d.s || null
+    kind: 'store',
+    name: store.name,
+    zones: store.zones,
+    category_map: store.map,
+    lat: store.lat != null ? store.lat : null,
+    lng: store.lng != null ? store.lng : null,
+    preferred: !!store.pref
   };
 }
 
-function itemToDetails(item) {
-  var d = { c: item.cat, d: item.done ? 1 : 0, s: item.storeId };
-  if (item.qty) d.q = item.qty;
-  return JSON.stringify(d);
+function rowToItem(row) {
+  return {
+    id: row.id,
+    name: row.name || '',
+    cat: row.category || 'Other',
+    qty: row.qty || '',
+    done: !!row.done,
+    storeId: row.store_id || null
+  };
 }
 
 var shopStores = [];
@@ -241,21 +236,17 @@ var currentStoreId = null;
 var storeWhy = '';
 
 async function loadShopData() {
-  var all = await shopApi('GET', '/api/app?r=cards');
-  all = Array.isArray(all) ? all : [];
-  shopStores = all.filter(function(c) { return (c.tags || []).indexOf(STORE_TAG) !== -1 && !c.deleted_at; }).map(cardToStore);
-  shopItems = all.filter(function(c) { return (c.tags || []).indexOf(ITEM_TAG) !== -1 && !c.deleted_at; }).map(cardToItem);
+  var data = await shopApi('GET', SHOP_API);
+  data = (data && typeof data === 'object') ? data : {};
+  shopStores = (Array.isArray(data.stores) ? data.stores : []).map(rowToStore);
+  shopItems = (Array.isArray(data.items) ? data.items : []).map(rowToItem);
   if (!shopStores.length) {
-    var created = await shopApi('POST', '/api/app?r=cards', {
-      title: 'My Store',
-      tags: [STORE_TAG],
-      details: storeToDetails({
-        zones: TEMPLATE_ZONES.slice(), map: Object.assign({}, TEMPLATE_MAP),
-        lat: null, lng: null, pref: true
-      })
-    });
-    var s = cardToStore(created);
-    shopStores = [s];
+    var created = await shopApi('POST', SHOP_API, storeToBody({
+      name: 'My Store',
+      zones: TEMPLATE_ZONES.slice(), map: Object.assign({}, TEMPLATE_MAP),
+      lat: null, lng: null, pref: true
+    }));
+    shopStores = [rowToStore(created)];
   }
   if (!currentStoreId || !shopStores.some(function(s) { return String(s.id) === String(currentStoreId); })) {
     pickInitialStore();
@@ -406,7 +397,7 @@ function wireShop(rootEl) {
       if (!it) return;
       it.done = cb.checked;
       try {
-        await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(it.id), { details: itemToDetails(it) });
+        await shopApi('PATCH', SHOP_API + '&kind=item&id=' + encodeURIComponent(it.id), { done: it.done });
       } catch (e) { /* keep local state; next load resyncs */ }
       renderShop();
     });
@@ -417,7 +408,7 @@ function wireShop(rootEl) {
       var id = btn.dataset.id;
       shopItems = shopItems.filter(function(x) { return String(x.id) !== String(id); });
       renderShop();
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(id)); } catch (err) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(id)); } catch (err) {}
     });
   });
   var clearDone = rootEl.querySelector('#shop-clear-done');
@@ -425,7 +416,7 @@ function wireShop(rootEl) {
     var store = currentStore();
     var done = shopItems.filter(function(it) { return it.done && String(it.storeId) === String(store.id); });
     for (var i = 0; i < done.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
     }
     shopItems = shopItems.filter(function(it) { return !(it.done && String(it.storeId) === String(store.id)); });
     renderShop();
@@ -437,7 +428,7 @@ function wireShop(rootEl) {
     var store = currentStore();
     var mine = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
     for (var i = 0; i < mine.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
+      try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
     }
     shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(store.id); });
     renderShop();
@@ -448,10 +439,9 @@ async function addShopItem(name, cat, qty) {
   var store = currentStore();
   var item = { name: name, cat: cat || guessCategory(name), qty: qty || '', done: false, storeId: store.id };
   try {
-    var created = await shopApi('POST', '/api/app?r=cards', {
-      title: item.name,
-      tags: [ITEM_TAG],
-      details: itemToDetails(item)
+    var created = await shopApi('POST', SHOP_API, {
+      kind: 'item', store_id: store.id,
+      name: item.name, category: item.cat, qty: item.qty, done: false
     });
     item.id = created.id;
     shopItems.push(item);
@@ -643,32 +633,18 @@ async function saveShopEditor() {
   };
   try {
     if (store.id) {
-      await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(store.id), {
-        title: store.name, details: storeToDetails(store)
-      });
+      await shopApi('PATCH', SHOP_API + '&kind=store&id=' + encodeURIComponent(store.id), storeToBody(store));
       var idx = shopStores.findIndex(function(s) { return String(s.id) === String(store.id); });
       if (idx >= 0) shopStores[idx] = store;
     } else {
-      var created = await shopApi('POST', '/api/app?r=cards', {
-        title: store.name, tags: [STORE_TAG], details: storeToDetails(store)
-      });
+      var created = await shopApi('POST', SHOP_API, storeToBody(store));
       store.id = created.id;
       shopStores.push(store);
       currentStoreId = store.id;
     }
-    // Preferred is exclusive: clear it on every other store.
+    // Preferred is exclusive — the API clears it on other stores.
     if (store.pref) {
-      for (var i = 0; i < shopStores.length; i++) {
-        var other = shopStores[i];
-        if (String(other.id) !== String(store.id) && other.pref) {
-          other.pref = false;
-          try {
-            await shopApi('PATCH', '/api/app?r=cards&id=' + encodeURIComponent(other.id), {
-              details: storeToDetails(other)
-            });
-          } catch (e) {}
-        }
-      }
+      shopStores.forEach(function(s) { if (String(s.id) !== String(store.id)) s.pref = false; });
       storeWhy = '★ your preferred store';
     }
     closeShopModal();
@@ -684,11 +660,7 @@ async function deleteShopStore() {
   if (!confirm('Delete this store and its shopping list?')) return;
   var id = editorState.storeId;
   try {
-    var mine = shopItems.filter(function(it) { return String(it.storeId) === String(id); });
-    for (var i = 0; i < mine.length; i++) {
-      try { await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
-    }
-    await shopApi('DELETE', '/api/app?r=cards&id=' + encodeURIComponent(id));
+    await shopApi('DELETE', SHOP_API + '&kind=store&id=' + encodeURIComponent(id));
     shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(id); });
     shopStores = shopStores.filter(function(s) { return String(s.id) !== String(id); });
     if (String(currentStoreId) === String(id)) { currentStoreId = null; pickInitialStore(); }

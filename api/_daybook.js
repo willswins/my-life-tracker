@@ -5,6 +5,7 @@ const handlers = {
   links: require('./_links'),
   inbox: require('./_inbox'),
   tags: require('./_tags'),
+  shop: require('./_shop'),
 };
 
 module.exports = async (req, res) => {
