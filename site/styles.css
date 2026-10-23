@@ -1286,6 +1286,8 @@ pre#ingest-docs {
 .shop-item:hover { background: rgba(0,0,0,0.03); }
 .shop-item input[type="checkbox"] { width: 22px; height: 22px; flex: 0 0 auto; }
 .shop-item-name { flex: 1; font-size: 1rem; overflow-wrap: break-word; }
+.shop-item-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shop-item-special { color: #2e7d43; font-size: 0.85rem; margin-top: 0.12rem; overflow-wrap: break-word; }
 .shop-item.done .shop-item-name { text-decoration: line-through; color: var(--muted); }
 .shop-item-qty { color: var(--muted); font-size: 0.9rem; }
 .shop-del { border: 0; background: transparent; color: var(--muted); font-size: 1.25rem; cursor: pointer; padding: 0.2rem 0.5rem; line-height: 1; }
@@ -1336,14 +1338,6 @@ pre#ingest-docs {
 /* Shop: big primary button (store finder) */
 .shop-nav-start { display: block; width: 100%; min-height: 52px; margin: 0 0 1rem; background: #2563eb; color: #fff; border: 0; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 
-/* Shop specials panel (automatic, under the list) */
-.shop-specials-panel { margin-top: 1.1rem; border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem 0.9rem; background: rgba(46,158,91,0.06); }
-.shop-specials-title { font-weight: 700; margin: 0 0 0.25rem; }
-.shop-specials-verdict { margin: 0 0 0.5rem; color: var(--ink); }
-.shop-specials-store { margin: 0.55rem 0 0.15rem; }
-.shop-specials-note { color: var(--muted); font-size: 0.82rem; }
-.shop-specials-line { margin: 0.12rem 0; color: var(--ink); font-size: 0.95rem; }
-.shop-specials-loading { color: var(--muted); margin-top: 1rem; }
 
 /* Shop store finder */
 .sf-or { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 0.2rem 0 0.6rem; }
