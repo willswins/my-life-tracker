@@ -49,13 +49,13 @@ var TEMPLATE_MAP = {
 var GUESS_RULES = [
   ['Frozen', ['frozen', 'ice cream', 'icecream']],
   ['Dairy & Eggs', ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'yoghurt', 'cream', 'paneer', 'curd']],
-  ['Produce', ['apple', 'banana', 'orange', 'lemon', 'lime', 'grape', 'berr', 'lettuce', 'salad', 'spinach', 'tomato', 'potato', 'onion', 'carrot', 'cucumber', 'pepper', 'avocado', 'garlic', 'ginger', 'cilantro', 'mint', 'herb', 'fruit', 'veg', 'mango', 'peach', 'pear', 'melon', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'corn', 'peas', 'eggplant']],
+  ['Produce', ['apple', 'banana', 'orange', 'lemon', 'lime', 'grape', 'berr', 'lettuce', 'salad', 'spinach', 'tomato', 'potato', 'onion', 'carrot', 'cucumber', 'pepper', 'avocado', 'garlic', 'ginger', 'cilantro', 'mint', 'basil', 'parsley', 'dill', 'thyme', 'rosemary', 'chive', 'herb', 'fruit', 'veg', 'mango', 'peach', 'pear', 'melon', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'corn', 'peas', 'eggplant']],
   ['Bakery', ['bread', 'bagel', 'muffin', 'cake', 'cookie', 'croissant', 'bun', 'tortilla', 'donut', 'pie', 'roll']],
-  ['Meat & Deli', ['chicken', 'beef', 'pork', 'fish', 'salmon', 'shrimp', 'turkey', 'ham', 'bacon', 'sausage', 'steak', 'meat', 'deli', 'mutton', 'lamb']],
+  ['Meat & Deli', ['chicken', 'beef', 'pork', 'fish', 'salmon', 'shrimp', 'turkey', 'ham', 'bacon', 'sausage', 'steak', 'meat', 'deli', 'mutton', 'lamb', 'hot dog', 'hot dogs', 'hotdog']],
   ['Personal Care', ['shampoo', 'conditioner', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'razor', 'vitamin', 'medicine', 'bandage', 'soap bar', 'body wash', 'sunscreen']],
-  ['Household', ['detergent', 'dish soap', 'soap', 'cleaner', 'tissue', 'paper towel', 'trash bag', 'foil', 'wrap', 'battery', 'batteries', 'bulb', 'sponge', 'bleach', 'wipes']],
+  ['Household', ['detergent', 'dish soap', 'soap', 'cleaner', 'tissue', 'paper towel', 'towel', 'paper', 'laundry', 'napkin', 'trash bag', 'foil', 'wrap', 'battery', 'batteries', 'bulb', 'sponge', 'bleach', 'wipes']],
   ['Snacks & Drinks', ['chips', 'soda', 'juice', 'coffee', 'tea', 'chocolate', 'candy', 'nuts', 'popcorn', 'beer', 'wine', 'water', 'snack', 'crackers', 'granola']],
-  ['Pantry', ['rice', 'pasta', 'flour', 'sugar', 'salt', 'oil', 'cereal', 'oats', 'lentil', 'dal', 'beans', 'canned', 'sauce', 'spice', 'honey', 'peanut butter', 'jam', 'atta', 'noodle', 'soup', 'ketchup', 'vinegar']]
+  ['Pantry', ['rice', 'pasta', 'flour', 'sugar', 'salt', 'oil', 'cereal', 'oats', 'lentil', 'dal', 'beans', 'canned', 'sauce', 'spice', 'honey', 'peanut butter', 'jam', 'atta', 'noodle', 'soup', 'ketchup', 'vinegar', 'rice paper']]
 ];
 
 function guessCategory(name) {
@@ -298,7 +298,7 @@ function pickInitialStore() {
     return;
   }
   currentStoreId = shopStores[0].id;
-  storeWhy = '';
+  storeWhy = shopStores.length > 1 ? 'no preferred store set — showing the first store' : '';
   // If geolocation is already granted, silently switch to the nearest
   // store that has a saved location.
   var withLoc = shopStores.filter(function(s) { return s.lat != null && s.lng != null; });
@@ -470,7 +470,13 @@ function wireShop(rootEl) {
   });
   var clearAll = rootEl.querySelector('#shop-clear-all');
   if (clearAll) clearAll.addEventListener('click', async function() {
-    if (!confirm('Clear the whole list for this store?')) return;
+    if (!clearAll.dataset.armed) {
+      clearAll.dataset.armed = '1';
+      clearAll.textContent = 'Tap again to clear the whole list';
+      setTimeout(function() { delete clearAll.dataset.armed; clearAll.textContent = 'Clear list'; }, 4000);
+      return;
+    }
+    delete clearAll.dataset.armed;
     var store = currentStore();
     var mine = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
     for (var i = 0; i < mine.length; i++) {
@@ -493,6 +499,14 @@ async function toggleShopItem(id, done) {
 
 async function addShopItem(name, cat, qty) {
   var store = currentStore();
+  var dup = shopItems.some(function(x) {
+    return String(x.storeId) === String(store.id) && !x.done &&
+      x.name.trim().toLowerCase() === name.trim().toLowerCase();
+  });
+  if (dup) {
+    if (typeof toast === 'function') toast('Already on your list');
+    return;
+  }
   var item = { name: name, cat: cat || guessCategory(name), qty: qty || '', done: false, storeId: store.id };
   try {
     var created = await shopApi('POST', SHOP_API, {
@@ -531,18 +545,19 @@ function releaseNavWakeLock() {
 // Schematic map: zones in walking order on a serpentine grid — first zone
 // bottom-left (by the entrance), order snakes upward to the back of the
 // store. State per zone: 'current' | 'todo' | 'done' | 'empty'.
-function buildNavMap(store, stateByZone) {
+function buildNavMap(store, stateByZone, anywhere) {
   var zones = store.zones || [];
   var cols = 3, cellW = 124, cellH = 58, gap = 10;
   var rows = Math.max(1, Math.ceil(zones.length / cols));
   var W = cols * cellW + (cols + 1) * gap;
-  var H = rows * cellH + (rows + 1) * gap + 26; // + entrance strip
+  var anywhereH = anywhere ? (cellH + gap) : 0;
+  var H = rows * cellH + (rows + 1) * gap + 26 + anywhereH; // + entrance strip (+ anywhere row)
   function cellPos(i) {
     var rowFromBottom = Math.floor(i / cols);
     var inRow = i % cols;
     var col = (rowFromBottom % 2 === 0) ? inRow : (cols - 1 - inRow);
     var x = gap + col * (cellW + gap);
-    var y = H - 26 - gap - (rowFromBottom + 1) * cellH - rowFromBottom * gap;
+    var y = H - 26 - anywhereH - gap - (rowFromBottom + 1) * cellH - rowFromBottom * gap;
     return { x: x, y: y };
   }
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="nav-map" role="img" aria-label="Store navigation map">';
@@ -565,6 +580,16 @@ function buildNavMap(store, stateByZone) {
       '<text x="' + (p.x + 13) + '" y="' + (p.y + 17) + '" text-anchor="middle" class="nav-badge-text">' + (state === 'done' ? '✓' : (i + 1)) + '</text>' +
       '</g>';
   });
+  if (anywhere) {
+    var ay = H - 26 - cellH;
+    s += '<g class="nav-cell nav-cell-' + anywhere.state + '">' +
+      '<rect x="' + gap + '" y="' + ay + '" width="' + (W - 2 * gap) + '" height="' + cellH + '" rx="8"/>' +
+      '<text x="' + (W / 2) + '" y="' + (ay + 26) + '" text-anchor="middle" class="nav-cell-name">Anywhere else</text>' +
+      '<text x="' + (W / 2) + '" y="' + (ay + 42) + '" text-anchor="middle" class="nav-cell-aisle">not tied to one zone</text>' +
+      '<circle cx="' + (gap + 13) + '" cy="' + (ay + 13) + '" r="9" class="nav-badge"/>' +
+      '<text x="' + (gap + 13) + '" y="' + (ay + 17) + '" text-anchor="middle" class="nav-badge-text">' + (anywhere.state === 'done' ? '✓' : anywhere.badge) + '</text>' +
+      '</g>';
+  }
   s += '<text x="' + (W / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="nav-entrance">— ENTRANCE —</text>';
   s += '</svg>';
   return s;
@@ -595,16 +620,25 @@ function renderNavigator(rootEl, store) {
   var h = '';
   h += '<div class="nav-topbar"><strong>Navigating ' + esc(store.name) + '</strong>' +
     '<button type="button" id="nav-end" class="shop-btn">End</button></div>';
-  h += buildNavMap(store, stateByZone);
+  var anywhereGroup = null;
+  for (var ai = 0; ai < stops.length; ai++) { if (stops[ai].zone === 'Anywhere else') anywhereGroup = stops[ai]; }
+  var anywhere = anywhereGroup ? {
+    state: stateByZone['Anywhere else'] || 'todo',
+    badge: stops.indexOf(anywhereGroup) + 1
+  } : null;
+  h += buildNavMap(store, stateByZone, anywhere);
   h += '<p class="shop-progress-text">' + pickedCount + ' of ' + items.length + ' picked</p>';
 
   if (!current) {
     h += '<div class="nav-done"><p class="nav-done-title">Everything picked</p>' +
       '<p>Head to checkout — you\'re done.</p></div>';
   } else {
-    var stopNum = stops.indexOf(current) + 1;
+    var stopNum = pending.indexOf(current) + 1;
     h += '<div class="nav-panel">';
-    h += '<p class="nav-stop-label">Stop ' + stopNum + ' of ' + stops.length + '</p>';
+    if (pending.length && pending.every(function(g) { return navSkipped[g.zone]; })) {
+      h += '<p class="shop-hint">You skipped every stop — circling back to the first one.</p>';
+    }
+    h += '<p class="nav-stop-label">Stop ' + stopNum + ' of ' + pending.length + '</p>';
     h += '<p class="nav-stop-title">' + esc(current.zone) +
       (current.aisle ? ' <span class="nav-stop-aisle">' + esc(current.aisle) + '</span>' : '') + '</p>';
     current.items.forEach(function(it) {
@@ -664,6 +698,7 @@ function ensureFinderModal() {
         '<button type="button" id="sf-search" class="shop-btn">Search</button>' +
       '</div>' +
       '<p id="sf-status" class="shop-hint"></p>' +
+      '<button type="button" id="sf-stop" class="shop-btn" style="display:none">Stop searching</button>' +
       '<div id="sf-results"></div>' +
       '<label class="shop-check-label"><input type="checkbox" id="sf-pref" checked> Make this my preferred store</label>' +
       '<div class="modal-actions">' +
@@ -672,6 +707,10 @@ function ensureFinderModal() {
     '</div>';
   document.body.appendChild(div);
   document.getElementById('sf-cancel').addEventListener('click', closeFinder);
+  document.getElementById('sf-stop').addEventListener('click', function() {
+    finderCancelled = true;
+    if (finderAbort) { try { finderAbort.abort(); } catch (e) {} }
+  });
   document.getElementById('sf-geo').addEventListener('click', finderUseLocation);
   document.getElementById('sf-search').addEventListener('click', finderSearchAddress);
   document.getElementById('sf-address').addEventListener('keydown', function(e) {
@@ -735,18 +774,33 @@ var OVERPASS_HOSTS = [
   'https://overpass.kumi.systems/api/interpreter'
 ];
 
+var finderAbort = null;
+var finderCancelled = false;
+
+function finderStopBtn(show) {
+  var b = document.getElementById('sf-stop');
+  if (b) b.style.display = show ? '' : 'none';
+}
+
 async function finderSearchNearby(lat, lng) {
+  finderCancelled = false;
+  finderStopBtn(true);
   finderStatus('Looking for grocery stores near you…');
-  var query = '[out:json][timeout:25];(' +
+  var query = '[out:json][timeout:20];(' +
     'node["shop"="supermarket"](around:12000,' + lat + ',' + lng + ');' +
     'node["shop"="grocery"](around:12000,' + lat + ',' + lng + ');' +
+    'node["shop"="department_store"](around:12000,' + lat + ',' + lng + ');' +
     'way["shop"="supermarket"](around:12000,' + lat + ',' + lng + ');' +
     'way["shop"="grocery"](around:12000,' + lat + ',' + lng + ');' +
+    'way["shop"="department_store"](around:12000,' + lat + ',' + lng + ');' +
     ');out center 60;';
   for (var i = 0; i < OVERPASS_HOSTS.length; i++) {
+    if (finderCancelled) break;
+    if (i > 0) finderStatus('Still looking — trying another source…');
     try {
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 35000) : null;
+      finderAbort = ctrl;
+      var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 12000) : null;
       var resp = await fetch(OVERPASS_HOSTS[i], {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -754,14 +808,22 @@ async function finderSearchNearby(lat, lng) {
         signal: ctrl ? ctrl.signal : undefined
       });
       if (timer) clearTimeout(timer);
+      finderAbort = null;
+      if (finderCancelled) break;
       if (!resp.ok) continue;
       var data = await resp.json();
       var places = parsePlaces(data.elements || [], lat, lng);
+      finderStopBtn(false);
       renderFinderResults(places);
       return;
-    } catch (e) { /* try the next mirror */ }
+    } catch (e) { finderAbort = null; /* try the next mirror */ }
   }
-  finderStatus('Store search failed — check your connection and try again.');
+  finderStopBtn(false);
+  if (finderCancelled) {
+    finderStatus('Search stopped.');
+  } else {
+    finderStatus('The store database didn\'t answer — it may be busy. Try again in a moment.');
+  }
 }
 
 function renderFinderResults(places) {
@@ -795,7 +857,10 @@ function renderFinderResults(places) {
 async function selectFoundStore(place) {
   var makePref = document.getElementById('sf-pref').checked;
   var existing = shopStores.find(function(s) {
-    return s.name.trim().toLowerCase() === place.name.trim().toLowerCase();
+    if (s.name.trim().toLowerCase() !== place.name.trim().toLowerCase()) return false;
+    if (s.lat == null || s.lng == null) return true; // no location yet — enrich it
+    // Same chain, different branch (>0.5 mi away) is a NEW store, not a match.
+    return haversineMi(s.lat, s.lng, place.lat, place.lng) < 0.5;
   });
   try {
     var store;
@@ -898,6 +963,9 @@ function openLayoutEditor(which) {
   }
   document.getElementById('she-name').value = editorState.name;
   document.getElementById('she-pref').checked = !!editorState.pref;
+  var delBtn = document.getElementById('she-delete');
+  if (delBtn) delBtn.textContent = 'Delete store';
+  deleteArmUntil = 0;
   renderEditorZones();
   renderEditorCatmap();
   document.getElementById('shop-modal').classList.remove('hidden');
@@ -1019,9 +1087,18 @@ async function saveShopEditor() {
   }
 }
 
+var deleteArmUntil = 0;
 async function deleteShopStore() {
   if (!editorState || !editorState.storeId) return;
-  if (!confirm('Delete this store and its shopping list?')) return;
+  // Two-tap arm instead of a native confirm — a store delete cascades to
+  // its whole list, so it must never be one accidental tap.
+  if (Date.now() > deleteArmUntil) {
+    deleteArmUntil = Date.now() + 4000;
+    var armBtn = document.getElementById('she-delete');
+    if (armBtn) armBtn.textContent = 'Tap again to delete this store + its list';
+    return;
+  }
+  deleteArmUntil = 0;
   var id = editorState.storeId;
   try {
     await shopApi('DELETE', SHOP_API + '&kind=store&id=' + encodeURIComponent(id));
@@ -1077,6 +1154,11 @@ function initShop() {
     menuBtn.addEventListener('click', function() { setTimeout(openShop, 50); });
   }
   window.addEventListener('hashchange', function() {
+    if (location.hash !== '#/shop' && navMode) {
+      navMode = false;
+      navSkipped = {};
+      releaseNavWakeLock();
+    }
     if (location.hash === '#/shop') setTimeout(openShop, 50);
   });
   if (location.hash === '#/shop') setTimeout(openShop, 500);
