@@ -393,9 +393,11 @@ function renderShop() {
     h += '<button type="button" id="shop-clear-done" class="shop-btn">Clear picked</button>';
     h += '<button type="button" id="shop-clear-all" class="shop-btn danger-btn">Clear list</button>';
     h += '</div>';
+    h += '<div id="shop-specials"></div>';
   }
   rootEl.innerHTML = h;
   wireShop(rootEl);
+  updateSpecialsPanel(rootEl);
 }
 
 function wireShop(rootEl) {
@@ -503,6 +505,205 @@ async function addShopItem(name, cat, qty) {
     if (typeof toast === 'function') toast('Could not add that item. Please try again.');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Specials — automatic, no button (Winny, 2026-10-23). Whenever the Shop
+// view shows the list, this checks the unchecked items against this week's
+// Harris Teeter and Publix ads and renders a panel under the list. Deals
+// are parsed from the public ad listings and cached for 12h.
+// ---------------------------------------------------------------------------
+
+var SPECIALS_SOURCES = [
+  { store: 'Harris Teeter', site: 'www.southernsavers.com', search: 'harris teeter weekly ad', hint: 'harris-teeter-weekly-ad', mode: 'list', coverage: 'full ad list' },
+  { store: 'Publix', site: 'www.iheartpublix.com', search: 'publix ad coupons', hint: 'publix-ad-coupons', mode: 'list', coverage: 'full ad list' },
+  { store: 'Publix', site: 'weeklyadguide.com', search: 'publix weekly ad', hint: 'publix-weekly-ad', mode: 'prose', coverage: 'highlights only', fallback: true }
+];
+var specialsState = { key: '', html: '', loading: false };
+
+function specialsItemKey() {
+  var names = {};
+  shopItems.forEach(function(it) {
+    if (!it.done) names[it.name.trim().toLowerCase()] = it.name.trim();
+  });
+  return Object.keys(names).sort().join('|');
+}
+
+function specialsCleanText(frag) {
+  var div = document.createElement('div');
+  div.innerHTML = frag || '';
+  return (div.textContent || '').replace(/\s+/g, ' ').replace(/^[\s*\-•]+/, '').trim();
+}
+
+var SPECIALS_PRICE_HINT = /(\$\s?\d|\d\s?¢|\d+\.\d{2}|BOGO|buy[ -]one[ -]get|buy[ -]two[ -]get|buy 1 get|buy 2 get|get[ -]one[ -]free|% off|\d+ for \$\d)/i;
+var SPECIALS_COUPON_CUT = /\s(-\$|-\d+\s?\/|-?\d+ points WYB|"Manufacturer|\(use |\(buy \(|\(makes it (a|\$?\d+.*after))/i;
+
+function specialsParseDeals(contentHtml, mode) {
+  var deals = [];
+  if (mode === 'list') {
+    var section = '';
+    var re = /<h\d[^>]*>([\s\S]*?)<\/h\d>|<li[^>]*>([\s\S]*?)<\/li>/gi;
+    var m;
+    while ((m = re.exec(contentHtml)) !== null) {
+      if (m[1] !== undefined) { section = specialsCleanText(m[1]); continue; }
+      var text = specialsCleanText(m[2] || '');
+      if (text.length < 6 || !SPECIALS_PRICE_HINT.test(text)) continue;
+      var cut = SPECIALS_COUPON_CUT.exec(text);
+      if (cut) text = text.slice(0, cut.index).replace(/[ ,]+$/, '');
+      if (text.length < 6) continue;
+      deals.push({ text: text.slice(0, 170), section: section,
+        bogo: /buy one get|buy two get|buy 1 get|buy 2 get|BOGO/i.test(text + ' ' + section) });
+    }
+  } else {
+    specialsCleanText(contentHtml).split(/(?<=[.!?])\s+/).forEach(function(sent) {
+      sent = sent.trim();
+      if (sent.length < 12 || !SPECIALS_PRICE_HINT.test(sent)) return;
+      deals.push({ text: sent.slice(0, 220), section: '',
+        bogo: /buy[ -]one[ -]get|BOGO|get[ -]one[ -]free/i.test(sent) });
+    });
+  }
+  return deals;
+}
+
+var SPECIALS_STOP = { fresh: 1, big: 1, pack: 1, set: 1, non: 1, white: 1, pkts: 1, pkt: 1, ct: 1, oz: 1, lb: 1, the: 1, for: 1, if: 1, available: 1 };
+var SPECIALS_GENERIC = { frozen: 1, canned: 1, organic: 1, snack: 1, snacks: 1, water: 1 };
+
+function specialsSingular(tok) {
+  if (tok.length > 4 && /ies$/.test(tok)) return tok.slice(0, -3) + 'y';
+  if (/oes$/.test(tok)) return tok.slice(0, -2);
+  if (tok.length > 3 && /s$/.test(tok)) return tok.slice(0, -1);
+  return tok;
+}
+
+function specialsKeywords(name) {
+  var base = name.replace(/\([^)]*\)/g, ' ').toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
+  var toks = base.split(/\s+/).filter(function(t) { return t && !SPECIALS_STOP[t] && !/^\d+$/.test(t); })
+    .map(specialsSingular);
+  var phrase = (toks.indexOf('ice') >= 0 && toks.indexOf('cream') >= 0) ? 'ice cream' : null;
+  var strong = toks.filter(function(t) { return !SPECIALS_GENERIC[t] && t.length >= 3; });
+  return { strong: strong, all: toks, phrase: phrase };
+}
+
+function specialsMatch(items, deals) {
+  var out = {};
+  items.forEach(function(item) {
+    var kw = specialsKeywords(item);
+    if (!kw.strong.length && !kw.phrase) return;
+    var scored = [];
+    deals.forEach(function(d) {
+      var dl = d.text.toLowerCase();
+      if (kw.strong.indexOf('orange') >= 0) {
+        if (dl.indexOf('orange juice') >= 0 && kw.all.indexOf('juice') < 0) return;
+        if (dl.indexOf('bell pepper') >= 0 && kw.all.indexOf('pepper') < 0) return;
+      }
+      var dtoks = {};
+      dl.replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).forEach(function(t) { dtoks[specialsSingular(t)] = 1; });
+      var score = kw.strong.filter(function(t) { return dtoks[t]; }).length;
+      if (kw.phrase && dl.indexOf(kw.phrase) >= 0) score += 2;
+      if (kw.all.indexOf('popsicle') >= 0 &&
+          (dl.indexOf('bomb pops') >= 0 || dl.indexOf('ice pops') >= 0 || dl.indexOf('popsicles') >= 0)) score += 2;
+      if (score) scored.push({ score: score, bogo: d.bogo ? 1 : 0, deal: d });
+    });
+    scored.sort(function(a, b) { return (b.score - a.score) || (b.bogo - a.bogo); });
+    if (scored.length) out[item] = scored.slice(0, 3).map(function(s) { return s.deal; });
+  });
+  return out;
+}
+
+async function specialsFetchSource(src) {
+  var searchUrl = 'https://' + src.site + '/wp-json/wp/v2/posts?search=' +
+    encodeURIComponent(src.search) + '&per_page=8&_fields=slug,link';
+  var posts = await (await fetch(searchUrl)).json();
+  var post = null;
+  for (var i = 0; i < (posts || []).length; i++) {
+    if ((posts[i].slug || '').indexOf(src.hint) >= 0) { post = posts[i]; break; }
+  }
+  if (!post && posts && posts.length) post = posts[0];
+  if (!post) throw new Error('no ad post');
+  var full = await (await fetch('https://' + src.site + '/wp-json/wp/v2/posts?slug=' +
+    encodeURIComponent(post.slug) + '&_fields=content')).json();
+  var content = full && full[0] && full[0].content && full[0].content.rendered;
+  if (!content) throw new Error('empty ad');
+  return { deals: specialsParseDeals(content, src.mode), coverage: src.coverage };
+}
+
+async function specialsGetDeals() {
+  var cache = null;
+  try { cache = JSON.parse(localStorage.getItem('shopAdsCacheV1') || 'null'); } catch (e) {}
+  if (cache && (Date.now() - cache.ts) < 12 * 3600 * 1000) return cache.sources;
+  var sources = {};
+  var done = {};
+  for (var i = 0; i < SPECIALS_SOURCES.length; i++) {
+    var src = SPECIALS_SOURCES[i];
+    if (done[src.store]) continue;
+    try {
+      sources[src.store] = await specialsFetchSource(src);
+      done[src.store] = true;
+    } catch (e) { /* source unreadable this time; fallbacks follow */ }
+  }
+  if (Object.keys(sources).length) {
+    try { localStorage.setItem('shopAdsCacheV1', JSON.stringify({ ts: Date.now(), sources: sources })); } catch (e) {}
+  }
+  return sources;
+}
+
+function specialsBuildHtml(itemNames, sources) {
+  var perStore = [];
+  Object.keys(sources).forEach(function(store) {
+    var matches = specialsMatch(itemNames, sources[store].deals || []);
+    perStore.push({ store: store, matches: matches, count: Object.keys(matches).length,
+      coverage: sources[store].coverage });
+  });
+  if (!perStore.length) return '';
+  perStore.sort(function(a, b) { return b.count - a.count; });
+  var top = perStore[0];
+  var verdict;
+  if (perStore.length > 1 && perStore[1].count === top.count) {
+    verdict = 'About even this week — ' + top.count + ' of your items on special at each store';
+  } else if (perStore.length > 1) {
+    verdict = top.store + ' has more of your list on special this week — ' + top.count +
+      ' vs ' + perStore[1].count + ' at ' + perStore[1].store;
+  } else {
+    verdict = top.store + ': ' + top.count + ' of your items on special this week';
+  }
+  var h = '<div class="shop-specials-panel"><p class="shop-specials-title">💲 This week\'s specials for your list</p>';
+  h += '<p class="shop-specials-verdict">' + esc(verdict) + '</p>';
+  perStore.forEach(function(ps) {
+    if (!ps.count) return;
+    h += '<p class="shop-specials-store"><strong>' + esc(ps.store) + '</strong>' +
+      (ps.coverage.indexOf('highlights') >= 0 ? ' <span class="shop-specials-note">(highlights only)</span>' : '') + '</p>';
+    Object.keys(ps.matches).forEach(function(item) {
+      var d = ps.matches[item][0];
+      h += '<p class="shop-specials-line">' + esc(item) + ' — ' + esc(d.text) + '</p>';
+    });
+  });
+  h += '</div>';
+  return h;
+}
+
+async function updateSpecialsPanel(rootEl) {
+  var box = rootEl.querySelector('#shop-specials');
+  if (!box) return;
+  var key = specialsItemKey();
+  if (!key) { box.innerHTML = ''; return; }
+  if (specialsState.key === key && specialsState.html) { box.innerHTML = specialsState.html; return; }
+  if (specialsState.loading) { box.innerHTML = '<p class="shop-specials-loading">Checking this week\'s specials…</p>'; return; }
+  specialsState.loading = true;
+  box.innerHTML = '<p class="shop-specials-loading">Checking this week\'s specials…</p>';
+  try {
+    var names = {};
+    shopItems.forEach(function(it) { if (!it.done) names[it.name.trim().toLowerCase()] = it.name.trim(); });
+    var sources = await specialsGetDeals();
+    var html = specialsBuildHtml(Object.values(names), sources);
+    specialsState = { key: key, html: html, loading: false };
+    var live = document.querySelector('#shop-specials');
+    if (live && specialsItemKey() === key) live.innerHTML = html;
+  } catch (e) {
+    specialsState.loading = false;
+    var live2 = document.querySelector('#shop-specials');
+    if (live2) live2.innerHTML = '';
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // Store finder — how other sites do it: use my location (or an address),
