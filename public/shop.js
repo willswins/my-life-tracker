@@ -350,6 +350,7 @@ function renderShop() {
     return;
   }
   var items = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
+  var spReady = specialsState.key === specialsItemKey() && !!specialsState.byItem;
   var route = buildRoute(store, items);
   var doneCount = items.filter(function(it) { return it.done; }).length;
   var catOptions = CATEGORIES.map(function(c) { return '<option>' + c + '</option>'; }).join('');
@@ -382,7 +383,12 @@ function renderShop() {
       group.items.forEach(function(it) {
         h += '<label class="shop-item' + (it.done ? ' done' : '') + '">';
         h += '<input type="checkbox" class="shop-check" data-id="' + esc(it.id) + '"' + (it.done ? ' checked' : '') + '>';
-        h += '<span class="shop-item-name">' + esc(it.name) + '</span>';
+        h += '<span class="shop-item-main"><span class="shop-item-name">' + esc(it.name) + '</span>';
+        if (!it.done && spReady) {
+          var spLine = specialsLineFor(it.name);
+          if (spLine) h += '<span class="shop-item-special">' + spLine + '</span>';
+        }
+        h += '</span>';
         if (it.qty) h += '<span class="shop-item-qty">' + esc(it.qty) + '</span>';
         h += '<button type="button" class="shop-del" data-id="' + esc(it.id) + '" title="Remove">×</button>';
         h += '</label>';
@@ -393,11 +399,10 @@ function renderShop() {
     h += '<button type="button" id="shop-clear-done" class="shop-btn">Clear picked</button>';
     h += '<button type="button" id="shop-clear-all" class="shop-btn danger-btn">Clear list</button>';
     h += '</div>';
-    h += '<div id="shop-specials"></div>';
   }
   rootEl.innerHTML = h;
   wireShop(rootEl);
-  updateSpecialsPanel(rootEl);
+  updateSpecialsInline();
 }
 
 function wireShop(rootEl) {
@@ -518,7 +523,7 @@ var SPECIALS_SOURCES = [
   { store: 'Publix', site: 'www.iheartpublix.com', search: 'publix ad coupons', hint: 'publix-ad-coupons', mode: 'list', coverage: 'full ad list' },
   { store: 'Publix', site: 'weeklyadguide.com', search: 'publix weekly ad', hint: 'publix-weekly-ad', mode: 'prose', coverage: 'highlights only', fallback: true }
 ];
-var specialsState = { key: '', html: '', loading: false };
+var specialsState = { key: '', byItem: null, loading: false };
 
 function specialsItemKey() {
   var names = {};
@@ -646,64 +651,46 @@ async function specialsGetDeals() {
   return sources;
 }
 
-function specialsBuildHtml(itemNames, sources) {
-  var perStore = [];
+function specialsIndexByItem(itemNames, sources) {
+  var byItem = {};
   Object.keys(sources).forEach(function(store) {
     var matches = specialsMatch(itemNames, sources[store].deals || []);
-    perStore.push({ store: store, matches: matches, count: Object.keys(matches).length,
-      coverage: sources[store].coverage });
-  });
-  if (!perStore.length) return '';
-  perStore.sort(function(a, b) { return b.count - a.count; });
-  var top = perStore[0];
-  var verdict;
-  if (perStore.length > 1 && perStore[1].count === top.count) {
-    verdict = 'About even this week — ' + top.count + ' of your items on special at each store';
-  } else if (perStore.length > 1) {
-    verdict = top.store + ' has more of your list on special this week — ' + top.count +
-      ' vs ' + perStore[1].count + ' at ' + perStore[1].store;
-  } else {
-    verdict = top.store + ': ' + top.count + ' of your items on special this week';
-  }
-  var h = '<div class="shop-specials-panel"><p class="shop-specials-title">💲 This week\'s specials for your list</p>';
-  h += '<p class="shop-specials-verdict">' + esc(verdict) + '</p>';
-  perStore.forEach(function(ps) {
-    if (!ps.count) return;
-    h += '<p class="shop-specials-store"><strong>' + esc(ps.store) + '</strong>' +
-      (ps.coverage.indexOf('highlights') >= 0 ? ' <span class="shop-specials-note">(highlights only)</span>' : '') + '</p>';
-    Object.keys(ps.matches).forEach(function(item) {
-      var d = ps.matches[item][0];
-      h += '<p class="shop-specials-line">' + esc(item) + ' — ' + esc(d.text) + '</p>';
+    Object.keys(matches).forEach(function(item) {
+      var key = item.trim().toLowerCase();
+      if (!byItem[key]) byItem[key] = [];
+      byItem[key].push({ store: store, text: matches[item][0].text });
     });
   });
-  h += '</div>';
-  return h;
+  return byItem;
 }
 
-async function updateSpecialsPanel(rootEl) {
-  var box = rootEl.querySelector('#shop-specials');
-  if (!box) return;
+function specialsLineFor(name) {
+  if (!specialsState.byItem) return '';
+  var entries = specialsState.byItem[name.trim().toLowerCase()];
+  if (!entries || !entries.length) return '';
+  var parts = entries.map(function(e) {
+    var t = e.text.length > 90 ? e.text.slice(0, 90) + '…' : e.text;
+    return esc(e.store) + ': ' + esc(t);
+  });
+  return '💲 ' + parts.join(' · ');
+}
+
+async function updateSpecialsInline() {
   var key = specialsItemKey();
-  if (!key) { box.innerHTML = ''; return; }
-  if (specialsState.key === key && specialsState.html) { box.innerHTML = specialsState.html; return; }
-  if (specialsState.loading) { box.innerHTML = '<p class="shop-specials-loading">Checking this week\'s specials…</p>'; return; }
+  if (!key) return;
+  if (specialsState.key === key && specialsState.byItem) return;
+  if (specialsState.loading) return;
   specialsState.loading = true;
-  box.innerHTML = '<p class="shop-specials-loading">Checking this week\'s specials…</p>';
   try {
     var names = {};
     shopItems.forEach(function(it) { if (!it.done) names[it.name.trim().toLowerCase()] = it.name.trim(); });
     var sources = await specialsGetDeals();
-    var html = specialsBuildHtml(Object.values(names), sources);
-    specialsState = { key: key, html: html, loading: false };
-    var live = document.querySelector('#shop-specials');
-    if (live && specialsItemKey() === key) live.innerHTML = html;
+    specialsState = { key: key, byItem: specialsIndexByItem(Object.values(names), sources), loading: false };
+    if (location.hash === '#/shop' && specialsItemKey() === key) renderShop();
   } catch (e) {
     specialsState.loading = false;
-    var live2 = document.querySelector('#shop-specials');
-    if (live2) live2.innerHTML = '';
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // Store finder — how other sites do it: use my location (or an address),
