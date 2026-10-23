@@ -1266,8 +1266,19 @@ pre#ingest-docs {
 }
 
 /* Shop view — grocery route */
-.shop-storebar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.4rem; }
-.shop-store-sel { flex: 1; min-width: 140px; padding: 0.55rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; background: #fff; }
+.shop-storebar { position: relative; display: flex; justify-content: flex-end; margin-bottom: 0.4rem; }
+.shop-store-chip { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; max-width: 92%; }
+.shop-store-icon { font-size: 1.15rem; }
+.shop-store-meta { display: flex; flex-direction: column; min-width: 0; }
+.shop-store-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop-store-addr { color: var(--muted); font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop-store-addr:empty { display: none; }
+.shop-store-change { color: var(--muted); font-size: 0.95rem; }
+.shop-store-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 40; min-width: 230px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); padding: 0.3rem; }
+.shop-store-opt { display: block; width: 100%; text-align: left; padding: 0.55rem 0.6rem; border: 0; background: none; font-size: 0.95rem; border-radius: 7px; cursor: pointer; color: inherit; }
+.shop-store-opt:hover { background: rgba(0,0,0,0.04); }
+.shop-store-opt.current { font-weight: 600; }
+.shop-store-menu-actions { border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.3rem; }
 .shop-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 0.55rem 0.8rem; cursor: pointer; font-size: 0.9rem; min-height: 44px; }
 .shop-why { color: var(--muted); font-size: 0.85rem; margin: 0.1rem 0 0.6rem; }
 .shop-add { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
@@ -1312,9 +1323,7 @@ pre#ingest-docs {
    two-row add form, full-width editor buttons, 44px tap targets,
    16px inputs so Safari never auto-zooms on focus */
 @media (max-width: 768px) {
-  .shop-storebar { flex-wrap: wrap; }
-  .shop-store-sel { flex: 1 1 100%; min-height: 48px; }
-  .shop-storebar .shop-btn { flex: 1; }
+  .shop-store-chip { max-width: 100%; }
   .shop-add { flex-direction: row; }
   #shop-new-name { flex: 1 1 100%; min-height: 48px; }
   .shop-cat-sel { flex: 1 1 auto; min-height: 48px; }
