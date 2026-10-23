@@ -1285,7 +1285,7 @@ pre#ingest-docs {
 .shop-add input[type="text"] { padding: 0.55rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; }
 #shop-new-name { flex: 2; min-width: 150px; }
 #shop-new-qty { flex: 0 0 70px; width: 70px; }
-.shop-cat-sel { flex: 1; min-width: 120px; padding: 0.55rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; background: #fff; }
+#shop-new-name { flex: 1 1 220px; }
 .shop-progress { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 0.25rem; }
 .shop-progress-bar { height: 100%; background: #2e9e5b; transition: width 0.25s ease; }
 .shop-progress-text { color: var(--muted); font-size: 0.85rem; margin: 0.35rem 0 0.9rem; }
@@ -1326,7 +1326,7 @@ pre#ingest-docs {
   .shop-store-chip { max-width: 100%; }
   .shop-add { flex-direction: row; }
   #shop-new-name { flex: 1 1 100%; min-height: 48px; }
-  .shop-cat-sel { flex: 1 1 auto; min-height: 48px; }
+  #shop-new-name { min-height: 48px; }
   #shop-new-qty { flex: 0 0 76px; width: 76px; min-height: 48px; }
   .shop-add button[type="submit"] { min-height: 48px; padding: 0.55rem 1.1rem; }
   .shop-item { padding: 0.7rem 0.4rem; min-height: 52px; }
