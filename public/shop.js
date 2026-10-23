@@ -25,24 +25,27 @@ var CATEGORIES = [
   'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Other'
 ];
 
-// Standard grocery walk order: fresh first, cold last before checkout.
+// How supermarkets typically arrange departments, used as the sort order
+// for every list: fresh perimeter first (produce at the entrance, meat and
+// dairy along the back wall), center aisles next, frozen last so it thaws
+// least, then checkout. No store-specific aisle claims.
 var TEMPLATE_ZONES = [
-  ['Produce', 'Front'],
-  ['Bakery', 'Front'],
+  ['Produce', 'Entrance'],
+  ['Bakery', 'Fresh'],
   ['Meat & Deli', 'Back wall'],
-  ['Pantry', 'Aisles 1-4'],
-  ['Snacks & Drinks', 'Aisles 5-6'],
-  ['Household', 'Aisles 7-8'],
-  ['Personal Care', 'Aisle 9'],
-  ['Dairy & Eggs', 'Back'],
-  ['Frozen', 'Last aisles'],
+  ['Dairy & Eggs', 'Back wall'],
+  ['Pantry', 'Center aisles'],
+  ['Snacks & Drinks', 'Center aisles'],
+  ['Household', 'Center aisles'],
+  ['Personal Care', 'Near pharmacy'],
+  ['Frozen', 'Last section'],
   ['Checkout', 'Front']
 ];
 
 var TEMPLATE_MAP = {
-  'Produce': 0, 'Bakery': 1, 'Meat & Deli': 2, 'Dairy & Eggs': 7,
-  'Pantry': 3, 'Snacks & Drinks': 4, 'Frozen': 8, 'Household': 5,
-  'Personal Care': 6, 'Other': 3
+  'Produce': 0, 'Bakery': 1, 'Meat & Deli': 2, 'Dairy & Eggs': 3,
+  'Pantry': 4, 'Snacks & Drinks': 5, 'Frozen': 8, 'Household': 6,
+  'Personal Care': 7, 'Other': 4
 };
 
 // Keyword rules for auto-categorizing typed items. Checked in order.
@@ -267,11 +270,6 @@ var shopItems = [];
 var currentStoreId = null;
 var storeWhy = '';
 
-// Navigator state (in-memory only; derived from item check-offs)
-var navMode = false;
-var navSkipped = {};
-var navWakeLock = null;
-
 async function loadShopData() {
   var data = await shopApi('GET', SHOP_API);
   data = (data && typeof data === 'object') ? data : {};
@@ -351,10 +349,6 @@ function renderShop() {
     rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
     return;
   }
-  if (navMode) {
-    renderNavigator(rootEl, store);
-    return;
-  }
   var items = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
   var route = buildRoute(store, items);
   var doneCount = items.filter(function(it) { return it.done; }).length;
@@ -380,10 +374,7 @@ function renderShop() {
   } else {
     h += '<div class="shop-progress"><div class="shop-progress-bar" style="width:' +
       Math.round(doneCount / items.length * 100) + '%"></div></div>';
-    h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked · listed in walking order — top to bottom, entrance to checkout</p>';
-    if (doneCount < items.length) {
-      h += '<button type="button" id="shop-start-nav" class="shop-nav-start">Start navigation →</button>';
-    }
+    h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked · sorted the way stores arrange things — fresh first, frozen last</p>';
     route.forEach(function(group) {
       h += '<div class="shop-zone">';
       h += '<div class="shop-zone-head"><span class="shop-zone-name">' + esc(group.zone) + '</span>' +
@@ -408,14 +399,6 @@ function renderShop() {
 }
 
 function wireShop(rootEl) {
-  var startNav = rootEl.querySelector('#shop-start-nav');
-  if (startNav) startNav.addEventListener('click', function() {
-    navMode = true;
-    navSkipped = {};
-    requestNavWakeLock();
-    renderShop();
-    window.scrollTo(0, 0);
-  });
   var sel = rootEl.querySelector('#shop-store-sel');
   if (sel) sel.addEventListener('change', function() {
     currentStoreId = sel.value;
@@ -519,162 +502,6 @@ async function addShopItem(name, cat, qty) {
   } catch (e) {
     if (typeof toast === 'function') toast('Could not add that item. Please try again.');
   }
-}
-
-// ---------------------------------------------------------------------------
-// Navigator — visual stop-by-stop guidance through the store
-// ---------------------------------------------------------------------------
-
-function requestNavWakeLock() {
-  try {
-    if (navigator.wakeLock && navigator.wakeLock.request) {
-      navigator.wakeLock.request('screen').then(function(lock) {
-        navWakeLock = lock;
-      }).catch(function() {});
-    }
-  } catch (e) {}
-}
-
-function releaseNavWakeLock() {
-  try {
-    if (navWakeLock && navWakeLock.release) navWakeLock.release();
-  } catch (e) {}
-  navWakeLock = null;
-}
-
-// Schematic map: zones in walking order on a serpentine grid — first zone
-// bottom-left (by the entrance), order snakes upward to the back of the
-// store. State per zone: 'current' | 'todo' | 'done' | 'empty'.
-function buildNavMap(store, stateByZone, anywhere) {
-  var zones = store.zones || [];
-  var cols = 3, cellW = 124, cellH = 58, gap = 10;
-  var rows = Math.max(1, Math.ceil(zones.length / cols));
-  var W = cols * cellW + (cols + 1) * gap;
-  var anywhereH = anywhere ? (cellH + gap) : 0;
-  var H = rows * cellH + (rows + 1) * gap + 26 + anywhereH; // + entrance strip (+ anywhere row)
-  function cellPos(i) {
-    var rowFromBottom = Math.floor(i / cols);
-    var inRow = i % cols;
-    var col = (rowFromBottom % 2 === 0) ? inRow : (cols - 1 - inRow);
-    var x = gap + col * (cellW + gap);
-    var y = H - 26 - anywhereH - gap - (rowFromBottom + 1) * cellH - rowFromBottom * gap;
-    return { x: x, y: y };
-  }
-  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="nav-map" role="img" aria-label="Store navigation map">';
-  // Path through zone centers in walking order
-  var pts = zones.map(function(z, i) {
-    var p = cellPos(i);
-    return (p.x + cellW / 2) + ',' + (p.y + cellH / 2);
-  }).join(' ');
-  s += '<polyline points="' + pts + '" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 4" opacity="0.5"/>';
-  zones.forEach(function(z, i) {
-    var p = cellPos(i);
-    var state = stateByZone[z[0]] || 'empty';
-    var cls = 'nav-cell nav-cell-' + state;
-    var label = z[0].length > 17 ? z[0].slice(0, 16) + '…' : z[0];
-    s += '<g class="' + cls + '">' +
-      '<rect x="' + p.x + '" y="' + p.y + '" width="' + cellW + '" height="' + cellH + '" rx="8"/>' +
-      '<text x="' + (p.x + cellW / 2) + '" y="' + (p.y + 26) + '" text-anchor="middle" class="nav-cell-name">' + esc(label) + '</text>' +
-      (z[1] ? '<text x="' + (p.x + cellW / 2) + '" y="' + (p.y + 42) + '" text-anchor="middle" class="nav-cell-aisle">' + esc(z[1]) + '</text>' : '') +
-      '<circle cx="' + (p.x + 13) + '" cy="' + (p.y + 13) + '" r="9" class="nav-badge"/>' +
-      '<text x="' + (p.x + 13) + '" y="' + (p.y + 17) + '" text-anchor="middle" class="nav-badge-text">' + (state === 'done' ? '✓' : (i + 1)) + '</text>' +
-      '</g>';
-  });
-  if (anywhere) {
-    var ay = H - 26 - cellH;
-    s += '<g class="nav-cell nav-cell-' + anywhere.state + '">' +
-      '<rect x="' + gap + '" y="' + ay + '" width="' + (W - 2 * gap) + '" height="' + cellH + '" rx="8"/>' +
-      '<text x="' + (W / 2) + '" y="' + (ay + 26) + '" text-anchor="middle" class="nav-cell-name">Anywhere else</text>' +
-      '<text x="' + (W / 2) + '" y="' + (ay + 42) + '" text-anchor="middle" class="nav-cell-aisle">not tied to one zone</text>' +
-      '<circle cx="' + (gap + 13) + '" cy="' + (ay + 13) + '" r="9" class="nav-badge"/>' +
-      '<text x="' + (gap + 13) + '" y="' + (ay + 17) + '" text-anchor="middle" class="nav-badge-text">' + (anywhere.state === 'done' ? '✓' : anywhere.badge) + '</text>' +
-      '</g>';
-  }
-  s += '<text x="' + (W / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="nav-entrance">— ENTRANCE —</text>';
-  s += '</svg>';
-  return s;
-}
-
-function renderNavigator(rootEl, store) {
-  var items = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
-  var route = buildRoute(store, items);
-  var stops = route.filter(function(g) { return g.items.length > 0; });
-
-  // Zone states for the map
-  var stateByZone = {};
-  (store.zones || []).forEach(function(z) { stateByZone[z[0]] = 'empty'; });
-  stops.forEach(function(g) {
-    stateByZone[g.zone] = g.items.some(function(it) { return !it.done; }) ? 'todo' : 'done';
-  });
-
-  // Current stop: first with unchecked items, preferring un-skipped ones
-  var pending = stops.filter(function(g) { return g.items.some(function(it) { return !it.done; }); });
-  var current = null;
-  for (var i = 0; i < pending.length; i++) {
-    if (!navSkipped[pending[i].zone]) { current = pending[i]; break; }
-  }
-  if (!current && pending.length) current = pending[0];
-  if (current) stateByZone[current.zone] = 'current';
-
-  var pickedCount = items.filter(function(it) { return it.done; }).length;
-  var h = '';
-  h += '<div class="nav-topbar"><strong>Navigating ' + esc(store.name) + '</strong>' +
-    '<button type="button" id="nav-end" class="shop-btn">End</button></div>';
-  var anywhereGroup = null;
-  for (var ai = 0; ai < stops.length; ai++) { if (stops[ai].zone === 'Anywhere else') anywhereGroup = stops[ai]; }
-  var anywhere = anywhereGroup ? {
-    state: stateByZone['Anywhere else'] || 'todo',
-    badge: stops.indexOf(anywhereGroup) + 1
-  } : null;
-  h += buildNavMap(store, stateByZone, anywhere);
-  h += '<p class="shop-progress-text">' + pickedCount + ' of ' + items.length + ' picked</p>';
-
-  if (!current) {
-    h += '<div class="nav-done"><p class="nav-done-title">Everything picked</p>' +
-      '<p>Head to checkout — you\'re done.</p></div>';
-  } else {
-    var stopNum = pending.indexOf(current) + 1;
-    h += '<div class="nav-panel">';
-    if (pending.length && pending.every(function(g) { return navSkipped[g.zone]; })) {
-      h += '<p class="shop-hint">You skipped every stop — circling back to the first one.</p>';
-    }
-    h += '<p class="nav-stop-label">Stop ' + stopNum + ' of ' + pending.length + '</p>';
-    h += '<p class="nav-stop-title">' + esc(current.zone) +
-      (current.aisle ? ' <span class="nav-stop-aisle">' + esc(current.aisle) + '</span>' : '') + '</p>';
-    current.items.forEach(function(it) {
-      h += '<label class="shop-item' + (it.done ? ' done' : '') + '">' +
-        '<input type="checkbox" class="shop-check" data-id="' + esc(it.id) + '"' + (it.done ? ' checked' : '') + '>' +
-        '<span class="shop-item-name">' + esc(it.name) + '</span>' +
-        (it.qty ? '<span class="shop-item-qty">' + esc(it.qty) + '</span>' : '') +
-        '</label>';
-    });
-    h += '<div class="nav-actions">';
-    if (pending.length > 1) h += '<button type="button" id="nav-skip" class="shop-btn">Skip this stop →</button>';
-    h += '</div></div>';
-    var remaining = pending.filter(function(g) { return g !== current; });
-    if (remaining.length) {
-      h += '<p class="nav-next">Next: ' + remaining.map(function(g) { return esc(g.zone); }).join(' → ') + '</p>';
-    }
-  }
-  rootEl.innerHTML = h;
-
-  var endBtn = rootEl.querySelector('#nav-end');
-  if (endBtn) endBtn.addEventListener('click', function() {
-    navMode = false;
-    navSkipped = {};
-    releaseNavWakeLock();
-    renderShop();
-  });
-  var skipBtn = rootEl.querySelector('#nav-skip');
-  if (skipBtn && current) skipBtn.addEventListener('click', function() {
-    navSkipped[current.zone] = true;
-    renderShop();
-  });
-  rootEl.querySelectorAll('.shop-check').forEach(function(cb) {
-    cb.addEventListener('change', function() {
-      toggleShopItem(cb.dataset.id, cb.checked);
-    });
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1154,11 +981,6 @@ function initShop() {
     menuBtn.addEventListener('click', function() { setTimeout(openShop, 50); });
   }
   window.addEventListener('hashchange', function() {
-    if (location.hash !== '#/shop' && navMode) {
-      navMode = false;
-      navSkipped = {};
-      releaseNavWakeLock();
-    }
     if (location.hash === '#/shop') setTimeout(openShop, 50);
   });
   if (location.hash === '#/shop') setTimeout(openShop, 500);
