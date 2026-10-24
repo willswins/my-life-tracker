@@ -1266,8 +1266,8 @@ pre#ingest-docs {
 }
 
 /* Shop view — grocery route */
-.shop-storebar { position: relative; display: flex; justify-content: flex-end; margin-bottom: 0.4rem; }
-.shop-store-chip { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; max-width: 92%; }
+.shop-storebar { position: relative; display: flex; justify-content: flex-end; width: 100%; box-sizing: border-box; margin-bottom: 0.4rem; }
+.shop-store-chip { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; max-width: 92%; }
 .shop-store-icon { font-size: 1.15rem; }
 .shop-store-meta { display: flex; flex-direction: column; min-width: 0; }
 .shop-store-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
