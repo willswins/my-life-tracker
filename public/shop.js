@@ -297,26 +297,6 @@ function pickInitialStore() {
   }
   currentStoreId = shopStores[0].id;
   storeWhy = shopStores.length > 1 ? 'no preferred store set — showing the first store' : '';
-  // If geolocation is already granted, silently switch to the nearest
-  // store that has a saved location.
-  var withLoc = shopStores.filter(function(s) { return s.lat != null && s.lng != null; });
-  if (withLoc.length && navigator.geolocation && navigator.permissions && navigator.permissions.query) {
-    navigator.permissions.query({ name: 'geolocation' }).then(function(p) {
-      if (p.state !== 'granted') return;
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        var best = null, bestD = Infinity;
-        withLoc.forEach(function(s) {
-          var d = haversineMi(pos.coords.latitude, pos.coords.longitude, s.lat, s.lng);
-          if (d < bestD) { bestD = d; best = s; }
-        });
-        if (best && String(best.id) !== String(currentStoreId)) {
-          currentStoreId = best.id;
-          storeWhy = '📍 nearest store (' + bestD.toFixed(1) + ' mi)';
-          renderShop();
-        }
-      }, function() {}, { timeout: 5000 });
-    }).catch(function() {});
-  }
 }
 
 function currentStore() {
@@ -374,7 +354,7 @@ function renderShop() {
   h += '<div class="shop-store-chip" id="shop-store-chip" role="button" title="Your store — tap to change">';
   h += '<span class="shop-store-icon">\u{1F3EC}</span>';
   h += '<span class="shop-store-meta"><span class="shop-store-name">' + esc(store.name) + (store.pref ? ' \u2605' : '') + '</span>';
-  h += '<span class="shop-store-addr" id="shop-store-addr"></span></span>';
+  h += '</span>';
   h += '<span class="shop-store-change" aria-hidden="true">\u270E</span>';
   h += '</div>';
   h += '<div class="shop-store-menu" id="shop-store-menu" hidden>';
@@ -426,32 +406,10 @@ function renderShop() {
   }
   rootEl.innerHTML = h;
   wireShop(rootEl);
-  fillStoreAddress(store);
   updateSpecialsInline();
   updateShopBadge();
 }
 
-function fillStoreAddress(store) {
-  var el = document.getElementById('shop-store-addr');
-  if (!el) return;
-  if (!store.lat || !store.lng) { el.textContent = ''; return; }
-  var key = 'shopAddrV1:' + store.id + ':' + Number(store.lat).toFixed(4) + ',' + Number(store.lng).toFixed(4);
-  try { var c = localStorage.getItem(key); if (c) { el.textContent = c; return; } } catch (e) {}
-  fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + store.lat + '&lon=' + store.lng)
-    .then(function(r) { return r.json(); })
-    .then(function(j) {
-      var a = (j && j.address) || {};
-      var line = ((a.house_number ? a.house_number + ' ' : '') + (a.road || '')).trim();
-      var city = a.city || a.town || a.village || '';
-      var text = line ? (line + (city ? ', ' + city : '')) :
-        (j && j.display_name ? j.display_name.split(',').slice(0, 2).join(',') : '');
-      if (text) {
-        try { localStorage.setItem(key, text); } catch (e) {}
-        var live = document.getElementById('shop-store-addr');
-        if (live) live.textContent = text;
-      }
-    }).catch(function() {});
-}
 
 function wireShop(rootEl) {
   var chip = rootEl.querySelector('#shop-store-chip');
@@ -831,8 +789,6 @@ function ensureFinderModal() {
   div.innerHTML =
     '<div class="modal shop-modal">' +
       '<h3>Find a store</h3>' +
-      '<button type="button" id="sf-geo" class="shop-nav-start">Use my location</button>' +
-      '<p class="sf-or">or enter an address</p>' +
       '<div class="sf-addr-row">' +
         '<input id="sf-address" type="text" maxlength="120" placeholder="Street, city, or ZIP" autocomplete="off">' +
         '<button type="button" id="sf-search" class="shop-btn">Search</button>' +
@@ -851,7 +807,6 @@ function ensureFinderModal() {
     finderCancelled = true;
     if (finderAbort) { try { finderAbort.abort(); } catch (e) {} }
   });
-  document.getElementById('sf-geo').addEventListener('click', finderUseLocation);
   document.getElementById('sf-search').addEventListener('click', finderSearchAddress);
   document.getElementById('sf-address').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); finderSearchAddress(); }
@@ -875,18 +830,6 @@ function finderStatus(msg) {
   if (el) el.textContent = msg;
 }
 
-function finderUseLocation() {
-  if (!navigator.geolocation) {
-    finderStatus('Location is not available on this device — enter an address instead.');
-    return;
-  }
-  finderStatus('Getting your location…');
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    finderSearchNearby(pos.coords.latitude, pos.coords.longitude);
-  }, function() {
-    finderStatus('Could not get your location — enter an address instead.');
-  }, { timeout: 10000 });
-}
 
 async function finderSearchAddress() {
   var q = document.getElementById('sf-address').value.trim();
