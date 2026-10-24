@@ -323,6 +323,21 @@ function currentStore() {
   return shopStores.find(function(s) { return String(s.id) === String(currentStoreId); }) || shopStores[0];
 }
 
+// Menu badge + home tile: unchecked items in the store being shown.
+// Reuses app.js setBadge() so the bubble behaves like the other menu badges.
+function updateShopBadge() {
+  if (!shopLoaded) return;
+  var store = currentStore();
+  var n = 0;
+  if (store) {
+    n = shopItems.filter(function(it) { return String(it.storeId) === String(store.id) && !it.done; }).length;
+  }
+  var badgeEl = document.getElementById('badge-shop');
+  if (badgeEl && typeof setBadge === 'function') setBadge('badge-shop', n, false);
+  var homeEl = document.getElementById('home-shop');
+  if (homeEl) homeEl.textContent = n;
+}
+
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
@@ -413,6 +428,7 @@ function renderShop() {
   wireShop(rootEl);
   fillStoreAddress(store);
   updateSpecialsInline();
+  updateShopBadge();
 }
 
 function fillStoreAddress(store) {
@@ -1281,6 +1297,17 @@ function initShop() {
     if (location.hash === '#/shop') setTimeout(openShop, 50);
   });
   if (location.hash === '#/shop') setTimeout(openShop, 500);
+  // Prefetch so the menu badge + home tile are live before Shop is opened.
+  // Shares openShop's single-flight promise; a failed prefetch clears it so
+  // opening Shop later retries cleanly.
+  if (!shopLoaded && !shopLoadPromise) {
+    shopLoadPromise = (async function() {
+      await loadShopData();
+      shopLoaded = true;
+      updateShopBadge();
+    })();
+    shopLoadPromise.catch(function() { shopLoadPromise = null; });
+  }
 }
 
 function tryInit() {
@@ -1301,6 +1328,7 @@ if (document.readyState === 'loading') {
 
 // Exposed for testing and debugging.
 window.Shop = {
+  updateShopBadge: updateShopBadge,
   buildRoute: buildRoute,
   guessCategory: guessCategory,
   haversineMi: haversineMi,
