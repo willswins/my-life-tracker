@@ -259,6 +259,7 @@ pre#ingest-docs {
 }
 .badge.zero { opacity: 0.45; }
 .badge.hot { background: #fee2e2; color: #b91c1c; }
+.badge.badge-shop { background: #16a34a; color: #fff; }
 .menu-sep { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; }
 .menu-dot {
   position: absolute; top: -4px; right: -4px;
@@ -699,7 +700,7 @@ pre#ingest-docs {
 .home-greet { margin: 0.5rem 0 1.25rem; }
 .home-hello { font-size: 1.6rem; font-weight: 700; }
 .home-date { color: var(--muted); font-size: 0.9rem; margin-top: 0.15rem; }
-.home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+.home-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
 .home-stat {
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   padding: 0.8rem 0.4rem; cursor: pointer; display: flex; flex-direction: column;
@@ -785,7 +786,7 @@ pre#ingest-docs {
 .home-greet { margin: 0.5rem 0 1.25rem; }
 .home-hello { font-size: 1.6rem; font-weight: 700; }
 .home-date { color: var(--muted); font-size: 0.9rem; margin-top: 0.15rem; }
-.home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+.home-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
 .home-stat {
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   padding: 0.8rem 0.4rem; cursor: pointer; display: flex; flex-direction: column;
