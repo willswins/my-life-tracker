@@ -3,7 +3,9 @@
 // finder is removed too. Specials lines still show best prices per item.
 // Data: dedicated DB table — shop_items, via
 // /api/app?r=daybook&view=shop (migration-008). Shop_stores rows remain in
-// the DB but are unused. Items are database rows,
+// the DB but are unused. Catalog prices for non-grocery items arrive via
+// shop_deals rows (same API), refreshed by the shop watch, and render
+// inline like ad specials. Items are database rows,
 // never code and never board cards. The api() wrapper below still strips
 // any legacy shop cards (gstore/gitem) from other views during transition.
 // Loads after app.js.
@@ -100,11 +102,16 @@ function rowToItem(row) {
 }
 
 var shopItems = [];
+var shopDeals = {};
 
 async function loadShopData() {
   var data = await shopApi('GET', SHOP_API);
   data = (data && typeof data === 'object') ? data : {};
   shopItems = (Array.isArray(data.items) ? data.items : []).map(rowToItem);
+  shopDeals = {};
+  (Array.isArray(data.deals) ? data.deals : []).forEach(function(d) {
+    if (d.item_key) shopDeals[String(d.item_key).trim().toLowerCase()] = d.sellers || [];
+  });
 }
 
 
@@ -548,6 +555,23 @@ function specialsLineFor(name) {
   return line;
 }
 
+// Catalog deals (shop_deals table, refreshed by the shop watch) fill in
+// items the weekly ads don't cover. Same {store, text, price} shape, so
+// specialsLineFor renders them identically, inline under the item.
+// Ads always win when present; deals never override an ad line.
+function mergeDealLines(byItem, itemKeys, deals) {
+  itemKeys.forEach(function(key) {
+    if (byItem[key] && byItem[key].length) return;
+    var sellers = deals[key];
+    if (!Array.isArray(sellers) || !sellers.length) return;
+    var entries = sellers.slice(0, 3).map(function(s) {
+      return { store: s.store || '', text: s.text || '', price: (typeof s.price === 'number') ? s.price : null };
+    }).filter(function(e) { return e.store; });
+    if (entries.length) byItem[key] = entries;
+  });
+  return byItem;
+}
+
 async function updateSpecialsInline() {
   var key = specialsItemKey();
   if (!key) return;
@@ -558,7 +582,9 @@ async function updateSpecialsInline() {
     var names = {};
     shopItems.forEach(function(it) { if (!it.done) names[it.name.trim().toLowerCase()] = it.name.trim(); });
     var sources = await specialsGetDeals();
-    specialsState = { key: key, byItem: specialsIndexByItem(Object.values(names), sources), loading: false };
+    var byItem = specialsIndexByItem(Object.values(names), sources);
+    mergeDealLines(byItem, Object.keys(names), shopDeals);
+    specialsState = { key: key, byItem: byItem, loading: false };
     if (location.hash === '#/shop' && specialsItemKey() === key) renderShop();
   } catch (e) {
     specialsState.loading = false;
@@ -646,7 +672,8 @@ window.Shop = {
   specialsKeywords: specialsKeywords,
   specialsMatch: specialsMatch,
   specialsPrice: specialsPrice,
-  specialsIndexByItem: specialsIndexByItem
+  specialsIndexByItem: specialsIndexByItem,
+  mergeDealLines: mergeDealLines
 };
 
 })();
