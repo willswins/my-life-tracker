@@ -572,6 +572,10 @@ function mergeDealLines(byItem, itemKeys, deals) {
   return byItem;
 }
 
+// Recomputes price lines: weekly ads + fresh catalog deals. Deals are
+// re-fetched here (not just at page load) so a price the watch wrote a
+// minute ago shows on add/toggle without reopening the app. Ad-feed
+// failures must not hide deal lines, and vice versa.
 async function updateSpecialsInline() {
   var key = specialsItemKey();
   if (!key) return;
@@ -581,8 +585,20 @@ async function updateSpecialsInline() {
   try {
     var names = {};
     shopItems.forEach(function(it) { if (!it.done) names[it.name.trim().toLowerCase()] = it.name.trim(); });
-    var sources = await specialsGetDeals();
-    var byItem = specialsIndexByItem(Object.values(names), sources);
+    try {
+      var fresh = await shopApi('GET', SHOP_API);
+      if (fresh && typeof fresh === 'object' && Array.isArray(fresh.deals)) {
+        shopDeals = {};
+        fresh.deals.forEach(function(d) {
+          if (d.item_key) shopDeals[String(d.item_key).trim().toLowerCase()] = d.sellers || [];
+        });
+      }
+    } catch (e2) { /* keep the snapshot; lines still render from ads */ }
+    var byItem = {};
+    try {
+      var sources = await specialsGetDeals();
+      byItem = specialsIndexByItem(Object.values(names), sources);
+    } catch (e3) { /* ads down: deals still render */ }
     mergeDealLines(byItem, Object.keys(names), shopDeals);
     specialsState = { key: key, byItem: byItem, loading: false };
     if (location.hash === '#/shop' && specialsItemKey() === key) renderShop();
