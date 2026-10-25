@@ -26,7 +26,7 @@ function cleanItem(body) {
   return out;
 }
 
-const CATEGORIES = ['Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry', 'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Other'];
+const CATEGORIES = ['Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry', 'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Electronics', 'Other'];
 const MAX_ZONES = 40;
 
 // Validate + normalize a store layout. Returns an error string, or null
