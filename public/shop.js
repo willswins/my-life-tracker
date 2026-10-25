@@ -79,6 +79,7 @@ function shopSectionFor(name, stored) {
   var lower = String(name || '').toLowerCase();
   if (lower.indexOf('ice cream') !== -1) return 'Frozen';
   if (lower.indexOf('hot dog') !== -1) return 'Meat & Deli';
+  if (lower.replace(/[^a-z0-9]/g, '').indexOf('airpod') !== -1) return 'Electronics';
   var words = lower.match(/[a-z0-9]+/g) || [];
   if (words.indexOf('frozen') !== -1) return 'Frozen';
   for (var i = words.length - 1; i >= 0; i--) {
@@ -568,10 +569,17 @@ function specialsKeywords(name) {
   return { strong: strong, all: toks, phrase: phrase };
 }
 
+function isTechItem(name, toks) {
+  var norm = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (norm.indexOf('airpod') !== -1) return true;
+  return toks.length > 0 && !!SPECIALS_TECH[toks[toks.length - 1]];
+}
+
 function specialsMatch(items, deals) {
   var out = {};
   items.forEach(function(item) {
     var kw = specialsKeywords(item);
+    if (isTechItem(item, kw.all)) return;
     if (!kw.strong.length && !kw.phrase) return;
     var scored = [];
     deals.forEach(function(d) {
@@ -877,6 +885,7 @@ window.Shop = {
   sortShopItems: sortShopItems,
   specialsKeywords: specialsKeywords,
   specialsMatch: specialsMatch,
+  isTechItem: isTechItem,
   specialsPrice: specialsPrice,
   specialsIndexByItem: specialsIndexByItem,
   mergeDealLines: mergeDealLines,
