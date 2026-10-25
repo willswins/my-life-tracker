@@ -1267,17 +1267,6 @@ pre#ingest-docs {
 }
 
 /* Shop view — grocery route */
-.shop-storebar { position: relative; display: flex; justify-content: flex-end; width: 100%; box-sizing: border-box; margin-bottom: 0.4rem; }
-.shop-store-chip { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; max-width: 92%; }
-.shop-store-icon { font-size: 1.15rem; }
-.shop-store-meta { display: flex; flex-direction: column; min-width: 0; }
-.shop-store-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.shop-store-change { color: var(--muted); font-size: 0.95rem; }
-.shop-store-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 40; min-width: 230px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); padding: 0.3rem; }
-.shop-store-opt { display: block; width: 100%; text-align: left; padding: 0.55rem 0.6rem; border: 0; background: none; font-size: 0.95rem; border-radius: 7px; cursor: pointer; color: inherit; }
-.shop-store-opt:hover { background: rgba(0,0,0,0.04); }
-.shop-store-opt.current { font-weight: 600; }
-.shop-store-menu-actions { border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.3rem; }
 .shop-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 0.55rem 0.8rem; cursor: pointer; font-size: 0.9rem; min-height: 44px; }
 .shop-why { color: var(--muted); font-size: 0.85rem; margin: 0.1rem 0 0.6rem; }
 .shop-add { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
@@ -1298,19 +1287,11 @@ pre#ingest-docs {
 .shop-item-qty { color: var(--muted); font-size: 0.9rem; }
 .shop-del { border: 0; background: transparent; color: var(--muted); font-size: 1.25rem; cursor: pointer; padding: 0.2rem 0.5rem; line-height: 1; }
 .shop-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-.shop-modal label { display: block; margin: 0.5rem 0; font-weight: 600; font-size: 0.9rem; }
-.shop-modal label input[type="text"], .shop-modal label input:not([type]) { display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; font-weight: normal; box-sizing: border-box; }
-.shop-check-label { display: flex !important; align-items: center; gap: 0.5rem; font-weight: normal !important; }
-.shop-check-label input { width: 20px; height: 20px; }
-.shop-loc-row { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
-.shop-loc-row label { flex: 1; min-width: 110px; margin: 0; }
-.shop-hint { color: var(--muted); font-size: 0.82rem; margin: 0.3rem 0 0; }
 
-/* Shop on iPhone (<=768px, incl. 16 Pro Max 440px): stacked store bar,
+/* Shop on iPhone (<=768px, incl. 16 Pro Max 440px):
    two-row add form, 44px tap targets,
    16px inputs so Safari never auto-zooms on focus */
 @media (max-width: 768px) {
-  .shop-store-chip { max-width: 100%; }
   .shop-add { flex-direction: row; }
   #shop-new-name { flex: 1 1 100%; min-height: 48px; }
   #shop-new-name { min-height: 48px; }
@@ -1320,24 +1301,4 @@ pre#ingest-docs {
   .shop-item input[type="checkbox"] { width: 24px; height: 24px; }
   .shop-del { min-width: 44px; min-height: 44px; }
   .shop-actions .shop-btn { flex: 1; }
-  .shop-loc-row .shop-btn { width: 100%; }
-}
-
-/* Shop: big primary button (store finder) */
-
-
-/* Shop store finder */
-.sf-addr-row { display: flex; gap: 0.5rem; }
-.sf-addr-row input { flex: 1; min-width: 0; padding: 0.55rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; min-height: 48px; }
-.sf-addr-row .shop-btn { min-height: 48px; }
-#sf-results { margin-top: 0.4rem; }
-.sf-result { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.2rem; border-bottom: 1px solid var(--line); }
-.sf-result-main { flex: 1; min-width: 0; }
-.sf-result-name { font-weight: 600; font-size: 1rem; }
-.sf-result-addr { color: var(--muted); font-size: 0.85rem; overflow-wrap: break-word; }
-.sf-result-dist { color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
-.sf-select { min-height: 44px; }
-#shop-finder .modal-actions { flex-direction: row; }
-@media (max-width: 768px) {
-  #shop-finder .modal-actions button { min-height: 48px; flex: 1; }
 }
