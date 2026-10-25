@@ -104,14 +104,15 @@ module.exports = async (req, res) => {
         const row = cleanItem(body);
         if (!row.name) return send(400, { ok: false, error: 'name required' });
         if (typeof body.name === 'string' && body.name.trim().length > 160) return send(400, { ok: false, error: 'name too long (max 160)' });
-        if (!row.store_id) return send(400, { ok: false, error: 'store_id required' });
-        const stores = await sb('GET', `/rest/v1/shop_stores?id=eq.${encodeURIComponent(row.store_id)}&${scope}&deleted_at=is.null&select=id`);
-        if (!stores.length) return send(404, { ok: false, error: 'store not found' });
+        // Stores were removed from the app (Winny, 2026-10-25): items are
+        // not assigned to any store. Any store_id sent (e.g. a stale
+        // client) is dropped so new items land on the one list.
+        delete row.store_id;
         if (row.category && !CATEGORIES.includes(row.category)) return send(400, { ok: false, error: 'unknown category' });
         if (!row.category) row.category = 'Other';
-        // One unchecked row per item name per store — duplicates are a
+        // One unchecked row per item name — duplicates are a
         // client bug; reject instead of silently stacking rows.
-        const existing = await sb('GET', `/rest/v1/shop_items?store_id=eq.${encodeURIComponent(row.store_id)}&${scope}&deleted_at=is.null&done=eq.false&select=name`);
+        const existing = await sb('GET', `/rest/v1/shop_items?${scope}&deleted_at=is.null&done=eq.false&select=name`);
         const wanted = row.name.trim().toLowerCase();
         if (existing.some((it) => (it.name || '').trim().toLowerCase() === wanted)) {
           return send(409, { ok: false, error: 'already on the list' });
