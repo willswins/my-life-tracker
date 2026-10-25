@@ -83,7 +83,14 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const stores = await sb('GET', `/rest/v1/shop_stores?${scope}&deleted_at=is.null&order=created_at.asc`);
       const items = await sb('GET', `/rest/v1/shop_items?${scope}&deleted_at=is.null&order=created_at.asc`);
-      return send(200, { stores, items });
+      // Catalog deals (shop_deals table, refreshed by the shop watch).
+      // Tolerate a missing table so the app runs before the table exists.
+      let deals = [];
+      try {
+        const rows = await sb('GET', `/rest/v1/shop_deals?${scope}&select=item_key,sellers,updated_at`);
+        if (Array.isArray(rows)) deals = rows;
+      } catch (e) { /* table not created yet */ }
+      return send(200, { stores, items, deals });
     }
 
     if (req.method === 'POST') {
@@ -131,6 +138,26 @@ module.exports = async (req, res) => {
         row.store_id = bucket[0].id;
         row.user_email = email;
         const inserted = await sb('POST', '/rest/v1/shop_items', row);
+        return send(201, inserted[0]);
+      }
+      if (body.kind === 'deal') {
+        const key = (typeof body.item_key === 'string') ? body.item_key.trim().toLowerCase() : '';
+        if (!key) return send(400, { ok: false, error: 'item_key required' });
+        if (!Array.isArray(body.sellers)) return send(400, { ok: false, error: 'sellers must be an array' });
+        const sellers = body.sellers.slice(0, 3).map(function(s) {
+          return {
+            store: String((s && s.store) || ''),
+            price: (s && typeof s.price === 'number') ? s.price : null,
+            text: String((s && s.text) || '')
+          };
+        }).filter(function(s) { return s.store; });
+        const row = { user_email: email, item_key: key, sellers: sellers, updated_at: now };
+        const existing = await sb('GET', `/rest/v1/shop_deals?${scope}&item_key=eq.${encodeURIComponent(key)}&select=id`);
+        if (existing && existing.length) {
+          const updated = await sb('PATCH', `/rest/v1/shop_deals?${scope}&item_key=eq.${encodeURIComponent(key)}`, row);
+          return send(200, updated[0] || row);
+        }
+        const inserted = await sb('POST', '/rest/v1/shop_deals', row);
         return send(201, inserted[0]);
       }
       return send(400, { ok: false, error: 'kind must be store or item' });
