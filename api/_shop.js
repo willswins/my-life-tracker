@@ -119,6 +119,16 @@ module.exports = async (req, res) => {
         }
         if (!row.qty) row.qty = '';
         if (typeof row.done !== 'boolean') row.done = false;
+        // Bucket for the NOT NULL store_id column: the app no longer has
+        // stores, but the column still requires a value. New items point
+        // at the earliest non-deleted store row, which never appears
+        // anywhere in the app. TODO: drop the NOT NULL constraint via
+        // dashboard SQL, then delete this block.
+        let bucket = await sb('GET', `/rest/v1/shop_stores?${scope}&deleted_at=is.null&order=created_at.asc&limit=1&select=id`);
+        if (!bucket.length) {
+          bucket = await sb('POST', '/rest/v1/shop_stores', { name: 'List', user_email: email });
+        }
+        row.store_id = bucket[0].id;
         row.user_email = email;
         const inserted = await sb('POST', '/rest/v1/shop_items', row);
         return send(201, inserted[0]);
