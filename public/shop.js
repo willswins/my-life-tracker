@@ -39,6 +39,67 @@ function sortShopItems(items) {
 }
 
 // ---------------------------------------------------------------------------
+// Sections — basic categorization, display-only grouping (Winny, 2026-10-25).
+// Two sources: instant keyword rules from the item name (this file), and the
+// stored item.category (set by the watch from online catalog categories for
+// items the keywords miss). Keywords win; stored category is the fallback;
+// anything else lands in Others, always last. This is NOT zones, walking
+// order, or store assignment — those stay removed.
+// ---------------------------------------------------------------------------
+var SECTION_ORDER = ['Produce', 'Dairy & Eggs', 'Bakery', 'Meat & Deli', 'Pantry', 'Frozen', 'Snacks & Drinks', 'Household', 'Personal Care', 'Electronics', 'Others'];
+
+var SECTION_WORDS = {
+  'Produce': ['banana', 'apple', 'mango', 'orange', 'lemon', 'lime', 'grape', 'grapefruit', 'strawberry', 'blueberry', 'raspberry', 'blackberry', 'cherry', 'plum', 'pear', 'melon', 'watermelon', 'cantaloupe', 'pineapple', 'kiwi', 'avocado', 'tomato', 'potato', 'onion', 'garlic', 'carrot', 'celery', 'cucumber', 'lettuce', 'spinach', 'kale', 'broccoli', 'cauliflower', 'cabbage', 'pepper', 'zucchini', 'squash', 'eggplant', 'corn', 'pea', 'bean', 'mushroom', 'beet', 'radish', 'turnip', 'yam', 'ginger', 'basil', 'cilantro', 'parsley', 'mint', 'dill', 'rosemary', 'thyme', 'oregano', 'leaf', 'leaves', 'herb', 'fruit', 'vegetable', 'veggie', 'produce', 'salad'],
+  'Dairy & Eggs': ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'egg'],
+  'Bakery': ['bread', 'bagel', 'muffin', 'croissant', 'tortilla', 'bun', 'roll', 'donut', 'doughnut', 'cake'],
+  'Meat & Deli': ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'sausage', 'bacon', 'ham', 'steak', 'chop', 'breast', 'thigh', 'wing', 'leg', 'loin', 'fillet', 'rib', 'meat', 'seafood', 'deli'],
+  'Pantry': ['rice', 'pasta', 'noodle', 'flour', 'sugar', 'salt', 'oil', 'vinegar', 'sauce', 'ketchup', 'mustard', 'mayo', 'mayonnaise', 'dressing', 'jam', 'jelly', 'honey', 'syrup', 'cereal', 'oatmeal', 'oats', 'granola', 'soup', 'broth', 'stock', 'gravy', 'marinade', 'seasoning', 'spice', 'cocoa', 'vanilla', 'cinnamon', 'coffee', 'tea', 'hummus', 'salsa', 'guacamole', 'dip', 'applesauce', 'pancake', 'waffle'],
+  'Frozen': ['frozen', 'ice'],
+  'Snacks & Drinks': ['juice', 'soda', 'water', 'lemonade', 'chip', 'cracker', 'pretzel', 'popcorn', 'candy', 'chocolate', 'snack', 'cookie', 'nut', 'peanut', 'almond', 'walnut', 'cashew', 'pistachio'],
+  'Household': ['towel', 'tissue', 'paper', 'detergent', 'soap', 'trash', 'bag', 'cleaner', 'bleach', 'sponge', 'foil', 'wrap', 'napkin', 'plate', 'bulb', 'battery', 'vacuum', 'mop', 'broom', 'light'],
+  'Personal Care': ['shampoo', 'conditioner', 'toothpaste', 'toothbrush', 'lotion', 'deodorant', 'razor', 'sunscreen', 'vitamin', 'medicine', 'wash'],
+  'Electronics': ['macbook', 'mac', 'notebook', 'laptop', 'computer', 'phone', 'iphone', 'ipad', 'tablet', 'tv', 'monitor', 'keyboard', 'mouse', 'headphones', 'earbuds', 'airpods', 'charger', 'cable', 'camera', 'printer', 'router', 'speaker', 'console', 'watch', 'drone', 'kindle', 'pixel', 'galaxy']
+};
+
+var SECTION_WORD_MAP = {};
+Object.keys(SECTION_WORDS).forEach(function(sec) {
+  SECTION_WORDS[sec].forEach(function(w) { SECTION_WORD_MAP[w] = sec; });
+});
+
+function shopSingular(w) {
+  if (w.length > 4 && w.slice(-3) === 'ies') return w.slice(0, -3) + 'y';
+  if (w.length > 3 && (w.slice(-4) === 'ches' || w.slice(-4) === 'shes' || w.slice(-4) === 'sses' || w.slice(-3) === 'xes' || w.slice(-3) === 'zes' || w.slice(-3) === 'oes')) return w.slice(0, -2);
+  if (w.length > 3 && w.slice(-1) === 's') return w.slice(0, -1);
+  return w;
+}
+
+// Section for one item. Phrase rules first, then the head noun (last word),
+// scanning right-to-left, then the stored category, else Others.
+function shopSectionFor(name, stored) {
+  var lower = String(name || '').toLowerCase();
+  if (lower.indexOf('ice cream') !== -1) return 'Frozen';
+  if (lower.indexOf('hot dog') !== -1) return 'Meat & Deli';
+  var words = lower.match(/[a-z0-9]+/g) || [];
+  if (words.indexOf('frozen') !== -1) return 'Frozen';
+  for (var i = words.length - 1; i >= 0; i--) {
+    var sec = SECTION_WORD_MAP[words[i]] || SECTION_WORD_MAP[shopSingular(words[i])];
+    if (sec) return sec;
+  }
+  if (stored && stored !== 'Other' && SECTION_ORDER.indexOf(stored) !== -1) return stored;
+  return 'Others';
+}
+
+function groupShopItems(items) {
+  var buckets = {};
+  items.forEach(function(it) {
+    var sec = shopSectionFor(it.name, it.category);
+    (buckets[sec] = buckets[sec] || []).push(it);
+  });
+  return SECTION_ORDER.filter(function(sec) { return buckets[sec] && buckets[sec].length; })
+    .map(function(sec) { return { section: sec, items: buckets[sec] }; });
+}
+
+// ---------------------------------------------------------------------------
 // API layer — keep a raw reference so our own calls bypass the shop filter
 // ---------------------------------------------------------------------------
 
@@ -163,7 +224,9 @@ function renderShop() {
       Math.round(doneCount / items.length * 100) + '%"></div></div>';
     h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked</p>';
     h += '<div class="shop-list">';
-    items.forEach(function(it) {
+    groupShopItems(items).forEach(function(g) {
+      h += '<div class="shop-section-header">' + esc(g.section) + '<span class="shop-section-count">' + g.items.length + '</span></div>';
+      g.items.forEach(function(it) {
         h += '<label class="shop-item' + (it.done ? ' done' : '') + '">';
         h += '<input type="checkbox" class="shop-check" data-id="' + esc(it.id) + '"' + (it.done ? ' checked' : '') + '>';
         h += '<span class="shop-item-main"><span class="shop-item-name">' + esc(it.name) + '</span>';
@@ -175,6 +238,7 @@ function renderShop() {
         if (it.qty) h += '<span class="shop-item-qty">' + esc(it.qty) + '</span>';
         h += '<button type="button" class="shop-del" data-id="' + esc(it.id) + '" title="Remove">×</button>';
         h += '</label>';
+      });
     });
     h += '</div>';
     h += '<div class="shop-actions">';
@@ -693,7 +757,10 @@ window.Shop = {
   specialsMatch: specialsMatch,
   specialsPrice: specialsPrice,
   specialsIndexByItem: specialsIndexByItem,
-  mergeDealLines: mergeDealLines
+  mergeDealLines: mergeDealLines,
+  shopSectionFor: shopSectionFor,
+  groupShopItems: groupShopItems,
+  SECTION_ORDER: SECTION_ORDER
 };
 
 })();
