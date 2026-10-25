@@ -742,24 +742,36 @@ function specialsLineFor(name) {
   if (!entries || !entries.length) return '';
   var best = entries[0];
   var t = best.text.length > 90 ? best.text.slice(0, 90) + '…' : best.text;
-  var line = '💲 Best: ' + esc(best.store) + (best.price !== null ? ' $' + best.price.toFixed(2) : '') + ' — ' + esc(t);
+  var line = '💲 Best: ' + specialsStoreLink(best) + (best.price !== null ? ' $' + best.price.toFixed(2) : '') + ' — ' + esc(t);
   for (var i = 1; i < entries.length; i++) {
-    line += ' · also ' + esc(entries[i].store) + (entries[i].price !== null ? ' $' + entries[i].price.toFixed(2) : '');
+    line += ' · also ' + specialsStoreLink(entries[i]) + (entries[i].price !== null ? ' $' + entries[i].price.toFixed(2) : '');
   }
   return line;
 }
 
+// Online (catalog) deals carry a product-page URL; the store name
+// becomes the link. Weekly-ad entries have no URL and stay plain text.
+// The scheme check + esc() keep a stored row from injecting markup.
+function specialsStoreLink(e) {
+  var name = esc(e.store);
+  if (e.url && /^https?:\/\//.test(e.url)) {
+    return '<a href="' + esc(e.url) + '" target="_blank" rel="noopener noreferrer">' + name + '</a>';
+  }
+  return name;
+}
+
 // Catalog deals (shop_deals table, refreshed by the shop watch) fill in
-// items the weekly ads don't cover. Same {store, text, price} shape, so
-// specialsLineFor renders them identically, inline under the item.
-// Ads always win when present; deals never override an ad line.
+// items the weekly ads don't cover. Same {store, text, price} shape plus
+// the product-page url when the deal came from the online catalog, so
+// specialsLineFor can link the store name. Ads always win when present;
+// deals never override an ad line.
 function mergeDealLines(byItem, itemKeys, deals) {
   itemKeys.forEach(function(key) {
     if (byItem[key] && byItem[key].length) return;
     var sellers = deals[key];
     if (!Array.isArray(sellers) || !sellers.length) return;
     var entries = sellers.slice(0, 3).map(function(s) {
-      return { store: s.store || '', text: s.text || '', price: (typeof s.price === 'number') ? s.price : null };
+      return { store: s.store || '', text: s.text || '', price: (typeof s.price === 'number') ? s.price : null, url: (typeof s.url === 'string') ? s.url : '' };
     }).filter(function(e) { return e.store; });
     if (entries.length) byItem[key] = entries;
   });
@@ -889,6 +901,8 @@ window.Shop = {
   specialsPrice: specialsPrice,
   specialsIndexByItem: specialsIndexByItem,
   mergeDealLines: mergeDealLines,
+  specialsLineFor: specialsLineFor,
+  specialsState: specialsState,
   shopSectionFor: shopSectionFor,
   groupShopItems: groupShopItems,
   SECTION_ORDER: SECTION_ORDER,
