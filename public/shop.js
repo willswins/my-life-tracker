@@ -157,6 +157,8 @@ function rowToItem(row) {
     id: row.id,
     name: row.name || '',
     cat: row.category || 'Other',
+    category: row.category || 'Other',
+    list_id: row.list_id || null,
     qty: row.qty || '',
     done: !!row.done
   };
@@ -164,11 +166,44 @@ function rowToItem(row) {
 
 var shopItems = [];
 var shopDeals = {};
+var shopLists = [];
+var shopCurrentListId = null;
+
+// Multiple lists (Winny, 2026-10-25): one default list plus user-named
+// lists. Pure helpers (exported for tests); the stateful current list is
+// resolved on load and persisted in localStorage. A null current id means
+// legacy single-list mode (the server returned no lists).
+function shopResolveListId(lists, storedId) {
+  if (!lists || !lists.length) return null;
+  if (storedId && lists.some(function(l) { return String(l.id) === String(storedId); })) return storedId;
+  var d = lists.filter(function(l) { return l.is_default; })[0];
+  return d ? d.id : lists[0].id;
+}
+function shopDefaultId() {
+  return shopResolveListId(shopLists, null);
+}
+function shopItemListId(it, defaultId) {
+  return (it && it.list_id) || defaultId || null;
+}
+function shopVisibleItems(items, currentId, defaultId) {
+  if (currentId == null) return items;
+  return items.filter(function(it) { return shopItemListId(it, defaultId) === currentId; });
+}
+function shopResolveCurrentList() {
+  var stored = null;
+  try { stored = localStorage.getItem('shopCurrentListId'); } catch (e) {}
+  shopCurrentListId = shopResolveListId(shopLists, stored);
+}
+function shopSaveCurrentList() {
+  try { localStorage.setItem('shopCurrentListId', shopCurrentListId); } catch (e) {}
+}
 
 async function loadShopData() {
   var data = await shopApi('GET', SHOP_API);
   data = (data && typeof data === 'object') ? data : {};
   shopItems = (Array.isArray(data.items) ? data.items : []).map(rowToItem);
+  shopLists = Array.isArray(data.lists) ? data.lists : [];
+  shopResolveCurrentList();
   shopDeals = {};
   (Array.isArray(data.deals) ? data.deals : []).forEach(function(d) {
     if (d.item_key) shopDeals[String(d.item_key).trim().toLowerCase()] = d.sellers || [];
@@ -176,7 +211,7 @@ async function loadShopData() {
 }
 
 
-// Menu badge + home tile: unchecked items on the list.
+// Menu badge + home tile: unchecked items across all lists.
 // Reuses app.js setBadge() so the bubble behaves like the other menu badges.
 function updateShopBadge() {
   if (!shopLoaded) return;
@@ -205,11 +240,31 @@ function renderShop() {
     rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
     return;
   }
-  var items = sortShopItems(shopItems);
+  var defaultId = shopDefaultId();
+  var items = sortShopItems(shopVisibleItems(shopItems, shopCurrentListId, defaultId));
   var spReady = specialsState.key === specialsItemKey() && !!specialsState.byItem;
   var doneCount = items.filter(function(it) { return it.done; }).length;
 
   var h = '';
+
+  if (shopLists.length) {
+    h += '<div class="shop-lists">';
+    h += '<select id="shop-list-select">';
+    shopLists.forEach(function(l) {
+      var n = shopItems.filter(function(it) { return !it.done && shopItemListId(it, defaultId) === l.id; }).length;
+      h += '<option value="' + esc(l.id) + '"' + (String(l.id) === String(shopCurrentListId) ? ' selected' : '') + '>' + esc(l.name) + ' (' + n + ')</option>';
+    });
+    h += '</select>';
+    h += '<button type="button" id="shop-new-list-btn" class="shop-btn">+ New list</button>';
+    var curList = shopLists.filter(function(l) { return String(l.id) === String(shopCurrentListId); })[0];
+    if (curList && !curList.is_default) h += '<button type="button" id="shop-del-list-btn" class="shop-btn danger-btn">Delete list</button>';
+    h += '</div>';
+    h += '<div id="shop-new-list-form" class="shop-new-list" style="display:none">';
+    h += '<input id="shop-new-list-name" type="text" maxlength="80" placeholder="List name…" autocomplete="off">';
+    h += '<button type="button" id="shop-new-list-add" class="primary">Add</button>';
+    h += '<button type="button" id="shop-new-list-cancel" class="shop-btn">Cancel</button>';
+    h += '</div>';
+  }
 
   h += '<form id="shop-add-form" class="shop-add">';
   h += '<input id="shop-new-name" type="text" maxlength="80" placeholder="Add an item…" autocomplete="off">';
@@ -290,11 +345,13 @@ function wireShop(rootEl) {
   });
   var clearDone = rootEl.querySelector('#shop-clear-done');
   if (clearDone) clearDone.addEventListener('click', async function() {
-    var done = shopItems.filter(function(it) { return it.done; });
+    var done = shopVisibleItems(shopItems, shopCurrentListId, shopDefaultId()).filter(function(it) { return it.done; });
+    var doneIds = {};
+    done.forEach(function(it) { doneIds[String(it.id)] = true; });
     for (var i = 0; i < done.length; i++) {
       try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
     }
-    shopItems = shopItems.filter(function(it) { return !it.done; });
+    shopItems = shopItems.filter(function(it) { return !doneIds[String(it.id)]; });
     renderShop();
     if (typeof toast === 'function') toast('Picked items cleared');
   });
@@ -302,16 +359,75 @@ function wireShop(rootEl) {
   if (clearAll) clearAll.addEventListener('click', async function() {
     if (!clearAll.dataset.armed) {
       clearAll.dataset.armed = '1';
-      clearAll.textContent = 'Tap again to clear the whole list';
+      clearAll.textContent = 'Tap again to clear this list';
       setTimeout(function() { delete clearAll.dataset.armed; clearAll.textContent = 'Clear list'; }, 4000);
       return;
     }
     delete clearAll.dataset.armed;
-    var mine = shopItems.slice();
+    var mine = shopVisibleItems(shopItems, shopCurrentListId, shopDefaultId());
+    var mineIds = {};
+    mine.forEach(function(it) { mineIds[String(it.id)] = true; });
     for (var i = 0; i < mine.length; i++) {
       try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
     }
-    shopItems = [];
+    shopItems = shopItems.filter(function(it) { return !mineIds[String(it.id)]; });
+    renderShop();
+  });
+
+  var listSel = rootEl.querySelector('#shop-list-select');
+  if (listSel) listSel.addEventListener('change', function() {
+    shopCurrentListId = listSel.value;
+    shopSaveCurrentList();
+    renderShop();
+  });
+  var newListBtn = rootEl.querySelector('#shop-new-list-btn');
+  var newListForm = rootEl.querySelector('#shop-new-list-form');
+  if (newListBtn && newListForm) {
+    newListBtn.addEventListener('click', function() {
+      newListForm.style.display = 'flex';
+      var ni = rootEl.querySelector('#shop-new-list-name');
+      if (ni) ni.focus();
+      newListBtn.style.display = 'none';
+    });
+    var newListCancel = rootEl.querySelector('#shop-new-list-cancel');
+    if (newListCancel) newListCancel.addEventListener('click', function() {
+      newListForm.style.display = 'none';
+      newListBtn.style.display = '';
+    });
+    var newListAdd = rootEl.querySelector('#shop-new-list-add');
+    if (newListAdd) newListAdd.addEventListener('click', async function() {
+      var ni = rootEl.querySelector('#shop-new-list-name');
+      var name = ni ? ni.value.trim() : '';
+      if (!name) return;
+      try {
+        var created = await shopApi('POST', SHOP_API, { kind: 'list', name: name });
+        if (created && created.id) {
+          shopLists.push(created);
+          shopCurrentListId = created.id;
+          shopSaveCurrentList();
+        }
+        renderShop();
+      } catch (e) {
+        if (typeof toast === 'function') toast('Could not create that list. Please try again.');
+      }
+    });
+  }
+  var delListBtn = rootEl.querySelector('#shop-del-list-btn');
+  if (delListBtn) delListBtn.addEventListener('click', async function() {
+    if (!delListBtn.dataset.armed) {
+      delListBtn.dataset.armed = '1';
+      delListBtn.textContent = 'Tap again to delete this list';
+      setTimeout(function() { delete delListBtn.dataset.armed; delListBtn.textContent = 'Delete list'; }, 4000);
+      return;
+    }
+    delete delListBtn.dataset.armed;
+    var id = shopCurrentListId;
+    var def = shopDefaultId();
+    try { await shopApi('DELETE', SHOP_API + '&kind=list&id=' + encodeURIComponent(id)); } catch (e) {}
+    shopLists = shopLists.filter(function(l) { return String(l.id) !== String(id); });
+    shopItems = shopItems.filter(function(it) { return shopItemListId(it, def) !== id; });
+    shopCurrentListId = def;
+    shopSaveCurrentList();
     renderShop();
   });
 }
@@ -327,9 +443,11 @@ async function toggleShopItem(id, done) {
 }
 
 async function addShopItem(name, qty) {
+  var defaultId = shopDefaultId();
   var dup = shopItems.some(function(x) {
     return !x.done &&
-      x.name.trim().toLowerCase() === name.trim().toLowerCase();
+      x.name.trim().toLowerCase() === name.trim().toLowerCase() &&
+      shopItemListId(x, defaultId) === shopCurrentListId;
   });
   if (dup) {
     if (typeof toast === 'function') toast('Already on your list');
@@ -337,11 +455,15 @@ async function addShopItem(name, qty) {
   }
   var item = { name: name, qty: qty || '', done: false };
   try {
-    var created = await shopApi('POST', SHOP_API, {
+    var body = {
       kind: 'item',
       name: item.name, qty: item.qty, done: false
-    });
+    };
+    if (shopCurrentListId) body.list_id = shopCurrentListId;
+    var created = await shopApi('POST', SHOP_API, body);
     item.id = created.id;
+    item.list_id = created.list_id || shopCurrentListId || null;
+    item.category = created.category || 'Other';
     shopItems.push(item);
     renderShop();
   } catch (e) {
@@ -760,7 +882,10 @@ window.Shop = {
   mergeDealLines: mergeDealLines,
   shopSectionFor: shopSectionFor,
   groupShopItems: groupShopItems,
-  SECTION_ORDER: SECTION_ORDER
+  SECTION_ORDER: SECTION_ORDER,
+  shopResolveListId: shopResolveListId,
+  shopItemListId: shopItemListId,
+  shopVisibleItems: shopVisibleItems
 };
 
 })();
