@@ -208,7 +208,10 @@ module.exports = async (req, res) => {
           return {
             store: String((s && s.store) || ''),
             price: (s && typeof s.price === 'number') ? s.price : null,
-            text: String((s && s.text) || '')
+            text: String((s && s.text) || ''),
+            // Product-page link for online (catalog) deals; https-only
+            // and capped, so a stored row can never carry a script URL.
+            url: (s && typeof s.url === 'string' && /^https?:\/\//.test(s.url)) ? s.url.slice(0, 500) : ''
           };
         }).filter(function(s) { return s.store; });
         const row = { user_email: email, item_key: key, sellers: sellers, updated_at: now };
