@@ -23,7 +23,22 @@ function cleanItem(body) {
   if (typeof body.qty === 'string') out.qty = body.qty.slice(0, 40);
   if (typeof body.done === 'boolean') out.done = body.done;
   if (typeof body.store_id === 'string' && body.store_id) out.store_id = body.store_id;
+  if (typeof body.list_id === 'string' && body.list_id) out.list_id = body.list_id;
   return out;
+}
+
+// Multiple shopping lists (Winny, 2026-10-25): one default list plus
+// user-named lists. Returns the user's default list, creating it on first
+// use. Throws when the shop_lists table does not exist yet, so callers can
+// fall back to legacy single-list behavior.
+async function ensureDefaultList(scope, email) {
+  const lists = await sb('GET', `/rest/v1/shop_lists?${scope}&deleted_at=is.null&order=created_at.asc&select=id,name,is_default`);
+  let d = (lists || []).find((l) => l.is_default);
+  if (!d) {
+    const inserted = await sb('POST', '/rest/v1/shop_lists', { user_email: email, name: 'Shopping List', is_default: true });
+    d = inserted[0];
+  }
+  return d;
 }
 
 const CATEGORIES = ['Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry', 'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Electronics', 'Other'];
@@ -83,6 +98,27 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const stores = await sb('GET', `/rest/v1/shop_stores?${scope}&deleted_at=is.null&order=created_at.asc`);
       const items = await sb('GET', `/rest/v1/shop_items?${scope}&deleted_at=is.null&order=created_at.asc`);
+      // Shopping lists. Tolerate a missing table so the app runs before
+      // the table exists (legacy single-list mode: lists = []).
+      let lists = [];
+      try {
+        lists = await sb('GET', `/rest/v1/shop_lists?${scope}&deleted_at=is.null&order=created_at.asc`) || [];
+        let d = lists.find((l) => l.is_default);
+        if (!d) {
+          try {
+            const inserted = await sb('POST', '/rest/v1/shop_lists', { user_email: email, name: 'Shopping List', is_default: true });
+            if (inserted[0]) { lists.push(inserted[0]); d = inserted[0]; }
+          } catch (e) { /* race: another call just created it */ }
+        }
+        if (d && items.some((it) => !it.list_id)) {
+          // One-time backfill: legacy items (NULL list) belong to the
+          // default list. Runs only while NULL rows remain.
+          try {
+            await sb('PATCH', `/rest/v1/shop_items?${scope}&deleted_at=is.null&list_id=is.null`, { list_id: d.id });
+            items.forEach((it) => { if (!it.list_id) it.list_id = d.id; });
+          } catch (e) { /* leave NULLs; the client maps them to default */ }
+        }
+      } catch (e) { lists = []; }
       // Catalog deals (shop_deals table, refreshed by the shop watch).
       // Tolerate a missing table so the app runs before the table exists.
       let deals = [];
@@ -90,7 +126,7 @@ module.exports = async (req, res) => {
         const rows = await sb('GET', `/rest/v1/shop_deals?${scope}&select=item_key,sellers,updated_at`);
         if (Array.isArray(rows)) deals = rows;
       } catch (e) { /* table not created yet */ }
-      return send(200, { stores, items, deals });
+      return send(200, { stores, items, deals, lists });
     }
 
     if (req.method === 'POST') {
@@ -117,11 +153,29 @@ module.exports = async (req, res) => {
         delete row.store_id;
         if (row.category && !CATEGORIES.includes(row.category)) return send(400, { ok: false, error: 'unknown category' });
         if (!row.category) row.category = 'Other';
-        // One unchecked row per item name — duplicates are a
-        // client bug; reject instead of silently stacking rows.
-        const existing = await sb('GET', `/rest/v1/shop_items?${scope}&deleted_at=is.null&done=eq.false&select=name`);
+        // Resolve the item's list: an explicit list_id must belong to the
+        // user, otherwise the default list; without the lists table yet,
+        // legacy behavior (NULL list, client maps it to default).
+        let defaultList = null;
+        try { defaultList = await ensureDefaultList(scope, email); } catch (e) { /* table not created yet */ }
+        if (body.list_id) {
+          try {
+            const lists = await sb('GET', `/rest/v1/shop_lists?${scope}&deleted_at=is.null&select=id`);
+            if (!(lists || []).some((l) => l.id === body.list_id)) {
+              return send(400, { ok: false, error: 'unknown list' });
+            }
+            row.list_id = body.list_id;
+          } catch (e) { delete row.list_id; /* missing table: legacy */ }
+        }
+        if (!row.list_id && defaultList) row.list_id = defaultList.id;
+        // One unchecked row per item name per list — duplicates are a
+        // client bug; reject instead of silently stacking rows. NULL
+        // list rows count as default-list rows.
+        const existing = await sb('GET', `/rest/v1/shop_items?${scope}&deleted_at=is.null&done=eq.false&select=name,list_id`);
         const wanted = row.name.trim().toLowerCase();
-        if (existing.some((it) => (it.name || '').trim().toLowerCase() === wanted)) {
+        const wantedList = row.list_id || (defaultList && defaultList.id) || null;
+        const itemList = (it) => it.list_id || (defaultList && defaultList.id) || null;
+        if (existing.some((it) => (it.name || '').trim().toLowerCase() === wanted && itemList(it) === wantedList)) {
           return send(409, { ok: false, error: 'already on the list' });
         }
         if (!row.qty) row.qty = '';
@@ -138,6 +192,12 @@ module.exports = async (req, res) => {
         row.store_id = bucket[0].id;
         row.user_email = email;
         const inserted = await sb('POST', '/rest/v1/shop_items', row);
+        return send(201, inserted[0]);
+      }
+      if (body.kind === 'list') {
+        const name = (typeof body.name === 'string') ? body.name.trim().slice(0, 80) : '';
+        if (!name) return send(400, { ok: false, error: 'name required' });
+        const inserted = await sb('POST', '/rest/v1/shop_lists', { user_email: email, name: name, is_default: false });
         return send(201, inserted[0]);
       }
       if (body.kind === 'deal') {
@@ -160,7 +220,18 @@ module.exports = async (req, res) => {
         const inserted = await sb('POST', '/rest/v1/shop_deals', row);
         return send(201, inserted[0]);
       }
-      return send(400, { ok: false, error: 'kind must be store or item' });
+      return send(400, { ok: false, error: 'unknown kind' });
+    }
+
+    if (req.method === 'DELETE' && id && kind === 'list') {
+      const found = await sb('GET', `/rest/v1/shop_lists?id=eq.${encodeURIComponent(id)}&${scope}&deleted_at=is.null&select=id,is_default`);
+      if (!found.length) return send(404, { ok: false });
+      if (found[0].is_default) return send(400, { ok: false, error: 'cannot delete the default list' });
+      await sb('PATCH', `/rest/v1/shop_lists?id=eq.${encodeURIComponent(id)}&${scope}`, { deleted_at: now, updated_at: now });
+      await sb('PATCH', `/rest/v1/shop_items?list_id=eq.${encodeURIComponent(id)}&${scope}&deleted_at=is.null`, { deleted_at: now, updated_at: now });
+      res.writeHead(204, { 'Cache-Control': 'no-store' });
+      res.end();
+      return;
     }
 
     if ((req.method === 'PATCH' || req.method === 'PUT') && id && (kind === 'store' || kind === 'item')) {
@@ -173,6 +244,14 @@ module.exports = async (req, res) => {
       } else {
         if (typeof body.name === 'string' && body.name.trim().length > 160) return send(400, { ok: false, error: 'name too long (max 160)' });
         if (row.category && !CATEGORIES.includes(row.category)) return send(400, { ok: false, error: 'unknown category' });
+        if (body.list_id) {
+          try {
+            const lists = await sb('GET', `/rest/v1/shop_lists?${scope}&deleted_at=is.null&select=id`);
+            if (!(lists || []).some((l) => l.id === body.list_id)) {
+              return send(400, { ok: false, error: 'unknown list' });
+            }
+          } catch (e) { delete row.list_id; /* missing table: no change */ }
+        }
       }
       delete row.user_email;
       delete row.store_id;
