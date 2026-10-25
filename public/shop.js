@@ -635,6 +635,10 @@ async function openShop() {
       return;
     }
   }
+  // Every Shop open recomputes price lines (ad feeds are cached 12h, so
+  // this is cheap): deals the watch wrote since this page loaded show
+  // without waiting for a list change.
+  specialsState.key = '';
   renderShop();
 }
 
