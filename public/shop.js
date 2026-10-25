@@ -1,7 +1,9 @@
-// Shop — grocery list for one store at a time.
-// Pick a store; the list is a plain list of items for that store.
-// Data: dedicated DB tables — shop_stores / shop_items, via
-// /api/app?r=daybook&view=shop (migration-008). Items are database rows,
+// Shop — one plain grocery list.
+// Items are not assigned to any store (Winny, 2026-10-25); the store
+// finder is removed too. Specials lines still show best prices per item.
+// Data: dedicated DB table — shop_items, via
+// /api/app?r=daybook&view=shop (migration-008). Shop_stores rows remain in
+// the DB but are unused. Items are database rows,
 // never code and never board cards. The api() wrapper below still strips
 // any legacy shop cards (gstore/gitem) from other views during transition.
 // Loads after app.js.
@@ -24,15 +26,6 @@ var SHOP_API = '/api/app?r=daybook&view=shop';
 // Pure helpers (exposed on window.Shop for testing)
 // ---------------------------------------------------------------------------
 
-function haversineMi(lat1, lng1, lat2, lng2) {
-  var R = 3958.8;
-  var dLat = (lat2 - lat1) * Math.PI / 180;
-  var dLng = (lng2 - lng1) * Math.PI / 180;
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
 
 // Flat list order (no store layout, no walking route — Winny, 2026-10-25):
 // unchecked first, then alphabetical; checked items last.
@@ -47,37 +40,6 @@ function sortShopItems(items) {
 // API layer — keep a raw reference so our own calls bypass the shop filter
 // ---------------------------------------------------------------------------
 
-// Turn Overpass API elements into a clean, deduped, distance-sorted
-// place list: [{name, addr, lat, lng, distMi}].
-function parsePlaces(elements, lat, lng) {
-  var seen = {};
-  var out = [];
-  (elements || []).forEach(function(el) {
-    var tags = el.tags || {};
-    var name = tags.name || tags.brand || '';
-    if (!name) return;
-    var pLat = (typeof el.lat === 'number') ? el.lat : (el.center && el.center.lat);
-    var pLng = (typeof el.lon === 'number') ? el.lon : (el.center && el.center.lon);
-    if (typeof pLat !== 'number' || typeof pLng !== 'number') return;
-    var addrParts = [];
-    var street = ((tags['addr:housenumber'] || '') + ' ' + (tags['addr:street'] || '')).trim();
-    if (street) addrParts.push(street);
-    if (tags['addr:city']) addrParts.push(tags['addr:city']);
-    if (tags['addr:state']) addrParts.push(tags['addr:state']);
-    var key = name.toLowerCase() + '@' + pLat.toFixed(3) + ',' + pLng.toFixed(3);
-    if (seen[key]) return;
-    seen[key] = true;
-    out.push({
-      name: name,
-      addr: addrParts.join(', '),
-      lat: pLat,
-      lng: pLng,
-      distMi: haversineMi(lat, lng, pLat, pLng)
-    });
-  });
-  out.sort(function(a, b) { return a.distMi - b.distMi; });
-  return out.slice(0, 15);
-}
 
 var rawApi = null;
 
@@ -126,25 +88,6 @@ function purgeGlobalCards() {
 // Data
 // ---------------------------------------------------------------------------
 
-function rowToStore(row) {
-  return {
-    id: row.id,
-    name: row.name || 'Store',
-    lat: (typeof row.lat === 'number') ? row.lat : null,
-    lng: (typeof row.lng === 'number') ? row.lng : null,
-    pref: !!row.preferred
-  };
-}
-
-function storeToBody(store) {
-  return {
-    kind: 'store',
-    name: store.name,
-    lat: store.lat != null ? store.lat : null,
-    lng: store.lng != null ? store.lng : null,
-    preferred: !!store.pref
-  };
-}
 
 function rowToItem(row) {
   return {
@@ -152,57 +95,24 @@ function rowToItem(row) {
     name: row.name || '',
     cat: row.category || 'Other',
     qty: row.qty || '',
-    done: !!row.done,
-    storeId: row.store_id || null
+    done: !!row.done
   };
 }
 
-var shopStores = [];
 var shopItems = [];
-var currentStoreId = null;
-var storeWhy = '';
 
 async function loadShopData() {
   var data = await shopApi('GET', SHOP_API);
   data = (data && typeof data === 'object') ? data : {};
-  shopStores = (Array.isArray(data.stores) ? data.stores : []).map(rowToStore);
   shopItems = (Array.isArray(data.items) ? data.items : []).map(rowToItem);
-  if (!shopStores.length) {
-    var created = await shopApi('POST', SHOP_API, storeToBody({
-      name: 'My Store',
-      lat: null, lng: null, pref: true
-    }));
-    shopStores = [rowToStore(created)];
-  }
-  if (!currentStoreId || !shopStores.some(function(s) { return String(s.id) === String(currentStoreId); })) {
-    pickInitialStore();
-  }
 }
 
-function pickInitialStore() {
-  var pref = shopStores.find(function(s) { return s.pref; });
-  if (pref) {
-    currentStoreId = pref.id;
-    storeWhy = '★ your preferred store';
-    return;
-  }
-  currentStoreId = shopStores[0].id;
-  storeWhy = shopStores.length > 1 ? 'no preferred store set — showing the first store' : '';
-}
 
-function currentStore() {
-  return shopStores.find(function(s) { return String(s.id) === String(currentStoreId); }) || shopStores[0];
-}
-
-// Menu badge + home tile: unchecked items in the store being shown.
+// Menu badge + home tile: unchecked items on the list.
 // Reuses app.js setBadge() so the bubble behaves like the other menu badges.
 function updateShopBadge() {
   if (!shopLoaded) return;
-  var store = currentStore();
-  var n = 0;
-  if (store) {
-    n = shopItems.filter(function(it) { return String(it.storeId) === String(store.id) && !it.done; }).length;
-  }
+  var n = shopItems.filter(function(it) { return !it.done; }).length;
   var badgeEl = document.getElementById('badge-shop');
   if (badgeEl && typeof setBadge === 'function') setBadge('badge-shop', n, false);
   var homeEl = document.getElementById('home-shop');
@@ -219,46 +129,19 @@ function esc(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function storeOptionsHtml() {
-  return shopStores.map(function(s) {
-    return '<option value="' + esc(s.id) + '"' +
-      (String(s.id) === String(currentStoreId) ? ' selected' : '') + '>' +
-      esc(s.name) + (s.pref ? ' ★' : '') + '</option>';
-  }).join('');
-}
 
 function renderShop() {
   var rootEl = document.getElementById('shop-root');
   if (!rootEl) return;
-  var store = currentStore();
-  if (!store) {
+  if (!shopLoaded) {
     rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
     return;
   }
-  var items = sortShopItems(shopItems.filter(function(it) { return String(it.storeId) === String(store.id); }));
+  var items = sortShopItems(shopItems);
   var spReady = specialsState.key === specialsItemKey() && !!specialsState.byItem;
   var doneCount = items.filter(function(it) { return it.done; }).length;
 
   var h = '';
-  h += '<div class="shop-storebar">';
-  h += '<div class="shop-store-chip" id="shop-store-chip" role="button" title="Your store — tap to change">';
-  h += '<span class="shop-store-icon">\u{1F3EC}</span>';
-  h += '<span class="shop-store-meta"><span class="shop-store-name">' + esc(store.name) + (store.pref ? ' \u2605' : '') + '</span>';
-  h += '</span>';
-  h += '<span class="shop-store-change" aria-hidden="true">\u270E</span>';
-  h += '</div>';
-  h += '<div class="shop-store-menu" id="shop-store-menu" hidden>';
-  shopStores.forEach(function(s) {
-    var cur = String(s.id) === String(store.id);
-    h += '<button type="button" class="shop-store-opt' + (cur ? ' current' : '') + '" data-store-id="' + esc(s.id) + '">' +
-      (cur ? '\u2713 ' : '') + esc(s.name) + (s.pref ? ' \u2605' : '') + '</button>';
-  });
-  h += '<div class="shop-store-menu-actions">';
-  if (shopStores.length > 1) {
-    h += '<button type="button" id="shop-menu-delete" class="shop-store-opt danger-btn">Delete this store</button>';
-  }
-  h += '<button type="button" id="shop-menu-finder" class="shop-store-opt">\uFF0B Find a store</button>';
-  h += '</div></div></div>';
 
   h += '<form id="shop-add-form" class="shop-add">';
   h += '<input id="shop-new-name" type="text" maxlength="80" placeholder="Add an item…" autocomplete="off">';
@@ -300,29 +183,6 @@ function renderShop() {
 
 
 function wireShop(rootEl) {
-  var chip = rootEl.querySelector('#shop-store-chip');
-  var menu = rootEl.querySelector('#shop-store-menu');
-  if (chip && menu) {
-    chip.addEventListener('click', function(e) { e.stopPropagation(); menu.hidden = !menu.hidden; });
-    menu.querySelectorAll('[data-store-id]').forEach(function(b) {
-      b.addEventListener('click', function() {
-        currentStoreId = b.getAttribute('data-store-id');
-        var s = currentStore();
-        storeWhy = s && s.pref ? '★ your preferred store' : '';
-        renderShop();
-      });
-    });
-    var fBtn = menu.querySelector('#shop-menu-finder');
-    if (fBtn) fBtn.addEventListener('click', function() { menu.hidden = true; openStoreFinder(); });
-    var dBtn = menu.querySelector('#shop-menu-delete');
-    if (dBtn) dBtn.addEventListener('click', function() { deleteCurrentStore(dBtn); });
-    if (window.__shopMenuCloser) document.removeEventListener('click', window.__shopMenuCloser);
-    window.__shopMenuCloser = function(e) {
-      var m = document.getElementById('shop-store-menu');
-      if (m && !m.hidden && !(e.target.closest && e.target.closest('.shop-storebar'))) m.hidden = true;
-    };
-    document.addEventListener('click', window.__shopMenuCloser);
-  }
 
   var form = rootEl.querySelector('#shop-add-form');
   if (form) {
@@ -359,12 +219,11 @@ function wireShop(rootEl) {
   });
   var clearDone = rootEl.querySelector('#shop-clear-done');
   if (clearDone) clearDone.addEventListener('click', async function() {
-    var store = currentStore();
-    var done = shopItems.filter(function(it) { return it.done && String(it.storeId) === String(store.id); });
+    var done = shopItems.filter(function(it) { return it.done; });
     for (var i = 0; i < done.length; i++) {
       try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(done[i].id)); } catch (e) {}
     }
-    shopItems = shopItems.filter(function(it) { return !(it.done && String(it.storeId) === String(store.id)); });
+    shopItems = shopItems.filter(function(it) { return !it.done; });
     renderShop();
     if (typeof toast === 'function') toast('Picked items cleared');
   });
@@ -377,12 +236,11 @@ function wireShop(rootEl) {
       return;
     }
     delete clearAll.dataset.armed;
-    var store = currentStore();
-    var mine = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
+    var mine = shopItems.slice();
     for (var i = 0; i < mine.length; i++) {
       try { await shopApi('DELETE', SHOP_API + '&kind=item&id=' + encodeURIComponent(mine[i].id)); } catch (e) {}
     }
-    shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(store.id); });
+    shopItems = [];
     renderShop();
   });
 }
@@ -398,19 +256,18 @@ async function toggleShopItem(id, done) {
 }
 
 async function addShopItem(name, qty) {
-  var store = currentStore();
   var dup = shopItems.some(function(x) {
-    return String(x.storeId) === String(store.id) && !x.done &&
+    return !x.done &&
       x.name.trim().toLowerCase() === name.trim().toLowerCase();
   });
   if (dup) {
     if (typeof toast === 'function') toast('Already on your list');
     return;
   }
-  var item = { name: name, qty: qty || '', done: false, storeId: store.id };
+  var item = { name: name, qty: qty || '', done: false };
   try {
     var created = await shopApi('POST', SHOP_API, {
-      kind: 'item', store_id: store.id,
+      kind: 'item',
       name: item.name, qty: item.qty, done: false
     });
     item.id = created.id;
@@ -709,235 +566,6 @@ async function updateSpecialsInline() {
 }
 
 // ---------------------------------------------------------------------------
-// Store finder — type an address, list the grocery stores nearby, pick one.
-// How it finds stores (2026-10-24): Overpass is retired — its main instance
-// answers 406 to every query and every mirror times out, so search spun
-// for ~40s and failed. Instead: geocode the address with Nominatim, then
-// search Nominatim once per known grocery chain in that city and keep the
-// branches within about 7 miles. No key, no manual coordinates anywhere.
-// ---------------------------------------------------------------------------
-
-function ensureFinderModal() {
-  if (document.getElementById('shop-finder')) return;
-  var div = document.createElement('div');
-  div.id = 'shop-finder';
-  div.className = 'modal-backdrop hidden';
-  div.innerHTML =
-    '<div class="modal shop-modal">' +
-      '<h3>Find a store</h3>' +
-      '<div class="sf-addr-row">' +
-        '<input id="sf-address" type="text" maxlength="120" placeholder="Street, city, or ZIP" autocomplete="off">' +
-        '<button type="button" id="sf-search" class="shop-btn">Search</button>' +
-      '</div>' +
-      '<p id="sf-status" class="shop-hint"></p>' +
-      '<button type="button" id="sf-stop" class="shop-btn" style="display:none">Stop searching</button>' +
-      '<div id="sf-results"></div>' +
-      '<label class="shop-check-label"><input type="checkbox" id="sf-pref" checked> Make this my preferred store</label>' +
-      '<div class="modal-actions">' +
-        '<button type="button" id="sf-cancel">Cancel</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(div);
-  document.getElementById('sf-cancel').addEventListener('click', closeFinder);
-  document.getElementById('sf-stop').addEventListener('click', function() {
-    finderCancelled = true;
-  });
-  document.getElementById('sf-search').addEventListener('click', finderSearchAddress);
-  document.getElementById('sf-address').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); finderSearchAddress(); }
-  });
-  div.addEventListener('click', function(e) { if (e.target === div) closeFinder(); });
-}
-
-function openStoreFinder() {
-  ensureFinderModal();
-  document.getElementById('sf-status').textContent = '';
-  document.getElementById('sf-results').innerHTML = '';
-  document.getElementById('shop-finder').classList.remove('hidden');
-}
-
-function closeFinder() {
-  document.getElementById('shop-finder').classList.add('hidden');
-}
-
-function finderStatus(msg) {
-  var el = document.getElementById('sf-status');
-  if (el) el.textContent = msg;
-}
-
-
-async function finderSearchAddress() {
-  var q = document.getElementById('sf-address').value.trim();
-  if (!q) { document.getElementById('sf-address').focus(); return; }
-  finderStatus('Finding that address…');
-  try {
-    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&countrycodes=us&q=' + encodeURIComponent(q));
-    var results = await resp.json();
-    if (!results.length) {
-      finderStatus('Address not found — check it and try again.');
-      return;
-    }
-    var a = results[0].address || {};
-    var city = a.city || a.town || a.village || a.municipality || '';
-    var state = a.state || '';
-    finderSearchBrands(parseFloat(results[0].lat), parseFloat(results[0].lon), city, state);
-  } catch (e) {
-    finderStatus('Address lookup failed — check your connection and try again.');
-  }
-}
-
-var FINDER_BRANDS = ['Harris Teeter', 'Food Lion', 'Target', 'Walmart', 'Publix', 'ALDI', 'Lowes Foods'];
-
-var finderCancelled = false;
-
-function finderStopBtn(show) {
-  var b = document.getElementById('sf-stop');
-  if (b) b.style.display = show ? '' : 'none';
-}
-
-async function finderSearchBrands(lat, lng, city, state) {
-  finderCancelled = false;
-  finderStopBtn(true);
-  finderStatus('Looking for grocery stores near you…');
-  var out = [];
-  var seen = {};
-  var anyOk = false;
-  for (var b = 0; b < FINDER_BRANDS.length; b++) {
-    if (finderCancelled) break;
-    var q = FINDER_BRANDS[b] + (city ? ', ' + city : '') + (state ? ', ' + state : '');
-    try {
-      var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=us&q=' + encodeURIComponent(q));
-      var results = await resp.json();
-      if (results && results.length) anyOk = true;
-      (results || []).forEach(function(r) {
-        var pLat = parseFloat(r.lat), pLng = parseFloat(r.lon);
-        if (isNaN(pLat) || isNaN(pLng)) return;
-        var dist = haversineMi(lat, lng, pLat, pLng);
-        if (dist > 7.5) return;
-        var name = (r.display_name || '').split(',')[0] || FINDER_BRANDS[b];
-        var key = name.toLowerCase() + '@' + pLat.toFixed(3) + ',' + pLng.toFixed(3);
-        if (seen[key]) return;
-        seen[key] = true;
-        var a = r.address || {};
-        var street = ((a.house_number || '') + ' ' + (a.road || '')).trim();
-        var addrParts = [];
-        if (street) addrParts.push(street);
-        if (a.city || a.town || a.village) addrParts.push(a.city || a.town || a.village);
-        if (a.state) addrParts.push(a.state);
-        out.push({ name: name, addr: addrParts.join(', '), lat: pLat, lng: pLng, distMi: dist });
-      });
-    } catch (e) { /* this brand unavailable; the others are still tried */ }
-  }
-  finderStopBtn(false);
-  if (finderCancelled) {
-    finderStatus('Search stopped.');
-    return;
-  }
-  if (!anyOk) {
-    finderStatus('The store directory didn\'t answer — check your connection and try again.');
-    return;
-  }
-  out.sort(function(x, y) { return x.distMi - y.distMi; });
-  renderFinderResults(out.slice(0, 15));
-}
-
-function renderFinderResults(places) {
-  var box = document.getElementById('sf-results');
-  box.innerHTML = '';
-  if (!places.length) {
-    finderStatus('No grocery stores found within about 7 miles. Try another address.');
-    return;
-  }
-  finderStatus(places.length + ' stores found — tap one to use it:');
-  places.forEach(function(place) {
-    var row = document.createElement('div');
-    row.className = 'sf-result';
-    row.innerHTML =
-      '<div class="sf-result-main">' +
-        '<div class="sf-result-name">' + esc(place.name) + '</div>' +
-        (place.addr ? '<div class="sf-result-addr">' + esc(place.addr) + '</div>' : '') +
-      '</div>' +
-      '<div class="sf-result-dist">' + place.distMi.toFixed(1) + ' mi</div>' +
-      '<button type="button" class="shop-btn sf-select">Select</button>';
-    row.querySelector('.sf-select').addEventListener('click', function() {
-      selectFoundStore(place);
-    });
-    box.appendChild(row);
-  });
-}
-
-// Selecting a place: if we already have a store with this name, enrich it
-// with the location; otherwise create the store in the shop_stores table.
-async function selectFoundStore(place) {
-  var makePref = document.getElementById('sf-pref').checked;
-  var existing = shopStores.find(function(s) {
-    if (s.name.trim().toLowerCase() !== place.name.trim().toLowerCase()) return false;
-    if (s.lat == null || s.lng == null) return true; // no location yet — enrich it
-    // Same chain, different branch (>0.5 mi away) is a NEW store, not a match.
-    return haversineMi(s.lat, s.lng, place.lat, place.lng) < 0.5;
-  });
-  try {
-    var store;
-    if (existing) {
-      store = Object.assign({}, existing, {
-        lat: place.lat, lng: place.lng,
-        pref: makePref ? true : existing.pref
-      });
-      await shopApi('PATCH', SHOP_API + '&kind=store&id=' + encodeURIComponent(store.id), storeToBody(store));
-      var idx = shopStores.findIndex(function(s) { return String(s.id) === String(store.id); });
-      if (idx >= 0) shopStores[idx] = store;
-    } else {
-      store = {
-        name: place.name,
-        lat: place.lat, lng: place.lng,
-        pref: makePref
-      };
-      var created = await shopApi('POST', SHOP_API, storeToBody(store));
-      store.id = created.id;
-      shopStores.push(store);
-    }
-    if (makePref) {
-      shopStores.forEach(function(s) { if (String(s.id) !== String(store.id)) s.pref = false; });
-      storeWhy = '★ your preferred store';
-    }
-    currentStoreId = store.id;
-    closeFinder();
-    renderShop();
-    if (typeof toast === 'function') {
-      toast(existing ? 'Store updated — ' + store.name : 'Added ' + store.name);
-    }
-  } catch (e) {
-    finderStatus('Could not save that store. Please try again.');
-  }
-}
-
-// Store deletion lives in the store chip menu (two-tap arm: a delete
-// cascades to the store's whole list, so it must never be one tap).
-// The old layout editor is gone with the layout system (Winny, 2026-10-25).
-var deleteArmUntil = 0;
-
-async function deleteCurrentStore(btn) {
-  if (shopStores.length <= 1) return;
-  // Two-tap arm instead of a native confirm.
-  if (Date.now() > deleteArmUntil) {
-    deleteArmUntil = Date.now() + 4000;
-    if (btn) btn.textContent = 'Tap again to delete this store + its list';
-    return;
-  }
-  deleteArmUntil = 0;
-  var id = currentStoreId;
-  try {
-    await shopApi('DELETE', SHOP_API + '&kind=store&id=' + encodeURIComponent(id));
-    shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(id); });
-    shopStores = shopStores.filter(function(s) { return String(s.id) !== String(id); });
-    currentStoreId = null; pickInitialStore();
-    renderShop();
-  } catch (e) {
-    if (typeof toast === 'function') toast('Could not delete the store.');
-  }
-}
-
-// ---------------------------------------------------------------------------
 // View registration (same pattern as habit-ui.js)
 // ---------------------------------------------------------------------------
 
@@ -950,7 +578,7 @@ async function openShop() {
     var rootEl = document.getElementById('shop-root');
     if (rootEl) rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
     // Single-flight: concurrent opens (menu click + hashchange) must share
-    // one load, or the first-run store seeding fires twice.
+    // one load, or the first-run load fires twice.
     if (!shopLoadPromise) {
       shopLoadPromise = (async function() {
         await loadShopData();
@@ -961,7 +589,7 @@ async function openShop() {
       await shopLoadPromise;
     } catch (e) {
       shopLoadPromise = null;
-      if (rootEl) rootEl.innerHTML = '<p class="empty-note">Could not load your stores. Please try again.</p>';
+      if (rootEl) rootEl.innerHTML = '<p class="empty-note">Could not load your list. Please try again.</p>';
       return;
     }
   }
@@ -1015,8 +643,6 @@ if (document.readyState === 'loading') {
 window.Shop = {
   updateShopBadge: updateShopBadge,
   sortShopItems: sortShopItems,
-  haversineMi: haversineMi,
-  parsePlaces: parsePlaces,
   specialsKeywords: specialsKeywords,
   specialsMatch: specialsMatch,
   specialsPrice: specialsPrice,
