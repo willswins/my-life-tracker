@@ -536,8 +536,10 @@ async function addShopItem(name, cat, qty) {
 // ---------------------------------------------------------------------------
 // Specials — automatic, no button (Winny, 2026-10-23). Whenever the Shop
 // view shows the list, this checks the unchecked items against this week's
-// Harris Teeter and Publix ads and renders a panel under the list. Deals
-// are parsed from the public ad listings and cached for 12h.
+// weekly ads from nearby chains and renders one line under each item:
+// its BEST price across all chains (no distance cap, not anchored on the
+// preferred store), with up to 3 stores shown, best first (Winny, 2026-10-24).
+// Deals are parsed from the public ad listings and cached for 12h.
 // ---------------------------------------------------------------------------
 
 var SPECIALS_SOURCES = [
@@ -602,6 +604,15 @@ var SPECIALS_DENY = [['orange', 'orange juice'], ['orange', 'bell pepper'], ['or
   ['bread', 'snack bar'], ['bread', 'bread pan'], ['bread', 'loaf pan'], ['bread', 'cast-iron'],
   ['bread', 'bagel'], ['bread', 'muffin']];
 var SPECIALS_NONFOOD = { dog: 1, cat: 1, pet: 1, toothpaste: 1, medicine: 1, lego: 1, toy: 1, nail: 1, shampoo: 1, lotion: 1, vitamin: 1, book: 1 };
+// Item tokens that are tech/brand fragments, not grocery words (Winny,
+// 2026-10-24: 'Mac book pro' matched Mac & Cheese on 'mac' and a PRO
+// cooker on 'pro'). Stripped from an item's strong tokens before scoring.
+// Deliberately NOT 'apple' (fruit) or 'mini' (mini peppers).
+var SPECIALS_TECH = { mac: 1, macbook: 1, pro: 1, book: 1, laptop: 1, notebook: 1,
+  computer: 1, phone: 1, iphone: 1, ipad: 1, tablet: 1, tv: 1, monitor: 1,
+  keyboard: 1, mouse: 1, headphones: 1, earbuds: 1, airpods: 1, camera: 1,
+  printer: 1, router: 1, charger: 1, cable: 1, watch: 1, console: 1, speaker: 1,
+  drone: 1, kindle: 1, pixel: 1, galaxy: 1, samsung: 1, dell: 1, lenovo: 1, sony: 1 };
 
 function specialsSingular(tok) {
   if (tok.length > 4 && /ies$/.test(tok)) return tok.slice(0, -3) + 'y';
@@ -615,7 +626,7 @@ function specialsKeywords(name) {
   var toks = base.split(/\s+/).filter(function(t) { return t && !SPECIALS_STOP[t] && !/^\d+$/.test(t); })
     .map(specialsSingular);
   var phrase = (toks.indexOf('ice') >= 0 && toks.indexOf('cream') >= 0) ? 'ice cream' : null;
-  var strong = toks.filter(function(t) { return !SPECIALS_GENERIC[t] && t.length >= 3; });
+  var strong = toks.filter(function(t) { return !SPECIALS_GENERIC[t] && !SPECIALS_TECH[t] && t.length >= 3; });
   return { strong: strong, all: toks, phrase: phrase };
 }
 
@@ -734,15 +745,47 @@ async function specialsGetDeals() {
   return sources;
 }
 
+// Effective per-unit $ for a deal line, else null (mirrors check_specials
+// deal_price). '2 for $5' -> 2.50; BOGO -> half; buy-2-get-1 -> two-thirds.
+// Ranking only — the original text is always what gets shown.
+function specialsPrice(text) {
+  var t = text || '';
+  var m = /(\d+)\s+for\s+\$([\d,]+(?:\.\d{2})?)/i.exec(t);
+  if (m) return parseFloat(m[2].replace(/,/g, '')) / parseInt(m[1], 10);
+  m = /\$([\d,]+(?:\.\d{2})?)/.exec(t);
+  if (!m) { var c = /(\d+)\s?¢/.exec(t); return c ? parseInt(c[1], 10) / 100 : null; }
+  var p = parseFloat(m[1].replace(/,/g, ''));
+  if (/buy[ -]one[ -]get|buy 1 get|BOGO|get[ -]one[ -]free/i.test(t)) p /= 2;
+  else if (/buy[ -]two[ -]get|buy 2 get/i.test(t)) p *= 2 / 3;
+  return p;
+}
+
 function specialsIndexByItem(itemNames, sources) {
   var byItem = {};
   Object.keys(sources).forEach(function(store) {
     var matches = specialsMatch(itemNames, sources[store].deals || []);
     Object.keys(matches).forEach(function(item) {
       var key = item.trim().toLowerCase();
+      var list = matches[item];
+      var cand = null;
+      for (var i = 0; i < list.length; i++) {
+        if (specialsPrice(list[i].text) !== null) { cand = list[i]; break; }
+      }
+      if (!cand) cand = list[0];
+      if (!cand) return;
       if (!byItem[key]) byItem[key] = [];
-      byItem[key].push({ store: store, text: matches[item][0].text });
+      byItem[key].push({ store: store, text: cand.text, price: specialsPrice(cand.text) });
     });
+  });
+  // Best price first (unpriced deals last), at most 3 stores per item.
+  Object.keys(byItem).forEach(function(key) {
+    byItem[key].sort(function(a, b) {
+      if (a.price === null && b.price === null) return 0;
+      if (a.price === null) return 1;
+      if (b.price === null) return -1;
+      return a.price - b.price;
+    });
+    byItem[key] = byItem[key].slice(0, 3);
   });
   return byItem;
 }
@@ -751,11 +794,13 @@ function specialsLineFor(name) {
   if (!specialsState.byItem) return '';
   var entries = specialsState.byItem[name.trim().toLowerCase()];
   if (!entries || !entries.length) return '';
-  var parts = entries.slice(0, 4).map(function(e) {
-    var t = e.text.length > 90 ? e.text.slice(0, 90) + '…' : e.text;
-    return esc(e.store) + ': ' + esc(t);
-  });
-  return '💲 ' + parts.join(' · ');
+  var best = entries[0];
+  var t = best.text.length > 90 ? best.text.slice(0, 90) + '…' : best.text;
+  var line = '💲 Best: ' + esc(best.store) + (best.price !== null ? ' $' + best.price.toFixed(2) : '') + ' — ' + esc(t);
+  for (var i = 1; i < entries.length; i++) {
+    line += ' · also ' + esc(entries[i].store) + (entries[i].price !== null ? ' $' + entries[i].price.toFixed(2) : '');
+  }
+  return line;
 }
 
 async function updateSpecialsInline() {
@@ -776,9 +821,13 @@ async function updateSpecialsInline() {
 }
 
 // ---------------------------------------------------------------------------
-// Store finder — how other sites do it: use my location (or an address),
-// list the grocery stores nearby, pick one, and its layout is generated
-// and cached on the store card. No manual coordinates anywhere.
+// Store finder — type an address, list the grocery stores nearby, pick one,
+// and its layout is generated and cached on the store card.
+// How it finds stores (2026-10-24): Overpass is retired — its main instance
+// answers 406 to every query and every mirror times out, so search spun
+// for ~40s and failed. Instead: geocode the address with Nominatim, then
+// search Nominatim once per known grocery chain in that city and keep the
+// branches within about 7 miles. No key, no manual coordinates anywhere.
 // ---------------------------------------------------------------------------
 
 function ensureFinderModal() {
@@ -805,7 +854,6 @@ function ensureFinderModal() {
   document.getElementById('sf-cancel').addEventListener('click', closeFinder);
   document.getElementById('sf-stop').addEventListener('click', function() {
     finderCancelled = true;
-    if (finderAbort) { try { finderAbort.abort(); } catch (e) {} }
   });
   document.getElementById('sf-search').addEventListener('click', finderSearchAddress);
   document.getElementById('sf-address').addEventListener('keydown', function(e) {
@@ -836,28 +884,23 @@ async function finderSearchAddress() {
   if (!q) { document.getElementById('sf-address').focus(); return; }
   finderStatus('Finding that address…');
   try {
-    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=' + encodeURIComponent(q));
+    var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&countrycodes=us&q=' + encodeURIComponent(q));
     var results = await resp.json();
     if (!results.length) {
       finderStatus('Address not found — check it and try again.');
       return;
     }
-    finderSearchNearby(parseFloat(results[0].lat), parseFloat(results[0].lon));
+    var a = results[0].address || {};
+    var city = a.city || a.town || a.village || a.municipality || '';
+    var state = a.state || '';
+    finderSearchBrands(parseFloat(results[0].lat), parseFloat(results[0].lon), city, state);
   } catch (e) {
     finderStatus('Address lookup failed — check your connection and try again.');
   }
 }
 
-// Overpass mirrors, tried in order — the first that answers wins. The
-// main instance occasionally refuses or stalls; mirrors keep this working.
-var OVERPASS_HOSTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-  'https://overpass.nchc.org.tw/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter'
-];
+var FINDER_BRANDS = ['Harris Teeter', 'Food Lion', 'Target', 'Walmart', 'Publix', 'ALDI', 'Lowes Foods'];
 
-var finderAbort = null;
 var finderCancelled = false;
 
 function finderStopBtn(show) {
@@ -865,48 +908,50 @@ function finderStopBtn(show) {
   if (b) b.style.display = show ? '' : 'none';
 }
 
-async function finderSearchNearby(lat, lng) {
+async function finderSearchBrands(lat, lng, city, state) {
   finderCancelled = false;
   finderStopBtn(true);
   finderStatus('Looking for grocery stores near you…');
-  var query = '[out:json][timeout:20];(' +
-    'node["shop"="supermarket"](around:12000,' + lat + ',' + lng + ');' +
-    'node["shop"="grocery"](around:12000,' + lat + ',' + lng + ');' +
-    'node["shop"="department_store"](around:12000,' + lat + ',' + lng + ');' +
-    'way["shop"="supermarket"](around:12000,' + lat + ',' + lng + ');' +
-    'way["shop"="grocery"](around:12000,' + lat + ',' + lng + ');' +
-    'way["shop"="department_store"](around:12000,' + lat + ',' + lng + ');' +
-    ');out center 60;';
-  for (var i = 0; i < OVERPASS_HOSTS.length; i++) {
+  var out = [];
+  var seen = {};
+  var anyOk = false;
+  for (var b = 0; b < FINDER_BRANDS.length; b++) {
     if (finderCancelled) break;
-    if (i > 0) finderStatus('Still looking — trying another source…');
+    var q = FINDER_BRANDS[b] + (city ? ', ' + city : '') + (state ? ', ' + state : '');
     try {
-      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      finderAbort = ctrl;
-      var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 12000) : null;
-      var resp = await fetch(OVERPASS_HOSTS[i], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query),
-        signal: ctrl ? ctrl.signal : undefined
+      var resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=us&q=' + encodeURIComponent(q));
+      var results = await resp.json();
+      if (results && results.length) anyOk = true;
+      (results || []).forEach(function(r) {
+        var pLat = parseFloat(r.lat), pLng = parseFloat(r.lon);
+        if (isNaN(pLat) || isNaN(pLng)) return;
+        var dist = haversineMi(lat, lng, pLat, pLng);
+        if (dist > 7.5) return;
+        var name = (r.display_name || '').split(',')[0] || FINDER_BRANDS[b];
+        var key = name.toLowerCase() + '@' + pLat.toFixed(3) + ',' + pLng.toFixed(3);
+        if (seen[key]) return;
+        seen[key] = true;
+        var a = r.address || {};
+        var street = ((a.house_number || '') + ' ' + (a.road || '')).trim();
+        var addrParts = [];
+        if (street) addrParts.push(street);
+        if (a.city || a.town || a.village) addrParts.push(a.city || a.town || a.village);
+        if (a.state) addrParts.push(a.state);
+        out.push({ name: name, addr: addrParts.join(', '), lat: pLat, lng: pLng, distMi: dist });
       });
-      if (timer) clearTimeout(timer);
-      finderAbort = null;
-      if (finderCancelled) break;
-      if (!resp.ok) continue;
-      var data = await resp.json();
-      var places = parsePlaces(data.elements || [], lat, lng);
-      finderStopBtn(false);
-      renderFinderResults(places);
-      return;
-    } catch (e) { finderAbort = null; /* try the next mirror */ }
+    } catch (e) { /* this brand unavailable; the others are still tried */ }
   }
   finderStopBtn(false);
   if (finderCancelled) {
     finderStatus('Search stopped.');
-  } else {
-    finderStatus('The store database didn\'t answer — it may be busy. Try again in a moment.');
+    return;
   }
+  if (!anyOk) {
+    finderStatus('The store directory didn\'t answer — check your connection and try again.');
+    return;
+  }
+  out.sort(function(x, y) { return x.distMi - y.distMi; });
+  renderFinderResults(out.slice(0, 15));
 }
 
 function renderFinderResults(places) {
@@ -1276,6 +1321,10 @@ window.Shop = {
   guessCategory: guessCategory,
   haversineMi: haversineMi,
   parsePlaces: parsePlaces,
+  specialsKeywords: specialsKeywords,
+  specialsMatch: specialsMatch,
+  specialsPrice: specialsPrice,
+  specialsIndexByItem: specialsIndexByItem,
   CATEGORIES: CATEGORIES,
   TEMPLATE_ZONES: TEMPLATE_ZONES,
   TEMPLATE_MAP: TEMPLATE_MAP
