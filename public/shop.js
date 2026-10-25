@@ -1,6 +1,5 @@
-// Shop — grocery list with store-layout route optimization.
-// Pick a store (preferred, or nearest with a saved location), and your list
-// is re-sorted into the order you walk past everything — no backtracking.
+// Shop — grocery list for one store at a time.
+// Pick a store; the list is a plain list of items for that store.
 // Data: dedicated DB tables — shop_stores / shop_items, via
 // /api/app?r=daybook&view=shop (migration-008). Items are database rows,
 // never code and never board cards. The api() wrapper below still strips
@@ -20,89 +19,6 @@ var ITEM_TAG = 'gitem';
 
 var SHOP_API = '/api/app?r=daybook&view=shop';
 
-var CATEGORIES = [
-  'Produce', 'Bakery', 'Meat & Deli', 'Dairy & Eggs', 'Pantry',
-  'Snacks & Drinks', 'Frozen', 'Household', 'Personal Care', 'Other'
-];
-
-// How supermarkets typically arrange departments, used as the sort order
-// for every list: fresh perimeter first (produce at the entrance, meat and
-// dairy along the back wall), center aisles next, frozen last so it thaws
-// least, then checkout. No store-specific aisle claims.
-var TEMPLATE_ZONES = [
-  ['Produce', 'Entrance'],
-  ['Bakery', 'Fresh'],
-  ['Meat & Deli', 'Back wall'],
-  ['Dairy & Eggs', 'Back wall'],
-  ['Pantry', 'Center aisles'],
-  ['Snacks & Drinks', 'Center aisles'],
-  ['Household', 'Center aisles'],
-  ['Personal Care', 'Near pharmacy'],
-  ['Frozen', 'Last section'],
-  ['Checkout', 'Front'],
-  // 'Others' is not a store aisle: non-grocery items (category 'Other',
-  // e.g. a laptop) sit here, after checkout, instead of inside a grocery
-  // aisle (Winny, 2026-10-25 — 'Other' used to map to Pantry).
-  ['Others', '']
-];
-
-var TEMPLATE_MAP = {
-  'Produce': 0, 'Bakery': 1, 'Meat & Deli': 2, 'Dairy & Eggs': 3,
-  'Pantry': 4, 'Snacks & Drinks': 5, 'Frozen': 8, 'Household': 6,
-  'Personal Care': 7, 'Other': 10
-};
-
-// Keyword rules for auto-categorizing typed items. Checked in order.
-var GUESS_RULES = [
-  ['Frozen', ['frozen', 'ice cream', 'icecream']],
-  ['Dairy & Eggs', ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'yoghurt', 'cream', 'paneer', 'curd']],
-  ['Produce', ['apple', 'banana', 'orange', 'lemon', 'lime', 'grape', 'berr', 'lettuce', 'salad', 'spinach', 'tomato', 'potato', 'onion', 'carrot', 'cucumber', 'pepper', 'avocado', 'garlic', 'ginger', 'cilantro', 'mint', 'basil', 'parsley', 'dill', 'thyme', 'rosemary', 'chive', 'herb', 'fruit', 'veg', 'mango', 'peach', 'pear', 'melon', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'corn', 'peas', 'eggplant']],
-  ['Bakery', ['bread', 'bagel', 'muffin', 'cake', 'cookie', 'croissant', 'bun', 'tortilla', 'donut', 'pie', 'roll']],
-  ['Meat & Deli', ['chicken', 'beef', 'pork', 'fish', 'salmon', 'shrimp', 'turkey', 'ham', 'bacon', 'sausage', 'steak', 'meat', 'deli', 'mutton', 'lamb', 'hot dog', 'hot dogs', 'hotdog']],
-  ['Personal Care', ['shampoo', 'conditioner', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'razor', 'vitamin', 'medicine', 'bandage', 'soap bar', 'body wash', 'sunscreen']],
-  ['Household', ['detergent', 'dish soap', 'soap', 'cleaner', 'tissue', 'paper towel', 'towel', 'paper', 'laundry', 'napkin', 'trash bag', 'foil', 'wrap', 'battery', 'batteries', 'bulb', 'sponge', 'bleach', 'wipes']],
-  ['Snacks & Drinks', ['chips', 'soda', 'juice', 'coffee', 'tea', 'chocolate', 'candy', 'nuts', 'popcorn', 'beer', 'wine', 'water', 'snack', 'crackers', 'granola']],
-  ['Pantry', ['rice', 'pasta', 'flour', 'sugar', 'salt', 'oil', 'cereal', 'oats', 'lentil', 'dal', 'beans', 'canned', 'sauce', 'spice', 'honey', 'peanut butter', 'jam', 'atta', 'noodle', 'soup', 'ketchup', 'vinegar', 'rice paper']]
-];
-
-function guessCategory(name) {
-  var raw = ' ' + String(name || '').toLowerCase().trim() + ' ';
-  var i, j;
-  // 'Frozen' is a state, not a head noun — it wins from any position
-  // ('frozen peas' is frozen food, not produce).
-  if (raw.indexOf(' frozen ') !== -1) return 'Frozen';
-  // Pass 1: multi-word phrases are the most specific signal
-  // ('ice cream', 'peanut butter', 'dish soap', 'eggplant' as a phrase-length word).
-  for (i = 0; i < GUESS_RULES.length; i++) {
-    var words = GUESS_RULES[i][1];
-    for (j = 0; j < words.length; j++) {
-      if (words[j].indexOf(' ') !== -1 && raw.indexOf(' ' + words[j] + ' ') !== -1) {
-        return GUESS_RULES[i][0];
-      }
-    }
-  }
-  // Pass 2: single words. The head noun is usually the LAST word
-  // ('potato chips' is a snack, 'egg noodles' is pasta), so a match on a
-  // later word beats an earlier one; rule order breaks ties. Prefix match
-  // covers plurals ('eggs' -> 'egg') without substring traps
-  // ('shampoo' must not match 'ham').
-  var tokens = raw.trim().split(/\s+/);
-  var best = null;
-  for (i = 0; i < GUESS_RULES.length; i++) {
-    var kws = GUESS_RULES[i][1];
-    for (j = 0; j < kws.length; j++) {
-      if (kws[j].indexOf(' ') !== -1) continue;
-      for (var t = 0; t < tokens.length; t++) {
-        if (tokens[t] === kws[j] || tokens[t].indexOf(kws[j]) === 0) {
-          if (!best || t > best.pos || (t === best.pos && i < best.rule)) {
-            best = { pos: t, rule: i, cat: GUESS_RULES[i][0] };
-          }
-        }
-      }
-    }
-  }
-  return best ? best.cat : 'Other';
-}
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exposed on window.Shop for testing)
@@ -118,37 +34,13 @@ function haversineMi(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-// store: {zones: [[name, aisle], ...], map: {cat: zoneIdx}}
-// items: [{id, name, cat, qty, done}]
-// Returns [{zone, aisle, items}] in walk order; empty zones skipped.
-// Unmapped categories land in a trailing "Anywhere else" group.
-function buildRoute(store, items) {
-  var zones = (store && store.zones) || [];
-  var map = (store && store.map) || {};
-  var byZone = {};
-  var unmapped = [];
-  items.forEach(function(it) {
-    var zi = map[it.cat];
-    if (typeof zi === 'number' && zi >= 0 && zi < zones.length) {
-      (byZone[zi] = byZone[zi] || []).push(it);
-    } else {
-      unmapped.push(it);
-    }
+// Flat list order (no store layout, no walking route — Winny, 2026-10-25):
+// unchecked first, then alphabetical; checked items last.
+function sortShopItems(items) {
+  return items.slice().sort(function(a, b) {
+    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+    return String(a.name).localeCompare(String(b.name));
   });
-  function sortItems(list) {
-    return list.slice().sort(function(a, b) {
-      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-      return String(a.name).localeCompare(String(b.name));
-    });
-  }
-  var out = [];
-  Object.keys(byZone).map(Number).sort(function(a, b) { return a - b; }).forEach(function(zi) {
-    out.push({ zone: zones[zi][0], aisle: zones[zi][1] || '', items: sortItems(byZone[zi]) });
-  });
-  if (unmapped.length) {
-    out.push({ zone: 'Anywhere else', aisle: '', items: sortItems(unmapped) });
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -238,8 +130,6 @@ function rowToStore(row) {
   return {
     id: row.id,
     name: row.name || 'Store',
-    zones: Array.isArray(row.zones) && row.zones.length ? row.zones : TEMPLATE_ZONES.slice(),
-    map: (row.category_map && typeof row.category_map === 'object') ? row.category_map : Object.assign({}, TEMPLATE_MAP),
     lat: (typeof row.lat === 'number') ? row.lat : null,
     lng: (typeof row.lng === 'number') ? row.lng : null,
     pref: !!row.preferred
@@ -250,8 +140,6 @@ function storeToBody(store) {
   return {
     kind: 'store',
     name: store.name,
-    zones: store.zones,
-    category_map: store.map,
     lat: store.lat != null ? store.lat : null,
     lng: store.lng != null ? store.lng : null,
     preferred: !!store.pref
@@ -282,7 +170,6 @@ async function loadShopData() {
   if (!shopStores.length) {
     var created = await shopApi('POST', SHOP_API, storeToBody({
       name: 'My Store',
-      zones: TEMPLATE_ZONES.slice(), map: Object.assign({}, TEMPLATE_MAP),
       lat: null, lng: null, pref: true
     }));
     shopStores = [rowToStore(created)];
@@ -348,9 +235,8 @@ function renderShop() {
     rootEl.innerHTML = '<p class="empty-note">Loading…</p>';
     return;
   }
-  var items = shopItems.filter(function(it) { return String(it.storeId) === String(store.id); });
+  var items = sortShopItems(shopItems.filter(function(it) { return String(it.storeId) === String(store.id); }));
   var spReady = specialsState.key === specialsItemKey() && !!specialsState.byItem;
-  var route = buildRoute(store, items);
   var doneCount = items.filter(function(it) { return it.done; }).length;
 
   var h = '';
@@ -368,8 +254,10 @@ function renderShop() {
       (cur ? '\u2713 ' : '') + esc(s.name) + (s.pref ? ' \u2605' : '') + '</button>';
   });
   h += '<div class="shop-store-menu-actions">';
+  if (shopStores.length > 1) {
+    h += '<button type="button" id="shop-menu-delete" class="shop-store-opt danger-btn">Delete this store</button>';
+  }
   h += '<button type="button" id="shop-menu-finder" class="shop-store-opt">\uFF0B Find a store</button>';
-  h += '<button type="button" id="shop-menu-layout" class="shop-store-opt">\u270E Edit layout</button>';
   h += '</div></div></div>';
 
   h += '<form id="shop-add-form" class="shop-add">';
@@ -379,16 +267,13 @@ function renderShop() {
   h += '</form>';
 
   if (!items.length) {
-    h += '<p class="empty-note">Your list is empty. Add items above and they will be sorted into walking order for ' + esc(store.name) + '.</p>';
+    h += '<p class="empty-note">Your list is empty. Add items above.</p>';
   } else {
     h += '<div class="shop-progress"><div class="shop-progress-bar" style="width:' +
       Math.round(doneCount / items.length * 100) + '%"></div></div>';
-    h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked · sorted the way stores arrange things — fresh first, frozen last</p>';
-    route.forEach(function(group) {
-      h += '<div class="shop-zone">';
-      h += '<div class="shop-zone-head"><span class="shop-zone-name">' + esc(group.zone) + '</span>' +
-        (group.aisle ? '<span class="shop-zone-aisle">' + esc(group.aisle) + '</span>' : '') + '</div>';
-      group.items.forEach(function(it) {
+    h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked</p>';
+    h += '<div class="shop-list">';
+    items.forEach(function(it) {
         h += '<label class="shop-item' + (it.done ? ' done' : '') + '">';
         h += '<input type="checkbox" class="shop-check" data-id="' + esc(it.id) + '"' + (it.done ? ' checked' : '') + '>';
         h += '<span class="shop-item-main"><span class="shop-item-name">' + esc(it.name) + '</span>';
@@ -400,9 +285,8 @@ function renderShop() {
         if (it.qty) h += '<span class="shop-item-qty">' + esc(it.qty) + '</span>';
         h += '<button type="button" class="shop-del" data-id="' + esc(it.id) + '" title="Remove">×</button>';
         h += '</label>';
-      });
-      h += '</div>';
     });
+    h += '</div>';
     h += '<div class="shop-actions">';
     h += '<button type="button" id="shop-clear-done" class="shop-btn">Clear picked</button>';
     h += '<button type="button" id="shop-clear-all" class="shop-btn danger-btn">Clear list</button>';
@@ -430,8 +314,8 @@ function wireShop(rootEl) {
     });
     var fBtn = menu.querySelector('#shop-menu-finder');
     if (fBtn) fBtn.addEventListener('click', function() { menu.hidden = true; openStoreFinder(); });
-    var lBtn = menu.querySelector('#shop-menu-layout');
-    if (lBtn) lBtn.addEventListener('click', function() { menu.hidden = true; openLayoutEditor(null); });
+    var dBtn = menu.querySelector('#shop-menu-delete');
+    if (dBtn) dBtn.addEventListener('click', function() { deleteCurrentStore(dBtn); });
     if (window.__shopMenuCloser) document.removeEventListener('click', window.__shopMenuCloser);
     window.__shopMenuCloser = function(e) {
       var m = document.getElementById('shop-store-menu');
@@ -450,7 +334,7 @@ function wireShop(rootEl) {
       if (!name) return;
       form.dataset.adding = '1';
       try {
-        await addShopItem(name, '', form.querySelector('#shop-new-qty').value.trim());
+        await addShopItem(name, form.querySelector('#shop-new-qty').value.trim());
       } finally {
         delete form.dataset.adding;
       }
@@ -513,7 +397,7 @@ async function toggleShopItem(id, done) {
   renderShop();
 }
 
-async function addShopItem(name, cat, qty) {
+async function addShopItem(name, qty) {
   var store = currentStore();
   var dup = shopItems.some(function(x) {
     return String(x.storeId) === String(store.id) && !x.done &&
@@ -523,11 +407,11 @@ async function addShopItem(name, cat, qty) {
     if (typeof toast === 'function') toast('Already on your list');
     return;
   }
-  var item = { name: name, cat: cat || guessCategory(name), qty: qty || '', done: false, storeId: store.id };
+  var item = { name: name, qty: qty || '', done: false, storeId: store.id };
   try {
     var created = await shopApi('POST', SHOP_API, {
       kind: 'item', store_id: store.id,
-      name: item.name, category: item.cat, qty: item.qty, done: false
+      name: item.name, qty: item.qty, done: false
     });
     item.id = created.id;
     shopItems.push(item);
@@ -825,8 +709,7 @@ async function updateSpecialsInline() {
 }
 
 // ---------------------------------------------------------------------------
-// Store finder — type an address, list the grocery stores nearby, pick one,
-// and its layout is generated and cached on the store card.
+// Store finder — type an address, list the grocery stores nearby, pick one.
 // How it finds stores (2026-10-24): Overpass is retired — its main instance
 // answers 406 to every query and every mirror times out, so search spun
 // for ~40s and failed. Instead: geocode the address with Nominatim, then
@@ -984,8 +867,7 @@ function renderFinderResults(places) {
 }
 
 // Selecting a place: if we already have a store with this name, enrich it
-// with the location (layout kept as-is); otherwise create the store with a
-// generated layout and cache it in the shop_stores table.
+// with the location; otherwise create the store in the shop_stores table.
 async function selectFoundStore(place) {
   var makePref = document.getElementById('sf-pref').checked;
   var existing = shopStores.find(function(s) {
@@ -1007,8 +889,6 @@ async function selectFoundStore(place) {
     } else {
       store = {
         name: place.name,
-        zones: TEMPLATE_ZONES.map(function(z) { return z.slice(); }),
-        map: Object.assign({}, TEMPLATE_MAP),
         lat: place.lat, lng: place.lng,
         pref: makePref
       };
@@ -1024,220 +904,33 @@ async function selectFoundStore(place) {
     closeFinder();
     renderShop();
     if (typeof toast === 'function') {
-      toast(existing ? 'Store updated — ' + store.name : 'Added ' + store.name + ' — layout generated');
+      toast(existing ? 'Store updated — ' + store.name : 'Added ' + store.name);
     }
   } catch (e) {
     finderStatus('Could not save that store. Please try again.');
   }
 }
 
-// ---------------------------------------------------------------------------
-// Layout editor
-// ---------------------------------------------------------------------------
-
-var editorState = null; // {storeId|null('new'), name, zones, map, lat, lng, pref}
-
-function ensureShopModal() {
-  if (document.getElementById('shop-modal')) return;
-  var div = document.createElement('div');
-  div.id = 'shop-modal';
-  div.className = 'modal-backdrop hidden';
-  div.innerHTML =
-    '<div class="modal shop-modal">' +
-      '<h3 id="shop-modal-title">Store layout</h3>' +
-      '<label>Store name<input id="she-name" type="text" maxlength="60"></label>' +
-      '<label class="shop-check-label"><input type="checkbox" id="she-pref"> ★ Preferred store (always use this one)</label>' +
-      '<h4>Walking order (top = first)</h4>' +
-      '<div id="she-zones"></div>' +
-      '<button type="button" id="she-add-zone" class="shop-btn">+ Add zone</button>' +
-      '<h4>Where each category lives</h4>' +
-      '<div id="she-catmap"></div>' +
-      '<div class="modal-actions">' +
-        '<button type="button" id="she-delete" class="danger-btn">Delete store</button>' +
-        '<button type="button" id="she-cancel">Cancel</button>' +
-        '<button type="button" id="she-save" class="primary">Save</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(div);
-  document.getElementById('she-cancel').addEventListener('click', closeShopModal);
-  document.getElementById('she-save').addEventListener('click', saveShopEditor);
-  document.getElementById('she-delete').addEventListener('click', deleteShopStore);
-  document.getElementById('she-add-zone').addEventListener('click', function() {
-    editorState.zones.push(['New zone', '']);
-    renderEditorZones();
-    renderEditorCatmap();
-  });
-  div.addEventListener('click', function(e) { if (e.target === div) closeShopModal(); });
-}
-
-function openLayoutEditor(which) {
-  ensureShopModal();
-  if (which === 'new') {
-    editorState = {
-      storeId: null, name: '',
-      zones: TEMPLATE_ZONES.map(function(z) { return z.slice(); }),
-      map: Object.assign({}, TEMPLATE_MAP),
-      lat: null, lng: null, pref: false
-    };
-    document.getElementById('shop-modal-title').textContent = 'New store';
-    document.getElementById('she-delete').style.display = 'none';
-  } else {
-    var s = currentStore();
-    if (!s) return;
-    editorState = {
-      storeId: s.id, name: s.name,
-      zones: s.zones.map(function(z) { return z.slice(); }),
-      map: Object.assign({}, s.map),
-      lat: s.lat, lng: s.lng, pref: s.pref
-    };
-    document.getElementById('shop-modal-title').textContent = 'Store layout';
-    document.getElementById('she-delete').style.display = shopStores.length > 1 ? '' : 'none';
-  }
-  document.getElementById('she-name').value = editorState.name;
-  document.getElementById('she-pref').checked = !!editorState.pref;
-  var delBtn = document.getElementById('she-delete');
-  if (delBtn) delBtn.textContent = 'Delete store';
-  deleteArmUntil = 0;
-  renderEditorZones();
-  renderEditorCatmap();
-  document.getElementById('shop-modal').classList.remove('hidden');
-}
-
-function renderEditorZones() {
-  var box = document.getElementById('she-zones');
-  box.innerHTML = '';
-  editorState.zones.forEach(function(z, idx) {
-    var row = document.createElement('div');
-    row.className = 'she-zone-row';
-    row.innerHTML =
-      '<button type="button" class="she-move" data-dir="-1" title="Move up">↑</button>' +
-      '<button type="button" class="she-move" data-dir="1" title="Move down">↓</button>' +
-      '<input type="text" class="she-zone-name" maxlength="40" value="' + esc(z[0]) + '" placeholder="Zone name">' +
-      '<input type="text" class="she-zone-aisle" maxlength="20" value="' + esc(z[1] || '') + '" placeholder="Aisle">' +
-      '<button type="button" class="she-zone-del" title="Remove zone">×</button>';
-    row.querySelectorAll('.she-move').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var dir = Number(btn.dataset.dir);
-        var j = idx + dir;
-        if (j < 0 || j >= editorState.zones.length) return;
-        syncEditorZonesFromDom();
-        var tmp = editorState.zones[idx];
-        editorState.zones[idx] = editorState.zones[j];
-        editorState.zones[j] = tmp;
-        // Remap category indices to follow the swap
-        Object.keys(editorState.map).forEach(function(cat) {
-          if (editorState.map[cat] === idx) editorState.map[cat] = j;
-          else if (editorState.map[cat] === j) editorState.map[cat] = idx;
-        });
-        renderEditorZones();
-        renderEditorCatmap();
-      });
-    });
-    row.querySelector('.she-zone-del').addEventListener('click', function() {
-      if (editorState.zones.length <= 1) return;
-      syncEditorZonesFromDom();
-      editorState.zones.splice(idx, 1);
-      // Remap: categories pointing at the removed zone go to Pantry-ish first zone;
-      // indices above the removed one shift down.
-      Object.keys(editorState.map).forEach(function(cat) {
-        if (editorState.map[cat] === idx) editorState.map[cat] = 0;
-        else if (editorState.map[cat] > idx) editorState.map[cat] -= 1;
-      });
-      renderEditorZones();
-      renderEditorCatmap();
-    });
-    box.appendChild(row);
-  });
-}
-
-function syncEditorZonesFromDom() {
-  var rows = document.querySelectorAll('#she-zones .she-zone-row');
-  rows.forEach(function(row, i) {
-    if (!editorState.zones[i]) return;
-    editorState.zones[i][0] = row.querySelector('.she-zone-name').value.trim() || editorState.zones[i][0];
-    editorState.zones[i][1] = row.querySelector('.she-zone-aisle').value.trim();
-  });
-}
-
-function renderEditorCatmap() {
-  var box = document.getElementById('she-catmap');
-  box.innerHTML = '';
-  CATEGORIES.forEach(function(cat) {
-    var row = document.createElement('label');
-    row.className = 'she-cat-row';
-    var opts = editorState.zones.map(function(z, i) {
-      return '<option value="' + i + '"' + (editorState.map[cat] === i ? ' selected' : '') + '>' + esc(z[0]) + '</option>';
-    }).join('');
-    row.innerHTML = '<span>' + esc(cat) + '</span><select data-cat="' + esc(cat) + '">' + opts + '</select>';
-    row.querySelector('select').addEventListener('change', function(e) {
-      editorState.map[cat] = Number(e.target.value);
-    });
-    box.appendChild(row);
-  });
-}
-
-function closeShopModal() {
-  document.getElementById('shop-modal').classList.add('hidden');
-  editorState = null;
-}
-
-async function saveShopEditor() {
-  if (!editorState) return;
-  syncEditorZonesFromDom();
-  var name = document.getElementById('she-name').value.trim();
-  if (!name) { document.getElementById('she-name').focus(); return; }
-  var store = {
-    id: editorState.storeId,
-    name: name,
-    zones: editorState.zones,
-    map: editorState.map,
-    lat: (editorState.lat != null) ? editorState.lat : null,
-    lng: (editorState.lng != null) ? editorState.lng : null,
-    pref: document.getElementById('she-pref').checked
-  };
-  try {
-    if (store.id) {
-      await shopApi('PATCH', SHOP_API + '&kind=store&id=' + encodeURIComponent(store.id), storeToBody(store));
-      var idx = shopStores.findIndex(function(s) { return String(s.id) === String(store.id); });
-      if (idx >= 0) shopStores[idx] = store;
-    } else {
-      var created = await shopApi('POST', SHOP_API, storeToBody(store));
-      store.id = created.id;
-      shopStores.push(store);
-      currentStoreId = store.id;
-    }
-    // Preferred is exclusive — the API clears it on other stores.
-    if (store.pref) {
-      shopStores.forEach(function(s) { if (String(s.id) !== String(store.id)) s.pref = false; });
-      storeWhy = '★ your preferred store';
-    }
-    closeShopModal();
-    renderShop();
-    if (typeof toast === 'function') toast('Store saved');
-  } catch (e) {
-    if (typeof toast === 'function') toast('Could not save the store. Please try again.');
-  }
-}
-
+// Store deletion lives in the store chip menu (two-tap arm: a delete
+// cascades to the store's whole list, so it must never be one tap).
+// The old layout editor is gone with the layout system (Winny, 2026-10-25).
 var deleteArmUntil = 0;
-async function deleteShopStore() {
-  if (!editorState || !editorState.storeId) return;
-  // Two-tap arm instead of a native confirm — a store delete cascades to
-  // its whole list, so it must never be one accidental tap.
+
+async function deleteCurrentStore(btn) {
+  if (shopStores.length <= 1) return;
+  // Two-tap arm instead of a native confirm.
   if (Date.now() > deleteArmUntil) {
     deleteArmUntil = Date.now() + 4000;
-    var armBtn = document.getElementById('she-delete');
-    if (armBtn) armBtn.textContent = 'Tap again to delete this store + its list';
+    if (btn) btn.textContent = 'Tap again to delete this store + its list';
     return;
   }
   deleteArmUntil = 0;
-  var id = editorState.storeId;
+  var id = currentStoreId;
   try {
     await shopApi('DELETE', SHOP_API + '&kind=store&id=' + encodeURIComponent(id));
     shopItems = shopItems.filter(function(it) { return String(it.storeId) !== String(id); });
     shopStores = shopStores.filter(function(s) { return String(s.id) !== String(id); });
-    if (String(currentStoreId) === String(id)) { currentStoreId = null; pickInitialStore(); }
-    closeShopModal();
+    currentStoreId = null; pickInitialStore();
     renderShop();
   } catch (e) {
     if (typeof toast === 'function') toast('Could not delete the store.');
@@ -1321,17 +1014,13 @@ if (document.readyState === 'loading') {
 // Exposed for testing and debugging.
 window.Shop = {
   updateShopBadge: updateShopBadge,
-  buildRoute: buildRoute,
-  guessCategory: guessCategory,
+  sortShopItems: sortShopItems,
   haversineMi: haversineMi,
   parsePlaces: parsePlaces,
   specialsKeywords: specialsKeywords,
   specialsMatch: specialsMatch,
   specialsPrice: specialsPrice,
-  specialsIndexByItem: specialsIndexByItem,
-  CATEGORIES: CATEGORIES,
-  TEMPLATE_ZONES: TEMPLATE_ZONES,
-  TEMPLATE_MAP: TEMPLATE_MAP
+  specialsIndexByItem: specialsIndexByItem
 };
 
 })();
