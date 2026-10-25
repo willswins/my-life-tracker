@@ -1284,6 +1284,9 @@ pre#ingest-docs {
 .shop-item-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .shop-item-special { color: #2e7d43; font-size: 0.85rem; margin-top: 0.12rem; overflow-wrap: break-word; }
 .shop-item.done .shop-item-name { text-decoration: line-through; color: var(--muted); }
+.shop-section-header { font-weight: 700; font-size: 0.85rem; color: var(--muted); padding: 0.9rem 0.4rem 0.3rem; }
+.shop-section-header:first-child { padding-top: 0.1rem; }
+.shop-section-count { font-weight: 400; margin-left: 0.4rem; }
 .shop-item-qty { color: var(--muted); font-size: 0.9rem; }
 .shop-del { border: 0; background: transparent; color: var(--muted); font-size: 1.25rem; cursor: pointer; padding: 0.2rem 0.5rem; line-height: 1; }
 .shop-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
