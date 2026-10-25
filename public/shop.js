@@ -39,13 +39,17 @@ var TEMPLATE_ZONES = [
   ['Household', 'Center aisles'],
   ['Personal Care', 'Near pharmacy'],
   ['Frozen', 'Last section'],
-  ['Checkout', 'Front']
+  ['Checkout', 'Front'],
+  // 'Others' is not a store aisle: non-grocery items (category 'Other',
+  // e.g. a laptop) sit here, after checkout, instead of inside a grocery
+  // aisle (Winny, 2026-10-25 — 'Other' used to map to Pantry).
+  ['Others', '']
 ];
 
 var TEMPLATE_MAP = {
   'Produce': 0, 'Bakery': 1, 'Meat & Deli': 2, 'Dairy & Eggs': 3,
   'Pantry': 4, 'Snacks & Drinks': 5, 'Frozen': 8, 'Household': 6,
-  'Personal Care': 7, 'Other': 4
+  'Personal Care': 7, 'Other': 10
 };
 
 // Keyword rules for auto-categorizing typed items. Checked in order.
