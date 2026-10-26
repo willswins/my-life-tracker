@@ -157,6 +157,7 @@ function createHabitCard(habit) {
         <span class="habit-stat-label">30-day</span>
       </div>
     </div>
+    ${challengeSectionHTML(habit)}
     <div class="habit-grid" data-habit-id="${habit.id}"></div>
     <div class="habit-actions">
       <button class="habit-edit" data-habit-id="${habit.id}">Edit</button>
@@ -192,7 +193,101 @@ function createHabitCard(habit) {
     deleteHabit(fresh);
   });
 
+  // Bind challenge buttons (daily habits only)
+  const startBtn = card.querySelector('[data-challenge-start]');
+  if (startBtn) startBtn.addEventListener('click', () => startChallenge(habitId));
+  const endBtn = card.querySelector('[data-challenge-end]');
+  if (endBtn) endBtn.addEventListener('click', () => endChallenge(habitId));
+
   return card;
+}
+
+// ---------------------------------------------------------------------------
+// 21-day challenge (v1: daily habits only — a 21-day window means daily)
+// Pure progress math, kept separate so it can be unit-tested.
+// ---------------------------------------------------------------------------
+
+function challengeProgress(checkins, challenge, today) {
+  const fallback = 21;
+  if (!challenge || !challenge.start) {
+    return { status: 'none', done: 0, total: fallback, dayNumber: 0, daysLeft: 0, endDate: null };
+  }
+  const total = challenge.days || fallback;
+  const start = window.Habits._parseDate(challenge.start);
+  const end = new Date(start);
+  end.setDate(end.getDate() + total - 1);
+  const endStr = window.Habits._formatDate(end);
+  let done = 0;
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (checkins[window.Habits._formatDate(d)] === true) done++;
+  }
+  const todayStr = today || window.Habits._todayStr();
+  if (done >= total) {
+    return { status: 'complete', done, total, dayNumber: total, daysLeft: 0, endDate: endStr };
+  }
+  if (todayStr > endStr) {
+    return { status: 'ended', done, total, dayNumber: total, daysLeft: 0, endDate: endStr };
+  }
+  const dayNumber = Math.min(total, Math.max(1, window.Habits._daysBetween(challenge.start, todayStr) + 1));
+  const daysLeft = Math.max(0, window.Habits._daysBetween(todayStr, endStr));
+  return { status: 'active', done, total, dayNumber, daysLeft, endDate: endStr };
+}
+
+function challengeRingSVG(habit, prog) {
+  const r = 26;
+  const C = 2 * Math.PI * r;
+  const off = C * (1 - prog.done / prog.total);
+  return `<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="${prog.done} of ${prog.total} challenge days completed">` +
+    `<circle cx="32" cy="32" r="${r}" fill="none" stroke="#e5e5e5" stroke-width="7"/>` +
+    `<circle cx="32" cy="32" r="${r}" fill="none" stroke="${habit.color}" stroke-width="7" stroke-linecap="round" ` +
+    `stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 32 32)"/>` +
+    `<text x="32" y="31" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">${prog.done}/${prog.total}</text>` +
+    `<text x="32" y="45" text-anchor="middle" font-size="9" fill="currentColor">days</text></svg>`;
+}
+
+function challengeEndLabel(endStr) {
+  const d = window.Habits._parseDate(endStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function challengeSectionHTML(habit) {
+  if (habit.frequency !== 'daily') return '';
+  const prog = challengeProgress(habit.checkins, habit.challenge);
+  if (prog.status === 'none') {
+    return `<div class="habit-challenge" style="margin-top:10px">` +
+      `<button class="habit-edit" data-challenge-start="${habit.id}">Start 21-day challenge</button></div>`;
+  }
+  if (prog.status === 'active') {
+    return `<div class="habit-challenge" style="margin-top:10px;display:flex;align-items:center;gap:12px">` +
+      challengeRingSVG(habit, prog) +
+      `<div><div><strong>Day ${prog.dayNumber} of ${prog.total}</strong></div>` +
+      `<div>${prog.daysLeft} day${prog.daysLeft === 1 ? '' : 's'} left · ends ${challengeEndLabel(prog.endDate)}</div>` +
+      `<button class="habit-edit" data-challenge-end="${habit.id}" style="margin-top:4px">End challenge</button></div></div>`;
+  }
+  if (prog.status === 'complete') {
+    return `<div class="habit-challenge" style="margin-top:10px">🏆 <strong>Challenge complete — ${prog.done}/${prog.total}!</strong> ` +
+      `<button class="habit-edit" data-challenge-start="${habit.id}">Start again</button></div>`;
+  }
+  return `<div class="habit-challenge" style="margin-top:10px">Challenge ended — ${prog.done}/${prog.total} days. ` +
+    `<button class="habit-edit" data-challenge-start="${habit.id}">Start again</button></div>`;
+}
+
+async function startChallenge(habitId) {
+  try {
+    await window.Habits.startChallenge(habitId);
+    await renderHabits();
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not start challenge. Please try again.');
+  }
+}
+
+async function endChallenge(habitId) {
+  try {
+    await window.Habits.endChallenge(habitId);
+    await renderHabits();
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not end challenge. Please try again.');
+  }
 }
 
 function renderStreakGrid(container, habit) {
@@ -355,6 +450,7 @@ function cancelDeleteHabit() {
 window.HabitUI = {
   renderHabits,
   calculateStreak: (c, f) => window.Habits._calculateStreak(c, f),
+  challengeProgress,
 };
 
 // Start
