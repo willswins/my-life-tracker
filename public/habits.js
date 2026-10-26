@@ -184,6 +184,9 @@ function cardToHabit(card) {
     color: data.color || '#4CAF50',
     icon: data.icon || '✅',
     checkins: data.checkins || {},
+    // 21-day challenge state: {start: 'YYYY-MM-DD', days: 21} or null.
+    // Stored on the card so checkIn/checkOut/update round-trips keep it.
+    challenge: data.challenge || null,
     createdDate: data.created_date || card.created_at?.split('T')[0] || todayStr(),
     _card: card,
   };
@@ -199,6 +202,7 @@ function habitToDetails(habit) {
     color: habit.color,
     icon: habit.icon,
     checkins: habit.checkins,
+    challenge: habit.challenge || null,
     created_date: habit.createdDate,
   });
 }
@@ -311,6 +315,21 @@ const Habits = {
     });
 
     return cardToHabit(updated);
+  },
+
+  /**
+   * Start a 21-day challenge on a habit, beginning today.
+   * Any previous challenge is replaced; check-in history is kept.
+   */
+  async startChallenge(id) {
+    return this.update(id, { challenge: { start: todayStr(), days: 21 } });
+  },
+
+  /**
+   * End (clear) the current challenge on a habit.
+   */
+  async endChallenge(id) {
+    return this.update(id, { challenge: null });
   },
 
   /**
