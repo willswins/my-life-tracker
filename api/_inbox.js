@@ -126,7 +126,28 @@ module.exports = async (req, res) => {
         source,
         source_ref: typeof body.source_ref === 'string' ? body.source_ref.slice(0, 300) : null,
       });
-      return send(201, inserted[0]);
+      const item = inserted[0];
+      // Optional photo: upload to private Supabase Storage, store the signed
+      // URL on the item. The text capture is never lost because of a photo
+      // failure — a failed upload only adds image_error.
+      if (body.image && typeof body.image === 'object') {
+        try {
+          const { uploadBase64 } = require('./_storage');
+          const url = await uploadBase64({
+            userEmail: email,
+            cardId: item.id,
+            filename: body.image.filename,
+            contentType: body.image.contentType,
+            base64: body.image.base64,
+          });
+          const patched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(item.id)}&${scope}`, { image_url: url });
+          item.image_url = (patched[0] && patched[0].image_url) || url;
+        } catch (e) {
+          console.error('inbox image upload failed:', e.message);
+          item.image_error = 'photo could not be saved';
+        }
+      }
+      return send(201, item);
     }
     if (req.method === 'POST' && id) {
       const body = await readBody(req);
@@ -152,6 +173,19 @@ module.exports = async (req, res) => {
       return send(200, { ok: true, to, id: destId });
     }
     if (req.method === 'DELETE' && id) {
+      // Best-effort: remove the stored photo too, so discards don't orphan
+      // files in Storage. Row deletion must never fail over this.
+      try {
+        const rows = await sb('GET', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&select=image_url`);
+        const url = rows[0] && rows[0].image_url;
+        if (url) {
+          const { deleteFile, pathFromSignedUrl } = require('./_storage');
+          const p = pathFromSignedUrl(url);
+          if (p) await deleteFile(p);
+        }
+      } catch (e) {
+        console.error('inbox image cleanup failed:', e.message);
+      }
       await sb('DELETE', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`);
       res.writeHead(204, { 'Cache-Control': 'no-store' });
       res.end();
