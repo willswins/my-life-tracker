@@ -46,6 +46,7 @@
         '<select name="status"><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
         '<select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
         '<input name="description" type="text" placeholder="Note (optional)" style="flex:3 1 200px;">' +
+        '<input name="comments" type="text" placeholder="Comment (optional)" style="flex:3 1 200px;">' +
         '<button type="submit">Add</button>' +
       '</form>' +
       '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
@@ -78,6 +79,7 @@
         status: f.status.value,
         kind: f.kind.value,
         description: f.description.value.trim(),
+        comments: f.comments.value.trim(),
         source: 'manual',
         acknowledged: true,
       };
@@ -86,6 +88,7 @@
         f.payee.value = '';
         f.amount.value = '';
         f.description.value = '';
+        f.comments.value = '';
         f.item_date.value = todayISO();
         loadPayments();
       } catch (e) {
@@ -115,6 +118,11 @@
           else if (act === 'ack') await api('PATCH', base, { acknowledged: true });
           else if (act === 'att') await api('PATCH', base, { attention: true });
           else if (act === 'unatt') await api('PATCH', base, { attention: false });
+          else if (act === 'comment') {
+            var detailRow = btn.closest('tr');
+            var ta = detailRow ? detailRow.querySelector('.pay-comment-input') : null;
+            await api('PATCH', base, { comments: ta ? ta.value : '' });
+          }
           else if (act === 'del' && confirm('Delete this payment record?')) {
             await api('DELETE', base);
           }
@@ -157,10 +165,12 @@
     var html = '<table style="width:100%;border-collapse:collapse;">' +
       '<thead><tr><th style="text-align:left;">Date</th><th style="text-align:left;">Payee</th>' +
       '<th style="text-align:left;">Note</th><th style="text-align:right;">Amount</th>' +
-      '<th style="text-align:left;">Status</th></tr></thead><tbody>';
+      '<th style="text-align:left;">Status</th><th style="text-align:left;">Comments</th></tr></thead><tbody>';
     rows.forEach(function (r) {
       var note = (r.description || '').split('\n')[0] || '';
       if (note.length > 60) note = note.slice(0, 60) + '…';
+      var comment = r.comments || '';
+      if (comment.length > 40) comment = comment.slice(0, 40) + '…';
       html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid #ddd;">' +
         '<td style="white-space:nowrap;">' + esc(fmtDate(r.item_date)) + '</td>' +
         '<td>' + esc(r.payee || '—') +
@@ -168,10 +178,13 @@
           (r.attention ? ' <span title="Marked for attention">★</span>' : '') + '</td>' +
         '<td>' + esc(note) + '</td>' +
         '<td style="text-align:right;white-space:nowrap;">' + esc(fmtAmt(r.amount)) + '</td>' +
-        '<td style="color:' + statusColor(r.status) + ';font-weight:600;">' + esc(r.status) + '</td></tr>';
+        '<td style="color:' + statusColor(r.status) + ';font-weight:600;">' + esc(r.status) + '</td>' +
+        '<td>' + esc(comment) + '</td></tr>';
       if (state.openId === String(r.id)) {
-        html += '<tr><td colspan="5" style="background:#f7f7f7;">' +
+        html += '<tr><td colspan="6" style="background:#f7f7f7;">' +
           '<div style="white-space:pre-wrap;">' + esc(r.description || '') + '</div>' +
+          '<div style="margin-top:8px;"><textarea class="pay-comment-input" placeholder="Add a comment…" style="width:100%;box-sizing:border-box;">' + esc(r.comments || '') + '</textarea>' +
+          '<button data-pay-act="comment" data-pay-id="' + esc(r.id) + '" style="margin-top:4px;">Save comment</button></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
           (r.status !== 'paid'
             ? '<button data-pay-act="paid" data-pay-id="' + esc(r.id) + '">Mark paid</button>'
