@@ -454,6 +454,90 @@ function wrapInboxRow() {
   window.inboxRow._ibUxPatched = true;
 }
 
+// ---------------- inbox pagination ----------------
+// app.js renderInbox() renders every matching row into #inbox-list. With
+// full-message bodies that is a long page, so paginate in the client:
+// 20 rows per page, Prev/Next plus "Page X of Y · Showing A–B of N".
+// Wrapping renderInbox (not loadInbox) covers every refresh trigger —
+// filter, tag, search, triage, discard all funnel through renderInbox.
+var INBOX_PAGE_SIZE = 20;
+var inboxPage = 1;
+var inboxPageSig = null;
+
+// Pure: clamp page into range and compute the visible slice. Node-tested.
+function ibPageSlice(n, size, page) {
+  var maxPage = n > 0 ? Math.ceil(n / size) : 1;
+  if (page < 1) page = 1;
+  if (page > maxPage) page = maxPage;
+  return { page: page, maxPage: maxPage, start: (page - 1) * size, end: Math.min(page * size, n) };
+}
+
+function paginateInbox() {
+  var list = document.getElementById('inbox-list');
+  if (!list) return;
+  var rows = [];
+  for (var i = 0; i < list.children.length; i++) {
+    var c = list.children[i];
+    if (c.className && c.className.indexOf('inbox-row') !== -1) rows.push(c);
+  }
+  var bar = document.getElementById('inbox-pager');
+  if (!rows.length) {
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  // A filter/search/triaged-toggle change restarts at page 1; triage and
+  // discard refreshes keep the page (clamped to the new length). The
+  // app.js filter globals are top-level lets, so read them via typeof
+  // guards rather than window properties (lets never attach to window).
+  var sig = [
+    typeof inboxShowTriaged !== 'undefined' ? inboxShowTriaged : '',
+    typeof inboxTagFilter !== 'undefined' ? inboxTagFilter : '',
+    typeof inboxSearch !== 'undefined' ? inboxSearch : '',
+  ].join('|');
+  if (inboxPageSig !== null && sig !== inboxPageSig) inboxPage = 1;
+  inboxPageSig = sig;
+  var s = ibPageSlice(rows.length, INBOX_PAGE_SIZE, inboxPage);
+  inboxPage = s.page;
+  rows.forEach(function (row, idx) {
+    row.style.display = (idx >= s.start && idx < s.end) ? '' : 'none';
+  });
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'inbox-pager';
+    bar.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;';
+    var prev = document.createElement('button');
+    prev.textContent = '← Prev';
+    prev.addEventListener('click', function () { inboxPage--; paginateInbox(); window.scrollTo(0, 0); });
+    var info = document.createElement('span');
+    info.id = 'inbox-pager-info';
+    var next = document.createElement('button');
+    next.textContent = 'Next →';
+    next.addEventListener('click', function () { inboxPage++; paginateInbox(); window.scrollTo(0, 0); });
+    bar.appendChild(prev);
+    bar.appendChild(info);
+    bar.appendChild(next);
+    if (list.parentNode) list.parentNode.insertBefore(bar, list.nextSibling);
+  }
+  bar.style.display = s.maxPage > 1 ? '' : 'none';
+  var btns = bar.getElementsByTagName('button');
+  if (btns[0]) btns[0].disabled = s.page <= 1;
+  if (btns[1]) btns[1].disabled = s.page >= s.maxPage;
+  var infoEl = document.getElementById('inbox-pager-info');
+  if (infoEl) infoEl.textContent = 'Page ' + s.page + ' of ' + s.maxPage + ' · Showing ' + (s.start + 1) + '–' + s.end + ' of ' + rows.length;
+}
+
+function wrapRenderInbox() {
+  var orig = window.renderInbox;
+  if (typeof orig !== 'function' || orig._ibPaginated) return;
+  var wrapped = function () {
+    var out = orig.apply(this, arguments);
+    try { paginateInbox(); } catch (e) { /* pagination must never break render */ }
+    return out;
+  };
+  wrapped._ibPaginated = true;
+  window.renderInbox = wrapped;
+}
+
 // ---------------- init ----------------
 
 let initAttempts = 0;
@@ -477,6 +561,11 @@ function tryInit() {
     wrapApi();
     wrapInboxRow();
     wrapSwitchView();
+    wrapRenderInbox();
+    // If the app booted straight onto the inbox, its rows predated the
+    // wrap; paginate them once instead of waiting for the next render.
+    const inboxView = document.getElementById('view-inbox');
+    if (inboxView && !inboxView.classList.contains('hidden')) paginateInbox();
     // Hide the old inline form ONLY after the new composer is in place, so
     // a failure here can never leave the inbox without any way to add.
     const form = document.getElementById('inbox-form');
@@ -496,7 +585,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice };
 }
 
 })();
