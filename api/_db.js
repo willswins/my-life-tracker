@@ -54,7 +54,7 @@ const ISSUE_TYPES = ['task', 'bug', 'story'];
 function cleanCard(card) {
   const out = {};
   if (typeof card.title === 'string' && card.title.trim()) out.title = card.title.trim().slice(0, 160);
-  if (typeof card.details === 'string') out.details = card.details.slice(0, 2000);
+  if (typeof card.details === 'string') out.details = card.details.slice(0, 5000);
   if (TAGS.includes(card.tag)) out.tag = card.tag;
   // tags column is an array: accept arrays natively (UI sends pickedTags as an array).
   if (Array.isArray(card.tags)) out.tags = card.tags.map(t => String(t).slice(0, 50)).slice(0, 20);
