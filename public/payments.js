@@ -28,6 +28,23 @@
   function statusColor(s) {
     return s === 'paid' ? '#2e7d32' : s === 'overdue' ? '#c62828' : '#b7791f';
   }
+  // Display label for a row's source. New rows carry a precise source at
+  // capture (email, parentsquare, infinite-campus, manual). Older email
+  // rows predate that, so classify them from the message text: ParentSquare
+  // mail carries "posted in" snippets or parentsquare references.
+  function paySourceLabel(r) {
+    var s = String(r.source || '').toLowerCase();
+    if (s === 'parentsquare') return 'ParentSquare';
+    if (s === 'infinite-campus' || s === 'infinite_campus') return 'Infinite Campus';
+    if (s === 'manual') return 'Manual';
+    if (s === 'chat') return 'Chat';
+    if (s === 'email') {
+      var hay = ((r.description || '') + ' ' + (r.payee || '')).toLowerCase();
+      if (hay.indexOf('parentsquare') !== -1 || hay.indexOf('posted in ') !== -1) return 'ParentSquare';
+      return 'Email';
+    }
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—';
+  }
   function todayISO() {
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -165,7 +182,7 @@
     var html = '<table style="width:100%;border-collapse:collapse;">' +
       '<thead><tr><th style="text-align:left;">Date</th><th style="text-align:left;">Payee</th>' +
       '<th style="text-align:left;">Note</th><th style="text-align:right;">Amount</th>' +
-      '<th style="text-align:left;">Status</th><th style="text-align:left;">Comments</th></tr></thead><tbody>';
+      '<th style="text-align:left;">Status</th><th style="text-align:left;">Comments</th><th style="text-align:left;">Source</th></tr></thead><tbody>';
     rows.forEach(function (r) {
       var note = (r.description || '').split('\n')[0] || '';
       if (note.length > 60) note = note.slice(0, 60) + '…';
@@ -179,10 +196,12 @@
         '<td>' + esc(note) + '</td>' +
         '<td style="text-align:right;white-space:nowrap;">' + esc(fmtAmt(r.amount)) + '</td>' +
         '<td style="color:' + statusColor(r.status) + ';font-weight:600;">' + esc(r.status) + '</td>' +
-        '<td>' + esc(comment) + '</td></tr>';
+        '<td>' + esc(comment) + '</td>' +
+        '<td style="white-space:nowrap;">' + esc(paySourceLabel(r)) + '</td></tr>';
       if (state.openId === String(r.id)) {
-        html += '<tr><td colspan="6" style="background:#f7f7f7;">' +
+        html += '<tr><td colspan="7" style="background:#f7f7f7;">' +
           '<div style="white-space:pre-wrap;">' + esc(r.description || '') + '</div>' +
+          '<div style="color:#666;">Source: ' + esc(paySourceLabel(r)) + '</div>' +
           '<div style="margin-top:8px;"><textarea class="pay-comment-input" placeholder="Add a comment…" style="width:100%;box-sizing:border-box;">' + esc(r.comments || '') + '</textarea>' +
           '<button data-pay-act="comment" data-pay-id="' + esc(r.id) + '" style="margin-top:4px;">Save comment</button></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
@@ -265,8 +284,10 @@
     window.switchView = wrapped;
     return true;
   }
-  if (!wrapSwitch()) {
-    window.addEventListener('load', wrapSwitch);
+  if (typeof window !== 'undefined') {
+    if (!wrapSwitch()) {
+      window.addEventListener('load', wrapSwitch);
+    }
   }
 
   // Build the shell at load so the menu entry exists before anyone can
@@ -277,9 +298,15 @@
     wrapBadges();
     refreshPaymentsBadge();
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPayments);
-  } else {
-    initPayments();
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initPayments);
+    } else {
+      initPayments();
+    }
+  }
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { paySourceLabel: paySourceLabel };
   }
 })();
