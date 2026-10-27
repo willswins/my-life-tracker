@@ -4,6 +4,7 @@ const handlers = {
   journal: require('./_journal'),
   links: require('./_links'),
   inbox: require('./_inbox'),
+  payments: require('./_payments'),
   tags: require('./_tags'),
   shop: require('./_shop'),
 };
