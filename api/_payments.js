@@ -21,6 +21,8 @@ function cleanPayment(b) {
   if (KINDS.includes(b.kind)) out.kind = b.kind;
   if (typeof b.source === 'string') out.source = b.source.slice(0, 50);
   if (typeof b.source_ref === 'string') out.source_ref = b.source_ref.slice(0, 300);
+  if (typeof b.acknowledged === 'boolean') out.acknowledged = b.acknowledged;
+  if (typeof b.attention === 'boolean') out.attention = b.attention;
   out.updated_at = new Date().toISOString();
   return out;
 }
@@ -56,15 +58,33 @@ module.exports = async (req, res) => {
       return send(201, ins[0]);
     }
     if (req.method === 'PATCH' && id) {
-      // Status-only update (e.g. due -> paid). Nothing else changes.
+      // Status, acknowledgement, and attention updates only. Viewing the
+      // page never changes these — only explicit actions do, so the menu
+      // bubble count stays until the user acts.
       const body = await readBody(req);
-      if (!STATUSES.includes(body.status)) {
-        return send(400, { ok: false, error: 'status must be paid|due|overdue' });
+      const patch = { updated_at: new Date().toISOString() };
+      if (body.status !== undefined) {
+        if (!STATUSES.includes(body.status)) {
+          return send(400, { ok: false, error: 'status must be paid|due|overdue' });
+        }
+        patch.status = body.status;
       }
-      const patched = await sb('PATCH', `/rest/v1/payment_items?id=eq.${encodeURIComponent(id)}&${scope}`, {
-        status: body.status,
-        updated_at: new Date().toISOString(),
-      });
+      if (body.acknowledged !== undefined) {
+        if (typeof body.acknowledged !== 'boolean') {
+          return send(400, { ok: false, error: 'acknowledged must be boolean' });
+        }
+        patch.acknowledged = body.acknowledged;
+      }
+      if (body.attention !== undefined) {
+        if (typeof body.attention !== 'boolean') {
+          return send(400, { ok: false, error: 'attention must be boolean' });
+        }
+        patch.attention = body.attention;
+      }
+      if (Object.keys(patch).length === 1) {
+        return send(400, { ok: false, error: 'nothing to update' });
+      }
+      const patched = await sb('PATCH', `/rest/v1/payment_items?id=eq.${encodeURIComponent(id)}&${scope}`, patch);
       if (!patched[0]) return send(404, { ok: false, error: 'item not found' });
       return send(200, patched[0]);
     }
