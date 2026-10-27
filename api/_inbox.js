@@ -12,7 +12,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function cleanTriageReminder(b) {
   const out = {};
   if (typeof b.title === 'string' && b.title.trim()) out.title = b.title.trim().slice(0, 160);
-  if (typeof b.detail === 'string') out.detail = b.detail.slice(0, 2000);
+  if (typeof b.detail === 'string') out.detail = b.detail.slice(0, 5000);
   if (b.remind_at !== undefined) {
     const d = new Date(b.remind_at);
     if (isNaN(d)) throw new Error('bad remind_at');
@@ -122,7 +122,7 @@ module.exports = async (req, res) => {
       const source = SOURCES.includes(body.source) ? body.source : 'manual';
       const inserted = await sb('POST', '/rest/v1/inbox_items', {
         user_email: email,
-        text: text.slice(0, 5000),
+        text: text.slice(0, 20000),
         source,
         source_ref: typeof body.source_ref === 'string' ? body.source_ref.slice(0, 300) : null,
       });
@@ -171,6 +171,21 @@ module.exports = async (req, res) => {
         updated_at: now,
       });
       return send(200, { ok: true, to, id: destId });
+    }
+    if (req.method === 'PATCH' && id) {
+      // Text-only update (used by the body backfill): the owner can replace
+      // an item's text, nothing else. Triage still goes through POST.
+      const body = await readBody(req);
+      if (typeof body.text !== 'string' || !body.text.trim()) {
+        return send(400, { ok: false, error: 'text required' });
+      }
+      const now = new Date().toISOString();
+      const patched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`, {
+        text: body.text.slice(0, 20000),
+        updated_at: now,
+      });
+      if (!patched[0]) return send(404, { ok: false, error: 'item not found' });
+      return send(200, patched[0]);
     }
     if (req.method === 'DELETE' && id) {
       // Best-effort: remove the stored photo too, so discards don't orphan
