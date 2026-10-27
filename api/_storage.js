@@ -65,6 +65,33 @@ async function signedUrl(storagePath) {
   return base + '/storage/v1' + j.signedURL;
 }
 
+// Recover the storage path from a signed URL this module produced, so a
+// discarded item's file can be deleted. Returns null for foreign URLs.
+function pathFromSignedUrl(url) {
+  try {
+    const marker = `/storage/v1/object/sign/${BUCKET}/`;
+    const i = String(url || '').indexOf(marker);
+    if (i === -1) return null;
+    const rest = String(url).slice(i + marker.length).split('?')[0];
+    return decodeURIComponent(rest) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function deleteFile(storagePath) {
+  const base = sbBase();
+  const key = process.env.SUPABASE_SERVICE_KEY || '';
+  const r = await fetch(`${base}/storage/v1/object/${BUCKET}/${storagePath}`, {
+    method: 'DELETE',
+    headers: { apikey: key, Authorization: 'Bearer ' + key },
+  });
+  if (!r.ok && r.status !== 404) {
+    const t = await r.text().catch(() => '');
+    throw new Error('storage delete failed: ' + r.status + ' ' + t.slice(0, 200));
+  }
+}
+
 // Upload a base64-encoded file and return a signed URL good for ~1 year.
 async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }) {
   if (!/^image\/(jpeg|png|gif|webp|heic|heif)$/i.test(contentType || '')) {
@@ -87,4 +114,4 @@ async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }
   return signedUrl(storagePath);
 }
 
-module.exports = { uploadBase64, BUCKET };
+module.exports = { uploadBase64, signedUrl, deleteFile, pathFromSignedUrl, BUCKET };
