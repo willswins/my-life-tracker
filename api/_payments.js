@@ -45,7 +45,17 @@ module.exports = async (req, res) => {
     const scope = `user_email=eq.${encodeURIComponent(email)}`;
 
     if (req.method === 'GET') {
-      const rows = await sb('GET', `/rest/v1/payment_items?${scope}&order=item_date.desc.nullslast,created_at.desc`);
+      // PostgREST caps a single response at 1000 rows, so page through
+      // until a short page arrives; the client renders the full table.
+      const rows = [];
+      let offset = 0;
+      for (;;) {
+        const page = await sb('GET', `/rest/v1/payment_items?${scope}&order=item_date.desc.nullslast,created_at.desc&limit=1000&offset=${offset}`);
+        if (!Array.isArray(page)) break;
+        rows.push(...page);
+        if (page.length < 1000) break;
+        offset += 1000;
+      }
       return send(200, rows);
     }
     if (req.method === 'POST' && !id) {
