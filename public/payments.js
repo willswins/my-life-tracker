@@ -61,7 +61,7 @@
       var b = document.createElement('button');
       b.className = 'view-link';
       b.dataset.view = 'payments';
-      b.textContent = 'Payments';
+      b.innerHTML = 'Payments <span class="badge" id="badge-payments"></span>';
       b.addEventListener('click', function () { window.switchView('payments'); });
       var inboxBtn = menu.querySelector('[data-view="inbox"]');
       if (inboxBtn) inboxBtn.insertAdjacentElement('afterend', b);
@@ -79,6 +79,7 @@
         kind: f.kind.value,
         description: f.description.value.trim(),
         source: 'manual',
+        acknowledged: true,
       };
       try {
         await api('POST', '/api/app?r=daybook&view=payments', body);
@@ -109,11 +110,15 @@
         var id = btn.getAttribute('data-pay-id');
         var act = btn.getAttribute('data-pay-act');
         try {
-          if (act === 'paid') await api('PATCH', '/api/app?r=daybook&view=payments&id=' + encodeURIComponent(id), { status: 'paid' });
-          if (act === 'del' && confirm('Delete this payment record?')) {
-            await api('DELETE', '/api/app?r=daybook&view=payments&id=' + encodeURIComponent(id));
+          var base = '/api/app?r=daybook&view=payments&id=' + encodeURIComponent(id);
+          if (act === 'paid') await api('PATCH', base, { status: 'paid' });
+          else if (act === 'ack') await api('PATCH', base, { acknowledged: true });
+          else if (act === 'att') await api('PATCH', base, { attention: true });
+          else if (act === 'unatt') await api('PATCH', base, { attention: false });
+          else if (act === 'del' && confirm('Delete this payment record?')) {
+            await api('DELETE', base);
           }
-          if (act === 'paid' || (act === 'del' && state.rows.some(function (r) { return String(r.id) === id; }))) loadPayments();
+          loadPayments();
         } catch (e) {
           alert('That did not go through. Please try again.');
         }
@@ -158,17 +163,25 @@
       if (note.length > 60) note = note.slice(0, 60) + '…';
       html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid #ddd;">' +
         '<td style="white-space:nowrap;">' + esc(fmtDate(r.item_date)) + '</td>' +
-        '<td>' + esc(r.payee || '—') + '</td>' +
+        '<td>' + esc(r.payee || '—') +
+          (!r.acknowledged ? ' <span style="font-weight:700;color:#b7791f;">NEW</span>' : '') +
+          (r.attention ? ' <span title="Marked for attention">★</span>' : '') + '</td>' +
         '<td>' + esc(note) + '</td>' +
         '<td style="text-align:right;white-space:nowrap;">' + esc(fmtAmt(r.amount)) + '</td>' +
         '<td style="color:' + statusColor(r.status) + ';font-weight:600;">' + esc(r.status) + '</td></tr>';
       if (state.openId === String(r.id)) {
         html += '<tr><td colspan="5" style="background:#f7f7f7;">' +
           '<div style="white-space:pre-wrap;">' + esc(r.description || '') + '</div>' +
-          '<div style="margin-top:8px;display:flex;gap:8px;">' +
+          '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
           (r.status !== 'paid'
             ? '<button data-pay-act="paid" data-pay-id="' + esc(r.id) + '">Mark paid</button>'
             : '') +
+          (!r.acknowledged
+            ? '<button data-pay-act="ack" data-pay-id="' + esc(r.id) + '">Acknowledge</button>'
+            : '') +
+          (r.attention
+            ? '<button data-pay-act="unatt" data-pay-id="' + esc(r.id) + '">Remove attention</button>'
+            : '<button data-pay-act="att" data-pay-id="' + esc(r.id) + '">Mark for attention</button>') +
           '<button data-pay-act="del" data-pay-id="' + esc(r.id) + '">Delete</button>' +
           '</div></td></tr>';
       }
@@ -185,9 +198,46 @@
       var rows = await api('GET', '/api/app?r=daybook&view=payments');
       state.rows = Array.isArray(rows) ? rows : [];
       renderPayments();
+      paintBadgeFromState();
     } catch (e) {
       wrap.innerHTML = '<p>Could not load payments.</p>';
     }
+  }
+
+  // Bubble rule: unacknowledged new items PLUS items marked for attention.
+  // Opening the page never clears it — only Acknowledge (for new items)
+  // and Remove attention change the number.
+  function bubbleCount(rows) {
+    return rows.filter(function (r) { return !r.acknowledged || r.attention; }).length;
+  }
+  function paintBadgeFromState() {
+    var badge = document.getElementById('badge-payments');
+    if (!badge) return;
+    var n = bubbleCount(state.rows);
+    badge.textContent = n;
+    badge.classList.toggle('zero', n === 0);
+  }
+  async function refreshPaymentsBadge() {
+    var badge = document.getElementById('badge-payments');
+    if (!badge) return;
+    try {
+      var rows = await api('GET', '/api/app?r=daybook&view=payments');
+      var n = bubbleCount(rows);
+      badge.textContent = n;
+      badge.classList.toggle('zero', n === 0);
+    } catch (e) { /* leave the last count showing */ }
+  }
+  function wrapBadges() {
+    if (typeof window.updateBadges !== 'function') return false;
+    if (window.updateBadges.__paymentsWrapped) return true;
+    var orig = window.updateBadges;
+    var wrapped = async function () {
+      await orig();
+      await refreshPaymentsBadge();
+    };
+    wrapped.__paymentsWrapped = true;
+    window.updateBadges = wrapped;
+    return true;
   }
 
   function wrapSwitch() {
@@ -209,9 +259,14 @@
   // Build the shell at load so the menu entry exists before anyone can
   // navigate to it. (First version built it lazily on first open, which
   // meant the entry never appeared at all.)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureShell);
-  } else {
+  function initPayments() {
     ensureShell();
+    wrapBadges();
+    refreshPaymentsBadge();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPayments);
+  } else {
+    initPayments();
   }
 })();
