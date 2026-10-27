@@ -14,6 +14,7 @@ function cleanPayment(b) {
   if (b.item_date === null || DATE_RE.test(b.item_date || '')) out.item_date = b.item_date || null;
   if (typeof b.payee === 'string' && b.payee.trim()) out.payee = b.payee.trim().slice(0, 160);
   if (typeof b.description === 'string') out.description = b.description.slice(0, 20000);
+  if (typeof b.comments === 'string') out.comments = b.comments.slice(0, 5000);
   if (b.amount === null || b.amount === '' || !isNaN(Number(b.amount))) {
     out.amount = (b.amount === null || b.amount === '') ? null : Number(b.amount);
   }
@@ -80,6 +81,12 @@ module.exports = async (req, res) => {
           return send(400, { ok: false, error: 'attention must be boolean' });
         }
         patch.attention = body.attention;
+      }
+      if (body.comments !== undefined) {
+        if (typeof body.comments !== 'string') {
+          return send(400, { ok: false, error: 'comments must be a string' });
+        }
+        patch.comments = body.comments.slice(0, 5000);
       }
       if (Object.keys(patch).length === 1) {
         return send(400, { ok: false, error: 'nothing to update' });
