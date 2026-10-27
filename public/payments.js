@@ -63,7 +63,9 @@
       b.dataset.view = 'payments';
       b.textContent = 'Payments';
       b.addEventListener('click', function () { window.switchView('payments'); });
-      menu.appendChild(b);
+      var inboxBtn = menu.querySelector('[data-view="inbox"]');
+      if (inboxBtn) inboxBtn.insertAdjacentElement('afterend', b);
+      else menu.appendChild(b);
     }
 
     sec.querySelector('.pay-add').addEventListener('submit', async function (ev) {
@@ -202,5 +204,14 @@
   }
   if (!wrapSwitch()) {
     window.addEventListener('load', wrapSwitch);
+  }
+
+  // Build the shell at load so the menu entry exists before anyone can
+  // navigate to it. (First version built it lazily on first open, which
+  // meant the entry never appeared at all.)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureShell);
+  } else {
+    ensureShell();
   }
 })();
