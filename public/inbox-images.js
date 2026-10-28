@@ -146,20 +146,22 @@ function injectStyles() {
   const st = document.createElement('style');
   st.id = 'ib-ux-style';
   st.textContent = [
-    '#inbox-fab{position:fixed;right:16px;bottom:24px;width:56px;height:56px;border-radius:50%;',
-    'font-size:32px;line-height:1;z-index:90;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;}',
-    '.ib-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;',
-    'display:flex;align-items:flex-end;justify-content:center;}',
-    '.ib-sheet{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;',
-    'border-radius:16px 16px 0 0;padding:12px 16px 28px;}',
-    '.ib-sheet-title{font-size:15px;color:#555;margin:4px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    // Unification (2026-10-28): the FAB uses the shared .fab class from
+    // styles.css; editor + action sheets use the shared centered .modal
+    // geometry (dim .4, 14px radius, 480px). Only the sheet/input details
+    // that differ stay injected.
+    '.ib-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;',
+    'display:flex;align-items:center;justify-content:center;padding:1rem;}',
+    '.ib-sheet{background:var(--card);width:100%;max-width:480px;max-height:90vh;overflow:auto;',
+    'border-radius:14px;padding:1.25rem;}',
+    '.ib-sheet-title{font-size:15px;color:var(--muted);margin:4px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
     '.ib-sheet button.ib-act{display:block;width:100%;text-align:left;padding:14px 4px;font-size:17px;',
-    'background:none;border:none;border-bottom:1px solid #eee;cursor:pointer;}',
-    '.ib-sheet button.ib-danger{color:#c00;}',
+    'background:none;border:none;border-bottom:1px solid var(--line);cursor:pointer;}',
+    '.ib-sheet button.ib-danger{color:#b91c1c;}',
     '.ib-toolbar{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap;}',
     '.ib-toolbar button{padding:8px 12px;font-size:16px;cursor:pointer;}',
-    '#ib-editor{min-height:140px;border:1px solid #ddd;border-radius:8px;padding:10px;outline:none;font-size:16px;}',
-    '#ib-editor:empty:before{content:attr(data-placeholder);color:#999;}',
+    '#ib-editor{min-height:140px;border:1px solid var(--line);border-radius:8px;padding:10px;outline:none;font-size:16px;}',
+    '#ib-editor:empty:before{content:attr(data-placeholder);color:var(--muted);}',
     '#ib-editor img{max-width:100%;border-radius:8px;margin:6px 0;}',
     '.ib-row-actions{margin-left:auto;display:block;}',
     '.ib-row-actions button{font-size:20px;padding:2px 10px;cursor:pointer;}',
@@ -279,7 +281,7 @@ function buildEditor() {
     '<div class="ib-sheet" role="dialog" aria-label="New capture">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
     '<strong>New capture</strong>' +
-    '<span><button id="ib-editor-save">Save</button> <button id="ib-editor-close">✕</button></span>' +
+    '<span class="modal-actions"><button id="ib-editor-save" class="primary">Save</button> <button id="ib-editor-close">✕</button></span>' +
     '</div>' +
     '<div class="ib-toolbar">' +
     '<button type="button" data-cmd="bold"><b>B</b></button>' +
@@ -318,6 +320,7 @@ function buildFab() {
   if (document.getElementById('inbox-fab')) return;
   const fab = document.createElement('button');
   fab.id = 'inbox-fab';
+  fab.className = 'fab';
   fab.type = 'button';
   fab.textContent = '+';
   fab.setAttribute('aria-label', 'New capture');
