@@ -41,6 +41,14 @@
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[Number(m[2]) - 1] + ' ' + Number(m[3]) + ', ' + m[1];
   }
+  // Two-line date cell (Winny, 2026-10-28): month-day on line 1, year on
+  // line 2, so the Date column stays narrow on the phone. Pure, tested.
+  function payDateCell(d) {
+    var f = fmtDate(d);
+    var parts = f.split(', ');
+    if (parts.length === 2) return esc(parts[0]) + '<br>' + esc(parts[1]);
+    return esc(f);
+  }
   function fmtAmt(n) {
     if (n === null || n === undefined || n === '') return '—';
     return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -336,7 +344,7 @@
       var comment = r.comments || '';
       if (comment.length > 40) comment = comment.slice(0, 40) + '…';
       html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
-        '<td style="white-space:nowrap;">' + esc(fmtDate(r.item_date)) + '</td>' +
+        '<td>' + payDateCell(r.item_date) + '</td>' +
         '<td>' + esc(r.payee || '—') +
           (!r.acknowledged ? ' <span style="font-weight:700;color:#b7791f;">NEW</span>' : '') +
           (r.attention ? ' <span title="Marked for attention">★</span>' : '') + '</td>' +
@@ -473,6 +481,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell };
   }
 })();
