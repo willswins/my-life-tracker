@@ -84,18 +84,21 @@
     sec.id = 'view-payments';
     sec.className = 'view hidden';
     sec.innerHTML =
-      '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">' +
-        '<div class="filters pay-f-status" role="group" aria-label="Filter by status">' +
-          '<button type="button" data-v="all" class="active">All</button>' +
-          '<button type="button" data-v="paid">Paid</button>' +
-          '<button type="button" data-v="due">Due</button>' +
-          '<button type="button" data-v="overdue">Overdue</button></div>' +
-        '<div class="filters pay-f-kind" role="group" aria-label="Filter by kind">' +
-          '<button type="button" data-v="all" class="active">All</button>' +
-          '<button type="button" data-v="payment">Payment</button>' +
-          '<button type="button" data-v="debt">Debt</button>' +
-          '<button type="button" data-v="monthly">Monthly</button></div>' +
-        '<input class="pay-f-q" type="text" placeholder="Search payee or note" style="flex:1;">' +
+      '<div class="view-head">' +
+        '<input class="pay-f-q" type="search" placeholder="Search payee or note" aria-label="Search payments">' +
+        '<button type="button" class="primary" id="pay-add-btn">+ Add</button>' +
+      '</div>' +
+      '<div class="tag-filter-row pay-f-status" role="group" aria-label="Filter by status">' +
+        '<button type="button" class="tag-filter active" data-v="all">All</button>' +
+        '<button type="button" class="tag-filter" data-v="paid">Paid</button>' +
+        '<button type="button" class="tag-filter" data-v="due">Due</button>' +
+        '<button type="button" class="tag-filter" data-v="overdue">Overdue</button></div>' +
+      '<div class="tag-filter-row pay-f-kind" role="group" aria-label="Filter by kind">' +
+        '<button type="button" class="tag-filter active" data-v="all">All</button>' +
+        '<button type="button" class="tag-filter" data-v="payment">Payment</button>' +
+        '<button type="button" class="tag-filter" data-v="debt">Debt</button>' +
+        '<button type="button" class="tag-filter" data-v="monthly">Monthly</button></div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0.6rem 0;">' +
         '<span style="font-size:14px;color:var(--muted);">From</span><input class="pay-f-from" type="date" aria-label="From date">' +
         '<span style="font-size:14px;color:var(--muted);">To</span><input class="pay-f-to" type="date" aria-label="To date">' +
       '</div>' +
@@ -115,7 +118,7 @@
       else menu.appendChild(b);
     }
 
-    // Shared .filters pill groups (same language as Journal/Board).
+    // Board-style tag-filter pills (the bubbles on the work board).
     function bindPayFilter(groupSel, key) {
       var g = sec.querySelector(groupSel);
       g.addEventListener('click', function (ev) {
@@ -128,6 +131,7 @@
     }
     bindPayFilter('.pay-f-status', 'status');
     bindPayFilter('.pay-f-kind', 'kind');
+    sec.querySelector('#pay-add-btn').addEventListener('click', openPayModal);
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
       renderPayments();
@@ -184,10 +188,11 @@
 
   // ---------------- + button + popup modal ----------------
   // Unification (2026-10-28): the add flow uses the SHARED system — the
-  // .fab class from styles.css and the centered .modal. The injected CSS
-  // below only centers this modal's own backdrop (the #modal-backdrop id
-  // belongs to the task modal) and keeps modal inputs at 16px so iOS does
-  // not auto-zoom on focus.
+  // centered .modal, opened from the board-style + Add header button.
+  // The injected CSS below only centers this modal's own backdrop (the
+  // #modal-backdrop id belongs to the task modal), keeps modal inputs at
+  // 16px so iOS does not auto-zoom on focus, and formats the table
+  // (muted uppercase headers, comfortable cell padding).
   function injectPayStyles() {
     if (document.getElementById('pay-ux-style')) return;
     var st = document.createElement('style');
@@ -196,31 +201,12 @@
       '.pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;',
       'display:flex;align-items:center;justify-content:center;padding:1rem;}',
       '.pay-modal input,.pay-modal select{font-size:16px;padding:10px;}',
+      '.pay-table-wrap th{text-align:left;color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em;padding:0.6rem 0.5rem;border-bottom:1px solid var(--line);}',
+      '.pay-table-wrap td{padding:0.6rem 0.5rem;vertical-align:top;}',
     ].join('\n');
     document.head.appendChild(st);
   }
 
-  function payModalOpen() {
-    var bd = document.getElementById('pay-modal-backdrop');
-    return !!bd && !bd.classList.contains('hidden');
-  }
-  function updatePayFabVisibility() {
-    var fab = document.getElementById('pay-fab');
-    if (!fab) return;
-    var view = document.getElementById('view-payments');
-    fab.style.display = (view && !view.classList.contains('hidden') && !payModalOpen()) ? '' : 'none';
-  }
-  function buildPayFab() {
-    if (document.getElementById('pay-fab')) return;
-    var fab = document.createElement('button');
-    fab.id = 'pay-fab';
-    fab.className = 'fab';
-    fab.type = 'button';
-    fab.textContent = '+';
-    fab.setAttribute('aria-label', 'New payment');
-    fab.addEventListener('click', openPayModal);
-    document.body.appendChild(fab);
-  }
   function buildPayModal() {
     if (document.getElementById('pay-modal-backdrop')) return;
     var bd = document.createElement('div');
@@ -253,13 +239,11 @@
       f.item_date.value = todayISO();
     }
     bd.classList.remove('hidden');
-    updatePayFabVisibility();
     setTimeout(function () { var p = f ? f.payee : null; if (p) p.focus(); }, 0);
   }
   function closePayModal() {
     var bd = document.getElementById('pay-modal-backdrop');
     if (bd) bd.classList.add('hidden');
-    updatePayFabVisibility();
   }
   // Pure: POST body for a new manual row. Node-tested.
   function payNewRowBody(f) {
@@ -447,7 +431,6 @@
     var orig = window.switchView;
     var wrapped = async function (name, push) {
       await orig(name, push);
-      setTimeout(updatePayFabVisibility, 0);
       if (name === 'payments') loadPayments();
     };
     wrapped.__paymentsWrapped = true;
@@ -466,9 +449,7 @@
   function initPayments() {
     ensureShell();
     injectPayStyles();
-    buildPayFab();
     buildPayModal();
-    updatePayFabVisibility();
     wrapBadges();
     refreshPaymentsBadge();
   }
