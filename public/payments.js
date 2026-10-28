@@ -77,11 +77,19 @@
     sec.className = 'view hidden';
     sec.innerHTML =
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">' +
-        '<select class="pay-f-status"><option value="all">All statuses</option><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
-        '<select class="pay-f-kind"><option value="all">All kinds</option><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
+        '<div class="filters pay-f-status" role="group" aria-label="Filter by status">' +
+          '<button type="button" data-v="all" class="active">All</button>' +
+          '<button type="button" data-v="paid">Paid</button>' +
+          '<button type="button" data-v="due">Due</button>' +
+          '<button type="button" data-v="overdue">Overdue</button></div>' +
+        '<div class="filters pay-f-kind" role="group" aria-label="Filter by kind">' +
+          '<button type="button" data-v="all" class="active">All</button>' +
+          '<button type="button" data-v="payment">Payment</button>' +
+          '<button type="button" data-v="debt">Debt</button>' +
+          '<button type="button" data-v="monthly">Monthly</button></div>' +
         '<input class="pay-f-q" type="text" placeholder="Search payee or note" style="flex:1;">' +
-        '<span style="font-size:14px;color:#555;">From</span><input class="pay-f-from" type="date" aria-label="From date">' +
-        '<span style="font-size:14px;color:#555;">To</span><input class="pay-f-to" type="date" aria-label="To date">' +
+        '<span style="font-size:14px;color:var(--muted);">From</span><input class="pay-f-from" type="date" aria-label="From date">' +
+        '<span style="font-size:14px;color:var(--muted);">To</span><input class="pay-f-to" type="date" aria-label="To date">' +
       '</div>' +
       '<div class="pay-table-wrap" style="overflow-x:auto;"></div>' +
       '<div class="pay-pager" style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;"></div>';
@@ -99,14 +107,19 @@
       else menu.appendChild(b);
     }
 
-    sec.querySelector('.pay-f-status').addEventListener('change', function (ev) {
-      state.status = ev.target.value;
-      renderPayments();
-    });
-    sec.querySelector('.pay-f-kind').addEventListener('change', function (ev) {
-      state.kind = ev.target.value;
-      renderPayments();
-    });
+    // Shared .filters pill groups (same language as Journal/Board).
+    function bindPayFilter(groupSel, key) {
+      var g = sec.querySelector(groupSel);
+      g.addEventListener('click', function (ev) {
+        var b = ev.target.closest('button[data-v]');
+        if (!b) return;
+        state[key] = b.getAttribute('data-v');
+        g.querySelectorAll('button').forEach(function (x) { x.classList.toggle('active', x === b); });
+        renderPayments();
+      });
+    }
+    bindPayFilter('.pay-f-status', 'status');
+    bindPayFilter('.pay-f-kind', 'kind');
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
       renderPayments();
@@ -162,24 +175,19 @@
   }
 
   // ---------------- + button + popup modal ----------------
-  // (Winny, 2026-10-27, evening): no inline add form on the page — a +
-  // floating button (same pattern as the Inbox FAB) opens a popup modal
-  // with the same fields, saved with the same POST body as before.
+  // Unification (2026-10-28): the add flow uses the SHARED system — the
+  // .fab class from styles.css and the centered .modal. The injected CSS
+  // below only centers this modal's own backdrop (the #modal-backdrop id
+  // belongs to the task modal) and keeps modal inputs at 16px so iOS does
+  // not auto-zoom on focus.
   function injectPayStyles() {
     if (document.getElementById('pay-ux-style')) return;
     var st = document.createElement('style');
     st.id = 'pay-ux-style';
     st.textContent = [
-      '#pay-fab{position:fixed;right:16px;bottom:24px;width:56px;height:56px;border-radius:50%;',
-      'font-size:32px;line-height:1;z-index:90;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;}',
-      '.pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;',
-      'display:flex;align-items:flex-end;justify-content:center;}',
-      '.pay-sheet{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;',
-      'border-radius:16px 16px 0 0;padding:12px 16px 28px;}',
-      '.pay-sheet label{display:block;font-size:14px;color:#555;margin:10px 0 4px;}',
-      '.pay-sheet input,.pay-sheet select{width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ddd;border-radius:8px;}',
-      '.pay-sheet .pay-modal-btns{display:flex;gap:8px;margin-top:16px;}',
-      '.pay-sheet .pay-modal-btns button{flex:1;padding:12px;font-size:16px;cursor:pointer;}',
+      '.pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;',
+      'display:flex;align-items:center;justify-content:center;padding:1rem;}',
+      '.pay-modal input,.pay-modal select{font-size:16px;padding:10px;}',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -198,6 +206,7 @@
     if (document.getElementById('pay-fab')) return;
     var fab = document.createElement('button');
     fab.id = 'pay-fab';
+    fab.className = 'fab';
     fab.type = 'button';
     fab.textContent = '+';
     fab.setAttribute('aria-label', 'New payment');
@@ -210,8 +219,8 @@
     bd.id = 'pay-modal-backdrop';
     bd.className = 'pay-backdrop hidden';
     bd.innerHTML =
-      '<div class="pay-sheet" role="dialog" aria-label="New payment">' +
-      '<h3 style="margin:4px 0 8px;">New payment</h3>' +
+      '<div class="modal pay-modal" role="dialog" aria-label="New payment">' +
+      '<h3>New payment</h3>' +
       '<form id="pay-modal-form">' +
       '<label>Date</label><input name="item_date" type="date">' +
       '<label>Payee</label><input name="payee" type="text" required>' +
@@ -220,7 +229,7 @@
       '<label>Type</label><select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
       '<label>Note (optional)</label><input name="description" type="text">' +
       '<label>Comment (optional)</label><input name="comments" type="text">' +
-      '<div class="pay-modal-btns"><button type="submit">Save</button><button type="button" id="pay-modal-cancel">Cancel</button></div>' +
+      '<div class="modal-actions"><button type="submit" class="primary">Save</button><button type="button" id="pay-modal-cancel">Cancel</button></div>' +
       '</form></div>';
     document.body.appendChild(bd);
     bd.addEventListener('click', function (ev) { if (ev.target === bd) closePayModal(); });
@@ -326,7 +335,7 @@
       if (note.length > 60) note = note.slice(0, 60) + '…';
       var comment = r.comments || '';
       if (comment.length > 40) comment = comment.slice(0, 40) + '…';
-      html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid #ddd;">' +
+      html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
         '<td style="white-space:nowrap;">' + esc(fmtDate(r.item_date)) + '</td>' +
         '<td>' + esc(r.payee || '—') +
           (!r.acknowledged ? ' <span style="font-weight:700;color:#b7791f;">NEW</span>' : '') +
@@ -337,9 +346,9 @@
         '<td>' + esc(comment) + '</td>' +
         '<td style="white-space:nowrap;">' + esc(paySourceLabel(r)) + '</td></tr>';
       if (state.openId === String(r.id)) {
-        html += '<tr><td colspan="7" style="background:#f7f7f7;">' +
+        html += '<tr><td colspan="7" style="background:var(--lane);">' +
           '<div style="white-space:pre-wrap;">' + esc(r.description || '') + '</div>' +
-          '<div style="color:#666;">Source: ' + esc(paySourceLabel(r)) + '</div>' +
+          '<div style="color:var(--muted);">Source: ' + esc(paySourceLabel(r)) + '</div>' +
           '<div style="margin-top:8px;"><textarea class="pay-comment-input" placeholder="Add a comment…" style="width:100%;box-sizing:border-box;">' + esc(r.comments || '') + '</textarea>' +
           '<button data-pay-act="comment" data-pay-id="' + esc(r.id) + '" style="margin-top:4px;">Save comment</button></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
