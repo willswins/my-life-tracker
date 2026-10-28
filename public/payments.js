@@ -7,7 +7,27 @@
   if (typeof VIEW_IDS !== 'undefined') VIEW_IDS['payments'] = 'view-payments';
   if (typeof VIEW_TITLES !== 'undefined') VIEW_TITLES['payments'] = 'Payments';
 
-  var state = { rows: [], status: 'all', kind: 'all', q: '', openId: null };
+  var state = { rows: [], status: 'all', kind: 'all', q: '', openId: null, page: 1, pageSig: null };
+
+  // ---------------- payments pagination ----------------
+  // Ported from the Inbox pager (20 rows per page, Prev/Next plus
+  // "Page X of Y · Showing A–B of N"). Payments renders its own table
+  // from state.rows, so slice the data before building HTML instead of
+  // hiding DOM rows after render. A filter/search change restarts at
+  // page 1; action and load refreshes keep the page (clamped).
+  var PAY_PAGE_SIZE = 20;
+
+  // Pure: clamp page into range and compute the visible slice. Node-tested.
+  function payPageSlice(n, size, page) {
+    var maxPage = n > 0 ? Math.ceil(n / size) : 1;
+    if (page < 1) page = 1;
+    if (page > maxPage) page = maxPage;
+    return { page: page, maxPage: maxPage, start: (page - 1) * size, end: Math.min(page * size, n) };
+  }
+  function payPagerText(s, n) {
+    if (n === 0) return 'Page 1 of 1 · Showing 0 of 0';
+    return 'Page ' + s.page + ' of ' + s.maxPage + ' · Showing ' + (s.start + 1) + '–' + s.end + ' of ' + n;
+  }
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -71,7 +91,8 @@
         '<select class="pay-f-kind"><option value="all">All kinds</option><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
         '<input class="pay-f-q" type="text" placeholder="Search payee or note" style="flex:1;">' +
       '</div>' +
-      '<div class="pay-table-wrap" style="overflow-x:auto;"></div>';
+      '<div class="pay-table-wrap" style="overflow-x:auto;"></div>' +
+      '<div class="pay-pager" style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;"></div>';
     document.body.appendChild(sec);
 
     var menu = document.getElementById('menu');
@@ -123,6 +144,14 @@
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
       renderPayments();
+    });
+    sec.querySelector('.pay-pager').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-pay-page]');
+      if (!btn || btn.disabled) return;
+      if (btn.getAttribute('data-pay-page') === 'prev') state.page--;
+      else state.page++;
+      renderPayments();
+      window.scrollTo(0, 0);
     });
     sec.querySelector('.pay-table-wrap').addEventListener('click', async function (ev) {
       var btn = ev.target.closest('[data-pay-act]');
@@ -177,13 +206,20 @@
     var rows = filteredRows();
     if (!rows.length) {
       wrap.innerHTML = '<p>No payment records match. The daily sweep adds receipts and bills here automatically.</p>';
+      try { var pg0 = sec.querySelector('.pay-pager'); if (pg0) pg0.style.display = 'none'; } catch (e) {}
       return;
     }
+    var sig = state.status + '|' + state.kind + '|' + state.q;
+    if (state.pageSig !== null && sig !== state.pageSig) state.page = 1;
+    state.pageSig = sig;
+    var s = payPageSlice(rows.length, PAY_PAGE_SIZE, state.page);
+    state.page = s.page;
+    var pageRows = rows.slice(s.start, s.end);
     var html = '<table style="width:100%;border-collapse:collapse;">' +
       '<thead><tr><th style="text-align:left;">Date</th><th style="text-align:left;">Payee</th>' +
       '<th style="text-align:left;">Note</th><th style="text-align:right;">Amount</th>' +
       '<th style="text-align:left;">Status</th><th style="text-align:left;">Comments</th><th style="text-align:left;">Source</th></tr></thead><tbody>';
-    rows.forEach(function (r) {
+    pageRows.forEach(function (r) {
       var note = (r.description || '').split('\n')[0] || '';
       if (note.length > 60) note = note.slice(0, 60) + '…';
       var comment = r.comments || '';
@@ -220,6 +256,20 @@
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+    try {
+      var pager = sec.querySelector('.pay-pager');
+      if (pager) {
+        if (s.maxPage <= 1) {
+          pager.style.display = 'none';
+        } else {
+          pager.style.display = '';
+          pager.innerHTML =
+            '<button data-pay-page="prev"' + (s.page <= 1 ? ' disabled' : '') + '>← Prev</button>' +
+            '<span>' + payPagerText(s, rows.length) + '</span>' +
+            '<button data-pay-page="next"' + (s.page >= s.maxPage ? ' disabled' : '') + '>Next →</button>';
+        }
+      }
+    } catch (e) { /* pagination must never break render */ }
   }
 
   async function loadPayments() {
@@ -307,6 +357,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText };
   }
 })();
