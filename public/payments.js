@@ -7,7 +7,7 @@
   if (typeof VIEW_IDS !== 'undefined') VIEW_IDS['payments'] = 'view-payments';
   if (typeof VIEW_TITLES !== 'undefined') VIEW_TITLES['payments'] = 'Payments';
 
-  var state = { rows: [], status: 'all', kind: 'all', q: '', openId: null, page: 1, pageSig: null };
+  var state = { rows: [], status: 'all', kind: 'all', q: '', from: '', to: '', openId: null, page: 1, pageSig: null };
 
   // ---------------- payments pagination ----------------
   // Ported from the Inbox pager (20 rows per page, Prev/Next plus
@@ -76,20 +76,12 @@
     sec.id = 'view-payments';
     sec.className = 'view hidden';
     sec.innerHTML =
-      '<form class="pay-add" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">' +
-        '<input name="item_date" type="date" value="' + todayISO() + '" style="flex:1 1 120px;">' +
-        '<input name="payee" type="text" placeholder="Payee" required style="flex:2 1 140px;">' +
-        '<input name="amount" type="number" step="0.01" min="0" placeholder="Amount" style="flex:1 1 100px;">' +
-        '<select name="status"><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
-        '<select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
-        '<input name="description" type="text" placeholder="Note (optional)" style="flex:3 1 200px;">' +
-        '<input name="comments" type="text" placeholder="Comment (optional)" style="flex:3 1 200px;">' +
-        '<button type="submit">Add</button>' +
-      '</form>' +
-      '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">' +
         '<select class="pay-f-status"><option value="all">All statuses</option><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
         '<select class="pay-f-kind"><option value="all">All kinds</option><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
         '<input class="pay-f-q" type="text" placeholder="Search payee or note" style="flex:1;">' +
+        '<span style="font-size:14px;color:#555;">From</span><input class="pay-f-from" type="date" aria-label="From date">' +
+        '<span style="font-size:14px;color:#555;">To</span><input class="pay-f-to" type="date" aria-label="To date">' +
       '</div>' +
       '<div class="pay-table-wrap" style="overflow-x:auto;"></div>' +
       '<div class="pay-pager" style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;"></div>';
@@ -107,32 +99,6 @@
       else menu.appendChild(b);
     }
 
-    sec.querySelector('.pay-add').addEventListener('submit', async function (ev) {
-      ev.preventDefault();
-      var f = ev.target;
-      var body = {
-        item_date: f.item_date.value || null,
-        payee: f.payee.value.trim(),
-        amount: f.amount.value === '' ? null : Number(f.amount.value),
-        status: f.status.value,
-        kind: f.kind.value,
-        description: f.description.value.trim(),
-        comments: f.comments.value.trim(),
-        source: 'manual',
-        acknowledged: true,
-      };
-      try {
-        await api('POST', '/api/app?r=daybook&view=payments', body);
-        f.payee.value = '';
-        f.amount.value = '';
-        f.description.value = '';
-        f.comments.value = '';
-        f.item_date.value = todayISO();
-        loadPayments();
-      } catch (e) {
-        alert('Could not save this payment.');
-      }
-    });
     sec.querySelector('.pay-f-status').addEventListener('change', function (ev) {
       state.status = ev.target.value;
       renderPayments();
@@ -143,6 +109,14 @@
     });
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
+      renderPayments();
+    });
+    sec.querySelector('.pay-f-from').addEventListener('change', function (ev) {
+      state.from = ev.target.value;
+      renderPayments();
+    });
+    sec.querySelector('.pay-f-to').addEventListener('change', function (ev) {
+      state.to = ev.target.value;
       renderPayments();
     });
     sec.querySelector('.pay-pager').addEventListener('click', function (ev) {
@@ -187,16 +161,144 @@
     });
   }
 
-  function filteredRows() {
-    return state.rows.filter(function (r) {
-      if (state.status !== 'all' && r.status !== state.status) return false;
-      if (state.kind !== 'all' && r.kind !== state.kind) return false;
-      if (state.q) {
-        var hay = ((r.payee || '') + ' ' + (r.description || '')).toLowerCase();
-        if (hay.indexOf(state.q) === -1) return false;
-      }
-      return true;
+  // ---------------- + button + popup modal ----------------
+  // (Winny, 2026-10-27, evening): no inline add form on the page — a +
+  // floating button (same pattern as the Inbox FAB) opens a popup modal
+  // with the same fields, saved with the same POST body as before.
+  function injectPayStyles() {
+    if (document.getElementById('pay-ux-style')) return;
+    var st = document.createElement('style');
+    st.id = 'pay-ux-style';
+    st.textContent = [
+      '#pay-fab{position:fixed;right:16px;bottom:24px;width:56px;height:56px;border-radius:50%;',
+      'font-size:32px;line-height:1;z-index:90;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;}',
+      '.pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;',
+      'display:flex;align-items:flex-end;justify-content:center;}',
+      '.pay-sheet{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;',
+      'border-radius:16px 16px 0 0;padding:12px 16px 28px;}',
+      '.pay-sheet label{display:block;font-size:14px;color:#555;margin:10px 0 4px;}',
+      '.pay-sheet input,.pay-sheet select{width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ddd;border-radius:8px;}',
+      '.pay-sheet .pay-modal-btns{display:flex;gap:8px;margin-top:16px;}',
+      '.pay-sheet .pay-modal-btns button{flex:1;padding:12px;font-size:16px;cursor:pointer;}',
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  function payModalOpen() {
+    var bd = document.getElementById('pay-modal-backdrop');
+    return !!bd && !bd.classList.contains('hidden');
+  }
+  function updatePayFabVisibility() {
+    var fab = document.getElementById('pay-fab');
+    if (!fab) return;
+    var view = document.getElementById('view-payments');
+    fab.style.display = (view && !view.classList.contains('hidden') && !payModalOpen()) ? '' : 'none';
+  }
+  function buildPayFab() {
+    if (document.getElementById('pay-fab')) return;
+    var fab = document.createElement('button');
+    fab.id = 'pay-fab';
+    fab.type = 'button';
+    fab.textContent = '+';
+    fab.setAttribute('aria-label', 'New payment');
+    fab.addEventListener('click', openPayModal);
+    document.body.appendChild(fab);
+  }
+  function buildPayModal() {
+    if (document.getElementById('pay-modal-backdrop')) return;
+    var bd = document.createElement('div');
+    bd.id = 'pay-modal-backdrop';
+    bd.className = 'pay-backdrop hidden';
+    bd.innerHTML =
+      '<div class="pay-sheet" role="dialog" aria-label="New payment">' +
+      '<h3 style="margin:4px 0 8px;">New payment</h3>' +
+      '<form id="pay-modal-form">' +
+      '<label>Date</label><input name="item_date" type="date">' +
+      '<label>Payee</label><input name="payee" type="text" required>' +
+      '<label>Amount</label><input name="amount" type="number" step="0.01" min="0">' +
+      '<label>Status</label><select name="status"><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
+      '<label>Type</label><select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
+      '<label>Note (optional)</label><input name="description" type="text">' +
+      '<label>Comment (optional)</label><input name="comments" type="text">' +
+      '<div class="pay-modal-btns"><button type="submit">Save</button><button type="button" id="pay-modal-cancel">Cancel</button></div>' +
+      '</form></div>';
+    document.body.appendChild(bd);
+    bd.addEventListener('click', function (ev) { if (ev.target === bd) closePayModal(); });
+    document.getElementById('pay-modal-cancel').addEventListener('click', closePayModal);
+    document.getElementById('pay-modal-form').addEventListener('submit', savePayModal);
+  }
+  function openPayModal() {
+    var bd = document.getElementById('pay-modal-backdrop');
+    if (!bd) return;
+    var f = document.getElementById('pay-modal-form');
+    if (f) {
+      f.reset();
+      f.item_date.value = todayISO();
+    }
+    bd.classList.remove('hidden');
+    updatePayFabVisibility();
+    setTimeout(function () { var p = f ? f.payee : null; if (p) p.focus(); }, 0);
+  }
+  function closePayModal() {
+    var bd = document.getElementById('pay-modal-backdrop');
+    if (bd) bd.classList.add('hidden');
+    updatePayFabVisibility();
+  }
+  // Pure: POST body for a new manual row. Node-tested.
+  function payNewRowBody(f) {
+    return {
+      item_date: f.item_date || null,
+      payee: (f.payee || '').trim(),
+      amount: (f.amount === '' || f.amount == null) ? null : Number(f.amount),
+      status: f.status,
+      kind: f.kind,
+      description: (f.description || '').trim(),
+      comments: (f.comments || '').trim(),
+      source: 'manual',
+      acknowledged: true,
+    };
+  }
+  async function savePayModal(ev) {
+    ev.preventDefault();
+    var f = document.getElementById('pay-modal-form');
+    if (!f) return;
+    var body = payNewRowBody({
+      item_date: f.item_date.value,
+      payee: f.payee.value,
+      amount: f.amount.value,
+      status: f.status.value,
+      kind: f.kind.value,
+      description: f.description.value,
+      comments: f.comments.value,
     });
+    if (!body.payee) { f.payee.focus(); return; }
+    try {
+      await api('POST', '/api/app?r=daybook&view=payments', body);
+      closePayModal();
+      loadPayments();
+    } catch (e) {
+      alert('Could not save this payment.');
+    }
+  }
+
+  // Pure: does one row match the filters? Node-tested. Dates are
+  // YYYY-MM-DD strings, so plain string comparison works; a row with no
+  // date cannot be shown inside a range, so it is excluded when a bound
+  // is set. Bounds are inclusive.
+  function payRowMatches(r, f) {
+    if (f.status !== 'all' && r.status !== f.status) return false;
+    if (f.kind !== 'all' && r.kind !== f.kind) return false;
+    if (f.q) {
+      var hay = ((r.payee || '') + ' ' + (r.description || '')).toLowerCase();
+      if (hay.indexOf(f.q) === -1) return false;
+    }
+    if (f.from && (!r.item_date || r.item_date < f.from)) return false;
+    if (f.to && (!r.item_date || r.item_date > f.to)) return false;
+    return true;
+  }
+  function filteredRows() {
+    var f = { status: state.status, kind: state.kind, q: state.q, from: state.from, to: state.to };
+    return state.rows.filter(function (r) { return payRowMatches(r, f); });
   }
 
   function renderPayments() {
@@ -209,7 +311,7 @@
       try { var pg0 = sec.querySelector('.pay-pager'); if (pg0) pg0.style.display = 'none'; } catch (e) {}
       return;
     }
-    var sig = state.status + '|' + state.kind + '|' + state.q;
+    var sig = state.status + '|' + state.kind + '|' + state.q + '|' + state.from + '|' + state.to;
     if (state.pageSig !== null && sig !== state.pageSig) state.page = 1;
     state.pageSig = sig;
     var s = payPageSlice(rows.length, PAY_PAGE_SIZE, state.page);
@@ -328,6 +430,7 @@
     var orig = window.switchView;
     var wrapped = async function (name, push) {
       await orig(name, push);
+      setTimeout(updatePayFabVisibility, 0);
       if (name === 'payments') loadPayments();
     };
     wrapped.__paymentsWrapped = true;
@@ -345,6 +448,10 @@
   // meant the entry never appeared at all.)
   function initPayments() {
     ensureShell();
+    injectPayStyles();
+    buildPayFab();
+    buildPayModal();
+    updatePayFabVisibility();
     wrapBadges();
     refreshPaymentsBadge();
   }
@@ -357,6 +464,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches };
   }
 })();
