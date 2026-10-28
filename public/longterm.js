@@ -122,15 +122,20 @@ function ensureLtModal() {
   var div = document.createElement('div');
   div.id = 'ltm-modal';
   div.className = 'modal-backdrop hidden';
+  // Unification (2026-10-28): .modal-backdrop has no stylesheet rule
+  // (only #modal-backdrop does), so the backdrop gets the shared centered
+  // modal values inline. .hidden still wins via its !important rule.
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);' +
+    'display:flex;align-items:center;justify-content:center;padding:1rem;z-index:50;';
   div.innerHTML =
     '<div class="modal">' +
       '<h3>Long-term reminder</h3>' +
       '<label>Title<input id="ltm-title" type="text" maxlength="120"></label>' +
       '<label>Notes<textarea id="ltm-notes" rows="3"></textarea></label>' +
       '<div class="modal-actions">' +
-        '<button id="ltm-delete" class="btn-danger">Delete</button>' +
-        '<button id="ltm-cancel" class="btn-secondary">Cancel</button>' +
-        '<button id="ltm-save" class="btn-primary">Save</button>' +
+        '<button id="ltm-delete" class="danger-btn">Delete</button>' +
+        '<button id="ltm-cancel">Cancel</button>' +
+        '<button id="ltm-save" class="primary">Save</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(div);
@@ -193,6 +198,9 @@ function wireLtAdd() {
   var btn = document.getElementById('lt-add');
   if (btn && !btn.hasAttribute('data-lt-wired')) {
     btn.setAttribute('data-lt-wired', '1');
+    // Unification (2026-10-28): index.html marks this btn-primary, a
+    // class no stylesheet defines — switch it to the shared .primary.
+    btn.className = 'primary';
     btn.addEventListener('click', function() { openLtModal(null); });
   }
 }
