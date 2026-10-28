@@ -396,20 +396,20 @@
     return rows.filter(function (r) { return !r.acknowledged || r.attention; }).length;
   }
   function paintBadgeFromState() {
-    var badge = document.getElementById('badge-payments');
-    if (!badge) return;
     var n = bubbleCount(state.rows);
-    badge.textContent = n;
-    badge.classList.toggle('zero', n === 0);
+    var badge = document.getElementById('badge-payments');
+    if (badge) { badge.textContent = n; badge.classList.toggle('zero', n === 0); }
+    var home = document.getElementById('home-payments');
+    if (home) { home.textContent = n; home.classList.toggle('zero', n === 0); }
   }
   async function refreshPaymentsBadge() {
-    var badge = document.getElementById('badge-payments');
-    if (!badge) return;
     try {
       var rows = await api('GET', '/api/app?r=daybook&view=payments');
       var n = bubbleCount(rows);
-      badge.textContent = n;
-      badge.classList.toggle('zero', n === 0);
+      var badge = document.getElementById('badge-payments');
+      if (badge) { badge.textContent = n; badge.classList.toggle('zero', n === 0); }
+      var home = document.getElementById('home-payments');
+      if (home) { home.textContent = n; home.classList.toggle('zero', n === 0); }
     } catch (e) { /* leave the last count showing */ }
   }
   function wrapBadges() {
@@ -446,10 +446,29 @@
   // Build the shell at load so the menu entry exists before anyone can
   // navigate to it. (First version built it lazily on first open, which
   // meant the entry never appeared at all.)
+  // Home Screen link (Winny, 2026-10-28): a Payments tile in the Home
+  // "At a glance" row, built at load like the menu entry, so Payments is
+  // reachable from Home without editing the generated api/index.js.
+  // It spans the full stats row and shows the same attention bubble as
+  // the menu badge (unacknowledged + attention items, never a total).
+  function buildHomeLink() {
+    var stats = document.querySelector('#view-home .home-stats');
+    if (!stats || document.getElementById('home-payments')) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'home-stat';
+    b.style.gridColumn = '1 / -1';
+    b.setAttribute('aria-label', 'Payments');
+    b.innerHTML = '<span class="home-stat-num" id="home-payments">0</span>' +
+      '<span class="home-stat-label">Payments</span>';
+    b.addEventListener('click', function () { window.switchView('payments'); });
+    stats.appendChild(b);
+  }
   function initPayments() {
     ensureShell();
     injectPayStyles();
     buildPayModal();
+    buildHomeLink();
     wrapBadges();
     refreshPaymentsBadge();
   }
