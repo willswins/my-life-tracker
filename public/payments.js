@@ -203,6 +203,8 @@
       '.pay-modal input,.pay-modal select{font-size:16px;padding:10px;}',
       '.pay-table-wrap th{text-align:left;color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em;padding:0.6rem 0.5rem;border-bottom:1px solid var(--line);}',
       '.pay-table-wrap td{padding:0.6rem 0.5rem;vertical-align:top;}',
+      '.pay-table-wrap tr.pay-row-attn td{background:#fee2e2;}',
+      '.pay-table-wrap tr.pay-row-ack td{background:#dcfce7;}',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -297,6 +299,15 @@
     if (f.to && (!r.item_date || r.item_date > f.to)) return false;
     return true;
   }
+  // Row tint (Winny, 2026-10-30): attention rows paint light red, rows
+  // still needing acknowledgement paint light green. Attention wins when
+  // a row is both.
+  function payRowClass(r) {
+    if (r && r.attention) return 'pay-row-attn';
+    if (r && !r.acknowledged) return 'pay-row-ack';
+    return '';
+  }
+
   function filteredRows() {
     var f = { status: state.status, kind: state.kind, q: state.q, from: state.from, to: state.to };
     return state.rows.filter(function (r) { return payRowMatches(r, f); });
@@ -327,7 +338,7 @@
       if (note.length > 60) note = note.slice(0, 60) + '…';
       var comment = r.comments || '';
       if (comment.length > 40) comment = comment.slice(0, 40) + '…';
-      html += '<tr data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
+      html += '<tr class="' + payRowClass(r) + '" data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
         '<td>' + payDateCell(r.item_date) + '</td>' +
         '<td>' + esc(r.payee || '—') +
           (!r.acknowledged ? ' <span style="font-weight:700;color:#b7791f;">NEW</span>' : '') +
@@ -481,6 +492,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell, payRowClass: payRowClass };
   }
 })();
