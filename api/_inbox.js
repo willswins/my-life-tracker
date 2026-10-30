@@ -176,6 +176,17 @@ module.exports = async (req, res) => {
       // Text-only update (used by the body backfill): the owner can replace
       // an item's text, nothing else. Triage still goes through POST.
       const body = await readBody(req);
+      // Read-state update (2026-10-30): opening a capture marks it read,
+      // which un-bolds its row. Only the flag may change this way.
+      if (typeof body.is_read === 'boolean') {
+        const nowRead = new Date().toISOString();
+        const readPatched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`, {
+          is_read: body.is_read,
+          updated_at: nowRead,
+        });
+        if (!readPatched[0]) return send(404, { ok: false, error: 'item not found' });
+        return send(200, readPatched[0]);
+      }
       if (typeof body.text !== 'string' || !body.text.trim()) {
         return send(400, { ok: false, error: 'text required' });
       }
