@@ -166,8 +166,8 @@ function injectStyles() {
     '.ib-row-actions{margin-left:auto;display:block;}',
     '.ib-row-actions button{font-size:20px;padding:2px 10px;cursor:pointer;}',
     // Compact mail-style rows (Winny, 2026-10-30): collapsed row shows
-    // date, subject, tags, source; unread rows are bold; the detail
-    // opens on header tap, and opening a row marks it read (unbolded).
+    // date, subject, tags, source; untriaged (new) rows are bold; the
+    // detail opens on header tap.
     '.ib-head{display:flex;align-items:flex-start;gap:8px;cursor:pointer;}',
     '.ib-head-main{flex:1;min-width:0;}',
     '.ib-line1{display:flex;align-items:baseline;gap:10px;}',
@@ -331,6 +331,24 @@ function buildEditor() {
   });
 }
 
+// Alignment (Winny, 2026-10-30): the Inbox Add follows the shared page
+// pattern — a dark + Add button in the header search row — instead of
+// the floating action button the other pages never had. The composer it
+// opens is unchanged.
+function buildInboxAddBtn() {
+  const fab = document.getElementById('inbox-fab');
+  if (fab) fab.remove();
+  const row = document.querySelector('#view-inbox .search-add');
+  if (!row || document.getElementById('ib-add-btn')) return;
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.id = 'ib-add-btn';
+  b.className = 'primary';
+  b.textContent = '+ Add';
+  b.addEventListener('click', openEditor);
+  row.appendChild(b);
+}
+
 function buildFab() {
   if (document.getElementById('inbox-fab')) return;
   const fab = document.createElement('button');
@@ -471,26 +489,6 @@ function ibSourceLabel(it) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
-// Read state for the mail-style rows (Winny, 2026-10-30): opening a row
-// marks it read and unbolds it. Kept on this device (localStorage) —
-// triage stays the server-side state; read is a display concern.
-function ibReadIds() {
-  try { return JSON.parse(localStorage.getItem('ib-read-ids') || '[]'); } catch (e) { return []; }
-}
-function ibIsRead(id) {
-  if (!id) return false;
-  return ibReadIds().indexOf(id) !== -1;
-}
-function ibMarkRead(id) {
-  if (!id || ibIsRead(id)) return;
-  try {
-    var ids = ibReadIds();
-    ids.push(id);
-    while (ids.length > 1000) ids.shift();
-    localStorage.setItem('ib-read-ids', JSON.stringify(ids));
-  } catch (e) { /* storage unavailable: bold returns next visit */ }
-}
-
 // Restructure one rendered row into header + collapsible detail. The
 // header carries date, subject, tags (the core row's bubbles, moved)
 // and source; the ⋯ actions stay in the header; everything else (full
@@ -498,7 +496,7 @@ function ibMarkRead(id) {
 function compactInboxRow(el, it) {
   if (!it || !el.querySelector('p')) return;
   el.classList.add('ib-compact');
-  if (!it.triaged && !ibIsRead(it.id)) el.classList.add('ib-new');
+  if (!it.triaged) el.classList.add('ib-new');
   var head = document.createElement('div');
   head.className = 'ib-head';
   var main = document.createElement('div');
@@ -534,12 +532,6 @@ function compactInboxRow(el, it) {
   head.addEventListener('click', function (e) {
     if (e.target.closest('button, a, textarea, input, select')) return;
     el.classList.toggle('ib-open');
-    if (el.classList.contains('ib-open')) {
-      // Opening a message marks it read: drop the bold at once and
-      // remember it, so it stays unbolded on later renders.
-      el.classList.remove('ib-new');
-      ibMarkRead(it.id);
-    }
   });
 }
 
@@ -690,7 +682,7 @@ function tryInit() {
   }
   try {
     injectStyles();
-    buildFab();
+    buildInboxAddBtn();
     buildEditor();
     wrapApi();
     wrapInboxRow();
