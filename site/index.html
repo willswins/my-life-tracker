@@ -251,9 +251,11 @@
 <main id="view-mood" class="view hidden"></main>
 
 <main id="view-longterm" class="view hidden">
-  <div class="lt-header">
-    <p class="lt-sub">The big things. Glance daily, never forget.</p>
-    <button id="lt-add" class="btn-primary">+ Add</button>
+  <div class="view-head">
+    <div class="search-add">
+      <input id="lt-search" type="search" placeholder="Search long term…" aria-label="Search long term">
+      <button id="lt-add" class="primary">+ Add</button>
+    </div>
   </div>
   <div id="lt-grid" class="lt-grid"></div>
 </main>
@@ -374,8 +376,10 @@
 
 <main id="view-habits" class="view hidden">
   <div class="view-head">
-    <h2>Habits</h2>
-    <button id="habit-add" class="primary">+ New Habit</button>
+    <div class="search-add">
+      <input id="habit-search" type="search" placeholder="Search habits…" aria-label="Search habits">
+      <button id="habit-add" class="primary">+ New Habit</button>
+    </div>
   </div>
   <div id="habit-list" class="habit-list"></div>
   <div id="habit-empty" class="empty-note hidden">
@@ -726,6 +730,7 @@
 <script src="/board-luttu-filter.js"></script>
 <script src="/inbox-images.js"></script>
 <script src="/payments.js"></script>
+<script src="/align.js"></script>
 </script>
 </body>
 </html>
