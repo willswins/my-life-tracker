@@ -165,6 +165,21 @@ function injectStyles() {
     '#ib-editor img{max-width:100%;border-radius:8px;margin:6px 0;}',
     '.ib-row-actions{margin-left:auto;display:block;}',
     '.ib-row-actions button{font-size:20px;padding:2px 10px;cursor:pointer;}',
+    // Compact mail-style rows (Winny, 2026-10-30): collapsed row shows
+    // date, subject, tags, source; untriaged (new) rows are bold; the
+    // detail opens on header tap.
+    '.ib-head{display:flex;align-items:flex-start;gap:8px;cursor:pointer;}',
+    '.ib-head-main{flex:1;min-width:0;}',
+    '.ib-line1{display:flex;align-items:baseline;gap:10px;}',
+    '.ib-subject{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;}',
+    '.ib-date{color:var(--muted);font-size:12px;white-space:nowrap;}',
+    '.ib-line2{display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap;}',
+    '.ib-source{color:var(--muted);font-size:12px;}',
+    '.ib-compact.ib-new .ib-subject{font-weight:700;}',
+    '.ib-compact.ib-new .ib-date{font-weight:700;color:var(--ink);}',
+    '.ib-detail{display:none;margin-top:8px;}',
+    '.ib-compact.ib-open .ib-detail{display:block;}',
+    '.ib-compact.ib-open .ib-subject{white-space:normal;}',
   ].join('\n');
   document.head.appendChild(st);
 }
@@ -415,6 +430,93 @@ function wrapApi() {
   window.api._ibImgPatched = true;
 }
 
+// ---------------- compact mail-style rows (Winny, 2026-10-30) ----------------
+
+// Subject = first non-empty line of the capture. Email captures store
+// "Subject\nFrom: ...\nDate: ...\nbody"; manual logs lead with the log
+// line. Markdown markers are stripped for the one-line header. Pure.
+function ibSubject(text) {
+  var lines = String(text || '').split('\n');
+  var line = '';
+  for (var i = 0; i < lines.length; i++) { if (lines[i].trim()) { line = lines[i].trim(); break; } }
+  line = line.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '');
+  if (line.length > 100) line = line.slice(0, 100).trimEnd() + '…';
+  return line || '(no subject)';
+}
+
+// Short header date ("Oct 30", year added when not the current year). Pure.
+function ibDateShort(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var out = months[d.getMonth()] + ' ' + d.getDate();
+  if (d.getFullYear() !== new Date().getFullYear()) out += ', ' + d.getFullYear();
+  return out;
+}
+
+// Header source label. ParentSquare mail (stored as email) reads as
+// ParentSquare — same text classification as the Payments page. Pure.
+function ibSourceLabel(it) {
+  var s = String((it && it.source) || '').toLowerCase();
+  if (s === 'parentsquare') return 'ParentSquare';
+  if (s === 'infinite-campus' || s === 'infinite_campus') return 'Infinite Campus';
+  if (s === 'manual') return 'Manual';
+  if (s === 'chat') return 'Chat';
+  if (s === 'email') {
+    var hay = String((it && it.text) || '').toLowerCase();
+    if (hay.indexOf('parentsquare') !== -1 || hay.indexOf('posted in ') !== -1) return 'ParentSquare';
+    return 'Email';
+  }
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+// Restructure one rendered row into header + collapsible detail. The
+// header carries date, subject, tags (the core row's bubbles, moved)
+// and source; the ⋯ actions stay in the header; everything else (full
+// text, photo, meta, filed-as) moves into the detail.
+function compactInboxRow(el, it) {
+  if (!it || !el.querySelector('p')) return;
+  el.classList.add('ib-compact');
+  if (!it.triaged) el.classList.add('ib-new');
+  var head = document.createElement('div');
+  head.className = 'ib-head';
+  var main = document.createElement('div');
+  main.className = 'ib-head-main';
+  var line1 = document.createElement('div');
+  line1.className = 'ib-line1';
+  var subj = document.createElement('span');
+  subj.className = 'ib-subject';
+  subj.textContent = ibSubject(it.text);
+  var date = document.createElement('span');
+  date.className = 'ib-date';
+  date.textContent = ibDateShort(it.created_at);
+  line1.appendChild(subj);
+  line1.appendChild(date);
+  var line2 = document.createElement('div');
+  line2.className = 'ib-line2';
+  var src = document.createElement('span');
+  src.className = 'ib-source';
+  src.textContent = ibSourceLabel(it);
+  line2.appendChild(src);
+  main.appendChild(line1);
+  main.appendChild(line2);
+  head.appendChild(main);
+  var bubbles = el.querySelector('.tag-bubbles');
+  if (bubbles) line2.appendChild(bubbles);
+  var actions = el.querySelector('.ib-row-actions');
+  if (actions) head.appendChild(actions);
+  var detail = document.createElement('div');
+  detail.className = 'ib-detail';
+  Array.prototype.slice.call(el.children).forEach(function (child) { detail.appendChild(child); });
+  el.appendChild(head);
+  el.appendChild(detail);
+  head.addEventListener('click', function (e) {
+    if (e.target.closest('button, a, textarea, input, select')) return;
+    el.classList.toggle('ib-open');
+  });
+}
+
 // ---------------- inboxRow wrap (photo + markdown + ⋯ menu) ----------------
 
 function wrapInboxRow() {
@@ -452,6 +554,9 @@ function wrapInboxRow() {
       wrap.appendChild(btn);
       el.appendChild(wrap);
     }
+    // Compact restructure last, so photo/markdown/actions are settled.
+    // A failure here must never break the row — keep the classic look.
+    try { compactInboxRow(el, it); } catch (e) { /* classic row */ }
     return el;
   };
   window.inboxRow._ibUxPatched = true;
@@ -588,7 +693,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel };
 }
 
 })();
