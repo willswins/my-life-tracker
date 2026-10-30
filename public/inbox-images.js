@@ -166,7 +166,7 @@ function injectStyles() {
     '.ib-row-actions{margin-left:auto;display:block;}',
     '.ib-row-actions button{font-size:20px;padding:2px 10px;cursor:pointer;}',
     // Compact mail-style rows (Winny, 2026-10-30): collapsed row shows
-    // date, subject, tags, source; untriaged (new) rows are bold; the
+    // date, subject, tags, source; unread rows are bold; the
     // detail opens on header tap.
     '.ib-head{display:flex;align-items:flex-start;gap:8px;cursor:pointer;}',
     '.ib-head-main{flex:1;min-width:0;}',
@@ -496,7 +496,7 @@ function ibSourceLabel(it) {
 function compactInboxRow(el, it) {
   if (!it || !el.querySelector('p')) return;
   el.classList.add('ib-compact');
-  if (!it.triaged) el.classList.add('ib-new');
+  if (!it.is_read) el.classList.add('ib-new');
   var head = document.createElement('div');
   head.className = 'ib-head';
   var main = document.createElement('div');
@@ -531,8 +531,22 @@ function compactInboxRow(el, it) {
   el.appendChild(detail);
   head.addEventListener('click', function (e) {
     if (e.target.closest('button, a, textarea, input, select')) return;
-    el.classList.toggle('ib-open');
+    if (el.classList.toggle('ib-open')) markInboxRead(el, it);
   });
+}
+
+// Opening a row marks the capture read (2026-10-30): the row un-bolds
+// immediately and the flag is saved through the inbox PATCH route, so
+// the read state survives reloads and devices. Best-effort — a failed
+// save just means the row may show bold again on the next load.
+function markInboxRead(el, it) {
+  if (!it || it.is_read) return;
+  it.is_read = true;
+  el.classList.remove('ib-new');
+  try {
+    api('PATCH', '/api/app?r=daybook&view=inbox&id=' + encodeURIComponent(it.id), { is_read: true })
+      .catch(function () { /* keep the local un-bold */ });
+  } catch (e) { /* read state is best-effort */ }
 }
 
 // ---------------- inboxRow wrap (photo + markdown + ⋯ menu) ----------------
