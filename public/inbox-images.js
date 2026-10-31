@@ -180,6 +180,8 @@ function injectStyles() {
     '.ib-detail{display:none;margin-top:8px;}',
     '.ib-compact.ib-open .ib-detail{display:block;}',
     '.ib-sec-head{background:#f3f4f6;border:1px solid var(--line);border-radius:8px;padding:6px 8px;white-space:pre-wrap;word-break:break-word;}',
+    '.ib-h-subject{color:var(--work);font-weight:700;}',
+    '.ib-h-meta{color:#64748b;font-size:.92em;}',
     '.ib-sec-body{white-space:pre-wrap;word-break:break-word;padding:6px 2px 0;}',
     '.ib-sec a{color:var(--work);}',
     '.ib-compact.ib-open .ib-subject{white-space:normal;}',
@@ -493,15 +495,41 @@ function ibSourceLabel(it) {
 }
 
 // Split text into text/URL parts so links can render clickable. Pure.
+// Short display label for a link (Winny, 2026-10-31: "MUST NOT put the
+// whole link. Show a word with hyperlink"). ParentSquare links get
+// their content name; other links show just the site host.
+function ibLinkLabel(url) {
+  var host = '', path = '';
+  try {
+    var u = new URL(String(url));
+    host = u.hostname.replace(/^www\./, '');
+    path = u.pathname || '';
+  } catch (e) { return 'Open link'; }
+  if (host === 'parentsquare.com' || host === 'email-link.parentsquare.com') {
+    if (path.indexOf('/feeds/') !== -1) return 'ParentSquare post';
+    if (path.indexOf('/chats/') !== -1) return 'ParentSquare message';
+    return 'ParentSquare';
+  }
+  return host || 'Open link';
+}
+
+// Split text into text/url segments. A URL is never displayed as
+// itself: each url segment carries a short label — the words before a
+// "(URL)" in the text when present, else ibLinkLabel.
 function ibSplitLinks(text) {
   var s = String(text == null ? '' : text);
-  var rx = /https?:\/\/[^\s<>"')\]]+/g;
+  var rx = /([^\n(]{2,80}?)\s*\((https?:\/\/[^\s<>"')\]]+)\)|(https?:\/\/[^\s<>"')\]]+)/g;
   var out = [];
   var last = 0;
   var m;
   while ((m = rx.exec(s)) !== null) {
-    if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
-    out.push({ t: 'url', v: m[0] });
+    if (m[2]) {
+      if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
+      out.push({ t: 'url', v: m[2], label: m[1].trim() || ibLinkLabel(m[2]) });
+    } else {
+      if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
+      out.push({ t: 'url', v: m[3], label: ibLinkLabel(m[3]) });
+    }
     last = m.index + m[0].length;
   }
   if (last < s.length) out.push({ t: 'text', v: s.slice(last) });
@@ -509,13 +537,14 @@ function ibSplitLinks(text) {
 }
 
 // Turn bare URLs inside an element into clickable links, safely (text
-// nodes only — no HTML is ever built from capture text).
+// nodes only — no HTML is ever built from capture text). The link text
+// is the segment's short label, never the URL itself.
 function linkifyInto(el, text) {
   ibSplitLinks(text).forEach(function (part) {
     if (part.t === 'url') {
       var a = document.createElement('a');
       a.href = part.v;
-      a.textContent = part.v;
+      a.textContent = part.label || part.v;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       el.appendChild(a);
@@ -545,7 +574,12 @@ function sectionInboxDetail(detail) {
   }
   var head = document.createElement('div');
   head.className = 'ib-sec ib-sec-head';
-  linkifyInto(head, lines.slice(0, headEnd).join('\n'));
+  lines.slice(0, headEnd).forEach(function (ln, idx) {
+    var d = document.createElement('div');
+    d.className = idx === 0 ? 'ib-h-subject' : 'ib-h-meta';
+    linkifyInto(d, ln);
+    head.appendChild(d);
+  });
   var body = document.createElement('div');
   body.className = 'ib-sec ib-sec-body';
   linkifyInto(body, lines.slice(headEnd).join('\n').replace(/^\n+/, ''));
@@ -791,7 +825,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel };
 }
 
 })();
