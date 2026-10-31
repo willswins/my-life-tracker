@@ -83,37 +83,6 @@
     '.blane-chip.on{background:#6c5ce7;color:#fff;}',
     '#view-tasks #lanes .lane{display:none;}',
     '#view-tasks #lanes .lane.b-on{display:block;}',
-    // ---- Payments: card rows (phone widths) ------------------------------
-    '.pay-table-wrap{overflow:visible;}',
-    '.pay-table-wrap table,.pay-table-wrap tbody,.pay-table-wrap tr,.pay-table-wrap td{display:block;width:100%;}',
-    '.pay-table-wrap thead{display:none;}',
-    '.pay-table-wrap tr.pay-row{background:var(--b-surface);border:1px solid var(--b-line);',
-    'border-radius:22px;padding:12px 14px;margin-bottom:12px;}',
-    // the expanded detail row is a classless tr whose td carries an
-    // inline var(--lane) surface — style it as a card, and give its
-    // plain buttons a theme-aware look (they rendered as gray slabs)
-    '.pay-table-wrap tbody tr:not(.pay-row){margin:-6px 0 12px;}',
-    '.pay-table-wrap tbody tr:not(.pay-row) td{border-radius:22px;padding:14px 16px;}',
-    '.pay-table-wrap td button{background:var(--b-surface2);color:var(--b-ink);',
-    'border:1px solid var(--b-line);border-radius:10px;padding:8px 12px;font-family:inherit;cursor:pointer;}',
-    // row tints live on the tds in table layout; as cards they must sit
-    // on the tr itself or they paint a framed inner rectangle. Scoped to
-    // .pay-row cells so the detail td keeps its inline surface.
-    '.pay-table-wrap tr.pay-row td{background:transparent !important;}',
-    // payments.js paints status text and the NEW badge with light-theme
-    // colors (#2e7d32 / #b7791f / #c62828) inline — on dark cards they
-    // fall under the contrast floor; lift them, hues intact
-    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row td:nth-child(5){filter:brightness(1.8) saturate(1.25);}',
-    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row td:nth-child(2) span{filter:brightness(1.8) saturate(1.25);}',
-    '.pay-table-wrap tr.pay-row-attn{background:#fee2e2;}',
-    '.pay-table-wrap tr.pay-row-ack{background:#dcfce7;}',
-    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row-attn{background:#3a1d22;}',
-    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row-ack{background:#14301f;}',
-    '.pay-table-wrap td{border:0 !important;padding:2px 0;}',
-    '.pay-table-wrap td:nth-child(2){font-size:17px;font-weight:800;}',
-    '.pay-table-wrap td:nth-child(4){font-size:17px;font-weight:800;}',
-    '.pay-table-wrap td:nth-child(1){color:var(--b-muted);font-size:13px;font-weight:700;}',
-    '.pay-table-wrap td:nth-child(7){color:var(--b-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;}',
     // ---- Bottom sheets for add/edit (phone widths) -------------------------
     '#modal-backdrop,#reminder-backdrop,#detail-backdrop,#invite-backdrop,#keys-backdrop,.pay-backdrop{align-items:flex-end;padding:0;}',
     '.modal,.pay-modal{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:92vh;}',
