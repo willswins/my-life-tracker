@@ -8,6 +8,34 @@ const SOURCES = ['manual', 'email', 'chat', 'parentsquare', 'infinite-campus'];
 const DESTS = ['task', 'reminder', 'journal', 'link'];
 const TAGS = ['work', 'personal'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_ATTACHMENTS = 6;
+
+// Upload PDF attachments (sweep-captured email, Winny 2026-10-31) to
+// private Storage; returns [{name, url}] for the item's attachments
+// column. Non-fatal per file: a failed upload is skipped so the text
+// capture is never lost over an attachment.
+async function uploadAttachments(email, itemId, list) {
+  const { uploadBase64 } = require('./_storage');
+  const out = [];
+  const arr = Array.isArray(list) ? list.slice(0, MAX_ATTACHMENTS) : [];
+  for (const a of arr) {
+    if (!a || typeof a !== 'object' || typeof a.base64 !== 'string') continue;
+    const name = (typeof a.filename === 'string' && a.filename.trim() ? a.filename.trim() : 'attachment.pdf').slice(0, 120);
+    try {
+      const url = await uploadBase64({
+        userEmail: email,
+        cardId: itemId,
+        filename: name,
+        contentType: 'application/pdf',
+        base64: a.base64,
+      });
+      out.push({ name, url });
+    } catch (e) {
+      console.error('inbox attachment upload failed:', e.message);
+    }
+  }
+  return out;
+}
 
 function cleanTriageReminder(b) {
   const out = {};
@@ -147,6 +175,18 @@ module.exports = async (req, res) => {
           item.image_error = 'photo could not be saved';
         }
       }
+      // Optional PDF attachments (email captures): same non-fatal pattern
+      // as the photo — uploaded to private Storage, signed URLs stored in
+      // the item's attachments column as [{name, url}].
+      if (Array.isArray(body.attachments) && body.attachments.length) {
+        const atts = await uploadAttachments(email, item.id, body.attachments);
+        if (atts.length) {
+          const patched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(item.id)}&${scope}`, { attachments: atts });
+          item.attachments = (patched[0] && patched[0].attachments) || atts;
+        } else {
+          item.attachments_error = 'attachments could not be saved';
+        }
+      }
       return send(201, item);
     }
     if (req.method === 'POST' && id) {
@@ -187,6 +227,22 @@ module.exports = async (req, res) => {
         if (!readPatched[0]) return send(404, { ok: false, error: 'item not found' });
         return send(200, readPatched[0]);
       }
+      // Attachments update (2026-10-31): append uploaded PDFs to the
+      // item's attachments (used by the Sara attachment pass, which finds
+      // the PDFs behind a ParentSquare post after the capture exists).
+      if (Array.isArray(body.attachments)) {
+        const existing = await sb('GET', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&select=attachments`);
+        if (!existing[0]) return send(404, { ok: false, error: 'item not found' });
+        const cur = Array.isArray(existing[0].attachments) ? existing[0].attachments : [];
+        const added = await uploadAttachments(email, id, body.attachments);
+        const merged = cur.concat(added).slice(0, MAX_ATTACHMENTS);
+        const attPatched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`, {
+          attachments: merged,
+          updated_at: new Date().toISOString(),
+        });
+        if (!attPatched[0]) return send(404, { ok: false, error: 'item not found' });
+        return send(200, attPatched[0]);
+      }
       if (typeof body.text !== 'string' || !body.text.trim()) {
         return send(400, { ok: false, error: 'text required' });
       }
@@ -199,18 +255,26 @@ module.exports = async (req, res) => {
       return send(200, patched[0]);
     }
     if (req.method === 'DELETE' && id) {
-      // Best-effort: remove the stored photo too, so discards don't orphan
-      // files in Storage. Row deletion must never fail over this.
+      // Best-effort: remove stored files too (photo + PDF attachments),
+      // so discards don't orphan files in Storage. Row deletion must
+      // never fail over this.
       try {
-        const rows = await sb('GET', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&select=image_url`);
-        const url = rows[0] && rows[0].image_url;
-        if (url) {
+        const rows = await sb('GET', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}&select=image_url,attachments`);
+        const row0 = rows[0] || {};
+        const urls = [];
+        if (row0.image_url) urls.push(row0.image_url);
+        if (Array.isArray(row0.attachments)) {
+          row0.attachments.forEach((a) => { if (a && a.url) urls.push(a.url); });
+        }
+        if (urls.length) {
           const { deleteFile, pathFromSignedUrl } = require('./_storage');
-          const p = pathFromSignedUrl(url);
-          if (p) await deleteFile(p);
+          for (const u of urls) {
+            const p = pathFromSignedUrl(u);
+            if (p) await deleteFile(p);
+          }
         }
       } catch (e) {
-        console.error('inbox image cleanup failed:', e.message);
+        console.error('inbox file cleanup failed:', e.message);
       }
       await sb('DELETE', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`);
       res.writeHead(204, { 'Cache-Control': 'no-store' });
