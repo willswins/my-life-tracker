@@ -40,6 +40,9 @@
     // ---- Home: bento ---------------------------------------------------
     '.home-hello{font-size:1.9rem;font-weight:800;letter-spacing:-0.01em;}',
     '.home-stats{grid-template-columns:1fr 1fr;gap:12px;}',
+    // the 5th stat (Payments, appended by payments.js) would strand at
+    // half width on its own row — span it across both columns instead
+    '.home-stats .home-stat:last-child{grid-column:1 / -1;}',
     '.home-stat{border-radius:28px;padding:16px 10px;background:var(--b-surface);}',
     '.home-stat-num{font-size:34px;font-weight:800;}',
     '.home-stat-num.hot{color:#ff5d47;}',
