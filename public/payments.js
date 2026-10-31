@@ -64,6 +64,17 @@
     var f = String(r.frequency || r.cadence || '').toLowerCase();
     return f.indexOf('month') !== -1 || f.indexOf('recurr') !== -1;
   }
+  // Retention (Winny, 2026-10-31): Payments keeps only the last two
+  // years. Undated rows are kept — there is no date to age them out.
+  function payCutoffISO(now) {
+    var d = now ? new Date(now.getTime()) : new Date();
+    d.setFullYear(d.getFullYear() - 2);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function payWithinWindow(r, cutoff) {
+    if (!r || !r.item_date) return true;
+    return r.item_date >= (cutoff || payCutoffISO());
+  }
   function recurringCount(rows) {
     return (rows || []).filter(isRecurringPayment).length;
   }
@@ -459,7 +470,7 @@
     var wrap = sec.querySelector('.pay-table-wrap');
     try {
       var rows = await api('GET', '/api/app?r=daybook&view=payments');
-      state.rows = Array.isArray(rows) ? rows : [];
+      state.rows = (Array.isArray(rows) ? rows : []).filter(function (r) { return payWithinWindow(r); });
       renderPayments();
       paintBadgeFromState();
     } catch (e) {
@@ -483,7 +494,7 @@
   async function refreshPaymentsBadge() {
     try {
       var rows = await api('GET', '/api/app?r=daybook&view=payments');
-      var n = bubbleCount(rows);
+      var n = bubbleCount((Array.isArray(rows) ? rows : []).filter(function (r) { return payWithinWindow(r); }));
       var badge = document.getElementById('badge-payments');
       if (badge) { badge.textContent = n; badge.classList.toggle('zero', n === 0); }
       var home = document.getElementById('home-payments');
@@ -559,6 +570,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell, payRowClass: payRowClass, isRecurringPayment: isRecurringPayment, recurringCount: recurringCount, payStatusClass: payStatusClass };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell, payRowClass: payRowClass, isRecurringPayment: isRecurringPayment, recurringCount: recurringCount, payStatusClass: payStatusClass, payCutoffISO: payCutoffISO, payWithinWindow: payWithinWindow };
   }
 })();
