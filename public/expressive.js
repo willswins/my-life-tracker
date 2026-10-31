@@ -86,6 +86,13 @@
     'border-radius:22px;padding:12px 14px;margin-bottom:12px;}',
     '.pay-table-wrap tr.pay-detail{background:var(--b-surface);border:1px solid var(--b-line);',
     'border-radius:22px;padding:12px 14px;margin:-6px 0 12px;}',
+    // row tints live on the tds in table layout; as cards they must sit
+    // on the tr itself or they paint a framed inner rectangle
+    '.pay-table-wrap td{background:transparent !important;}',
+    '.pay-table-wrap tr.pay-row-attn{background:#fee2e2;}',
+    '.pay-table-wrap tr.pay-row-ack{background:#dcfce7;}',
+    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row-attn{background:#3a1d22;}',
+    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row-ack{background:#14301f;}',
     '.pay-table-wrap td{border:0 !important;padding:2px 0;}',
     '.pay-table-wrap td:nth-child(2){font-size:17px;font-weight:800;}',
     '.pay-table-wrap td:nth-child(4){font-size:17px;font-weight:800;}',
