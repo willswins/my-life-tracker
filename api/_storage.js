@@ -5,6 +5,23 @@
 const BUCKET = 'receipts';
 const SIGNED_URL_TTL = 31536000; // 1 year
 
+// Non-text file types DayBook stores for inbox items. Text bodies are
+// already captured as text; executables and scripts are never stored.
+function isStorableType(contentType) {
+  const ct = String(contentType || '').toLowerCase().split(';')[0].trim();
+  return /^image\//.test(ct)
+    || ct === 'application/pdf'
+    || ct === 'application/msword'
+    || ct === 'application/vnd.ms-excel'
+    || ct === 'application/vnd.ms-powerpoint'
+    || ct.startsWith('application/vnd.openxmlformats-officedocument.')
+    || ct === 'application/zip'
+    || ct === 'application/x-zip-compressed'
+    || ct === 'application/rtf'
+    || ct === 'text/csv'
+    || ct === 'application/octet-stream';
+}
+
 function sbBase() {
   return (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 }
@@ -93,10 +110,12 @@ async function deleteFile(storagePath) {
 }
 
 // Upload a base64-encoded file and return a signed URL good for ~1 year.
-// Images for captures; PDFs for email attachments (Winny, 2026-10-31).
+// Images for captures; any non-text email attachment (PDF, Office docs,
+// archives, ...) for inbox items (Winny, 2026-10-31: any non-text item
+// is stored the same way).
 async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }) {
-  if (!/^(image\/(jpeg|png|gif|webp|heic|heif)|application\/pdf)$/i.test(contentType || '')) {
-    throw new Error('only image and PDF uploads are supported');
+  if (!isStorableType(contentType)) {
+    throw new Error('unsupported file type: ' + (contentType || 'none'));
   }
   const buf = Buffer.from(base64, 'base64');
   if (!buf.length || buf.length > 8 * 1024 * 1024) {
@@ -115,4 +134,46 @@ async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }
   return signedUrl(storagePath);
 }
 
-module.exports = { uploadBase64, signedUrl, deleteFile, pathFromSignedUrl, BUCKET };
+function stampOf(name) {
+  const m = /^(\d+)_/.exec(String(name || ''));
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+async function listFolder(prefix) {
+  const base = sbBase();
+  const r = await fetch(`${base}/storage/v1/object/list/${BUCKET}`, {
+    method: 'POST',
+    headers: { ...svcHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefix, limit: 1000, offset: 0 }),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw new Error('storage list failed: ' + r.status + ' ' + t.slice(0, 200));
+  }
+  return r.json();
+}
+
+// Every stored file for one user: [{path, size, stamp}]. Paths are
+// <user>/<item>/<stamp>_<name>, so the top level lists item folders;
+// stamp (upload ms) sorts oldest-first for the storage cap.
+async function listUserFiles(userEmail) {
+  const safeEmail = String(userEmail).toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const top = await listFolder(safeEmail);
+  const out = [];
+  for (const entry of top) {
+    if (!entry || !entry.name) continue;
+    if (entry.id) {
+      out.push({ path: safeEmail + '/' + entry.name, size: (entry.metadata && entry.metadata.size) || 0, stamp: stampOf(entry.name) });
+    } else {
+      const inner = await listFolder(safeEmail + '/' + entry.name);
+      for (const f of inner) {
+        if (f && f.id) {
+          out.push({ path: safeEmail + '/' + entry.name + '/' + f.name, size: (f.metadata && f.metadata.size) || 0, stamp: stampOf(f.name) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+module.exports = { uploadBase64, signedUrl, deleteFile, pathFromSignedUrl, listUserFiles, isStorableType, BUCKET };
