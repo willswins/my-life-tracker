@@ -531,6 +531,19 @@ function ibShortLabel(raw) {
   return s;
 }
 
+// Chip icon by file extension (2026-10-31: any non-text attachment is
+// stored, not just PDFs).
+function ibAttIcon(name) {
+  var ext = String(name || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf') return '📄';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'].indexOf(ext) !== -1) return '🖼️';
+  if (['doc', 'docx', 'rtf', 'txt'].indexOf(ext) !== -1) return '📝';
+  if (['xls', 'xlsx', 'csv'].indexOf(ext) !== -1) return '📊';
+  if (['ppt', 'pptx'].indexOf(ext) !== -1) return '📽️';
+  if (['zip', 'rar', '7z'].indexOf(ext) !== -1) return '🗜️';
+  return '📎';
+}
+
 // Split text into text/url segments. A URL is never displayed as
 // itself: each url segment carries a short label — the words before a
 // "(URL)" in the text when present, else ibLinkLabel.
@@ -703,7 +716,7 @@ function wrapInboxRow() {
         link.href = a.url;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.textContent = '📄 ' + (a.name || 'attachment.pdf');
+        link.textContent = ibAttIcon(a.name) + ' ' + (a.name || 'attachment');
         attBox.appendChild(link);
       });
       if (attBox.children.length) {
@@ -871,7 +884,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, compactInboxRow, sectionInboxDetail, wrapInboxRow };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, ibAttIcon, compactInboxRow, sectionInboxDetail, wrapInboxRow };
 }
 
 })();
