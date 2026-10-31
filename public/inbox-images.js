@@ -518,6 +518,17 @@ function ibLinkLabel(url) {
   return host || 'Open link';
 }
 
+// The words before a "(URL)" can be a whole sentence; the link label
+// should be a word or short phrase (Winny, 2026-10-31), so keep only
+// the tail after the last sentence break, capped at the last 5 words.
+function ibShortLabel(raw) {
+  var s = String(raw || '').trim();
+  var cut = Math.max(s.lastIndexOf('. '), s.lastIndexOf('! '), s.lastIndexOf('? '));
+  if (cut >= 0) s = s.slice(cut + 2).trim();
+  if (s.length > 40) s = s.split(/\s+/).slice(-5).join(' ');
+  return s;
+}
+
 // Split text into text/url segments. A URL is never displayed as
 // itself: each url segment carries a short label — the words before a
 // "(URL)" in the text when present, else ibLinkLabel.
@@ -530,7 +541,7 @@ function ibSplitLinks(text) {
   while ((m = rx.exec(s)) !== null) {
     if (m[2]) {
       if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
-      out.push({ t: 'url', v: m[2], label: m[1].trim() || ibLinkLabel(m[2]) });
+      out.push({ t: 'url', v: m[2], label: ibShortLabel(m[1]) || ibLinkLabel(m[2]) });
     } else {
       if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
       out.push({ t: 'url', v: m[3], label: ibLinkLabel(m[3]) });
@@ -600,7 +611,6 @@ function compactInboxRow(el, it) {
   if (!it || !el.querySelector('p')) return;
   el.classList.add('ib-compact');
   if (!it.is_read) el.classList.add('ib-new');
-  try { sectionInboxDetail(detail); } catch (e) { /* detail stays as-is */ }
   var head = document.createElement('div');
   head.className = 'ib-head';
   var main = document.createElement('div');
@@ -633,6 +643,13 @@ function compactInboxRow(el, it) {
   Array.prototype.slice.call(el.children).forEach(function (child) { detail.appendChild(child); });
   el.appendChild(head);
   el.appendChild(detail);
+  // Section the detail (tinted header band, colored subject/From/Date,
+  // clickable labeled links) now that the detail element actually holds
+  // the row's content. Bug fix (Winny, 2026-10-31): this call previously
+  // sat at the top of this function, where `detail` was still undefined —
+  // it threw, was swallowed by its own try/catch, and never ran, so the
+  // expanded view rendered as one unformatted block with dead links.
+  try { sectionInboxDetail(detail); } catch (e) { /* detail stays as-is */ }
   head.addEventListener('click', function (e) {
     if (e.target.closest('button, a, textarea, input, select')) return;
     if (el.classList.toggle('ib-open')) markInboxRead(el, it);
@@ -830,7 +847,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, compactInboxRow, sectionInboxDetail };
 }
 
 })();
