@@ -60,6 +60,11 @@
     '#bnav{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;',
     'background:var(--b-surface);border-top:1px solid var(--b-line);',
     'padding-bottom:env(safe-area-inset-bottom, 0px);}',
+    // The header hamburger is retired (Winny, 2026-10-31): the bottom nav
+    // + More sheet carry every destination it had. The .menu-wrap element
+    // stays in the DOM (app.js binds it at load; modules file badge spans
+    // into it — updateBadges still feeds our tab badges from there).
+    '.menu-wrap{display:none !important;}',
     '.bnav-it{flex:1;background:none;border:0;cursor:pointer;color:var(--b-muted);',
     'font-size:10.5px;font-family:inherit;display:flex;flex-direction:column;align-items:center;',
     'gap:2px;padding:8px 0 10px;position:relative;}',
@@ -69,7 +74,6 @@
     '.bnav-badge{position:absolute;top:2px;right:calc(50% - 23px);background:#ff5d47;color:#fff;',
     'font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;line-height:17px;padding:0 4px;text-align:center;}',
     '.bnav-badge.zero{display:none;}',
-    // ---- FAB --------------------------------------------------------------
     // ---- More sheet (opened by the bottom-nav More tab) --------------------
     '#bmore{position:fixed;inset:0;z-index:85;background:rgba(10,8,20,.45);}',
     '#bmore[hidden]{display:none;}',
@@ -102,9 +106,9 @@
 
   var NAV = [
     { view: 'home', icon: '🏠', label: 'Home' },
-    { view: 'tasks', icon: '🗂️', label: 'Board' },
-    { view: 'reminders', icon: '⏰', label: 'Reminders' },
-    { view: 'inbox', icon: '📥', label: 'Inbox', badge: true },
+    { view: 'tasks', icon: '🗂️', label: 'Board', badge: 'badge-tasks' },
+    { view: 'reminders', icon: '⏰', label: 'Reminders', badge: 'badge-reminders' },
+    { view: 'inbox', icon: '📥', label: 'Inbox', badge: 'badge-inbox' },
     { view: '__more', icon: '•••', label: 'More' },
   ];
   var TAB_VIEWS = { home: 1, tasks: 1, reminders: 1, inbox: 1 };
@@ -120,10 +124,10 @@
     { view: 'journal', icon: '📓', label: 'Journal' },
     { view: 'links', icon: '🔗', label: 'Links', badge: 'badge-links' },
     { view: 'payments', icon: '💳', label: 'Payments', badge: 'badge-payments' },
-    { view: 'shop', icon: '🛒', label: 'Shop', badge: 'badge-shop' },
-    { view: 'habits', icon: '🔥', label: 'Habits' },
-    { view: 'longterm', icon: '🌱', label: 'Long Term' },
     { view: 'mood', icon: '🙂', label: 'Mood' },
+    { view: 'habits', icon: '🔥', label: 'Habits' },
+    { view: 'shop', icon: '🛒', label: 'Shop', badge: 'badge-shop' },
+    { view: 'longterm', icon: '🌱', label: 'Long Term' },
     { view: 'game', icon: '🎮', label: 'Sum It Up' },
     { view: 'spell', icon: '🔤', label: 'Spell It' },
     { view: 'bee', icon: '🐝', label: 'Spelling Bee' },
@@ -157,8 +161,21 @@
       b.type = 'button';
       b.className = 'bnav-it';
       b.dataset.view = item.view;
-      b.innerHTML = '<span class="bnav-ic">' + item.icon + '</span><span>' + item.label + '</span>' +
-        (item.badge ? '<span class="bnav-badge zero" id="bnav-badge">0</span>' : '');
+      var ic = document.createElement('span');
+      ic.className = 'bnav-ic';
+      ic.textContent = item.icon;
+      b.appendChild(ic);
+      var lb = document.createElement('span');
+      lb.textContent = item.label;
+      b.appendChild(lb);
+      if (item.badge) {
+        var bg = document.createElement('span');
+        bg.className = 'bnav-badge zero';
+        bg.dataset.src = item.badge;
+        if (item.view === 'inbox') bg.id = 'bnav-badge';
+        bg.textContent = '0';
+        b.appendChild(bg);
+      }
       b.addEventListener('click', function (ev) {
         if (item.view === '__more') {
           // The More sheet is ours (the old design proxied to the header
@@ -252,12 +269,13 @@
         var bv = b.dataset.view;
         b.classList.toggle('on', bv === v || (bv === '__more' && !TAB_VIEWS[v]));
       });
-      var src = document.getElementById('badge-inbox');
-      var mine = document.getElementById('bnav-badge');
-      if (src && mine) {
-        mine.textContent = src.textContent;
-        mine.classList.toggle('zero', !src.textContent || src.textContent === '0');
-      }
+      nav.querySelectorAll('.bnav-badge').forEach(function (mine) {
+        var src = document.getElementById(mine.dataset.src);
+        if (src) {
+          mine.textContent = src.textContent;
+          mine.classList.toggle('zero', !src.textContent || src.textContent === '0');
+        }
+      });
     }
   }
 
