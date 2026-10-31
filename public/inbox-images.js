@@ -179,6 +179,9 @@ function injectStyles() {
     '.ib-compact.ib-new .ib-date{font-weight:700;color:var(--ink);}',
     '.ib-detail{display:none;margin-top:8px;}',
     '.ib-compact.ib-open .ib-detail{display:block;}',
+    '.ib-sec-head{background:#f3f4f6;border:1px solid var(--line);border-radius:8px;padding:6px 8px;white-space:pre-wrap;word-break:break-word;}',
+    '.ib-sec-body{white-space:pre-wrap;word-break:break-word;padding:6px 2px 0;}',
+    '.ib-sec a{color:var(--work);}',
     '.ib-compact.ib-open .ib-subject{white-space:normal;}',
   ].join('\n');
   document.head.appendChild(st);
@@ -480,13 +483,74 @@ function ibSourceLabel(it) {
   if (s === 'parentsquare') return 'ParentSquare';
   if (s === 'infinite-campus' || s === 'infinite_campus') return 'Infinite Campus';
   if (s === 'manual') return 'Manual';
-  if (s === 'chat') return 'Chat';
+  if (s === 'chat') return 'Luttu';
   if (s === 'email') {
     var hay = String((it && it.text) || '').toLowerCase();
     if (hay.indexOf('parentsquare') !== -1 || hay.indexOf('posted in ') !== -1) return 'ParentSquare';
     return 'Email';
   }
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+// Split text into text/URL parts so links can render clickable. Pure.
+function ibSplitLinks(text) {
+  var s = String(text == null ? '' : text);
+  var rx = /https?:\/\/[^\s<>"')\]]+/g;
+  var out = [];
+  var last = 0;
+  var m;
+  while ((m = rx.exec(s)) !== null) {
+    if (m.index > last) out.push({ t: 'text', v: s.slice(last, m.index) });
+    out.push({ t: 'url', v: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) out.push({ t: 'text', v: s.slice(last) });
+  return out;
+}
+
+// Turn bare URLs inside an element into clickable links, safely (text
+// nodes only — no HTML is ever built from capture text).
+function linkifyInto(el, text) {
+  ibSplitLinks(text).forEach(function (part) {
+    if (part.t === 'url') {
+      var a = document.createElement('a');
+      a.href = part.v;
+      a.textContent = part.v;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      el.appendChild(a);
+    } else if (part.v) {
+      el.appendChild(document.createTextNode(part.v));
+    }
+  });
+}
+
+// Readable sections for the expanded capture (Winny, 2026-10-31): the
+// header block (subject / From / Date) sits on a light tinted band, the
+// body below it plain, links clickable. Only the standard plain-text
+// capture shape is restructured; anything else is linkified in place.
+function sectionInboxDetail(detail) {
+  var p = null;
+  for (var i = 0; i < detail.children.length; i++) {
+    if (detail.children[i].tagName === 'P') { p = detail.children[i]; break; }
+  }
+  if (!p) return;
+  var lines = String(p.textContent || '').split('\n');
+  var headEnd = 0;
+  if (lines.length > 3 && /^From:/.test(lines[1]) && /^Date:/.test(lines[2])) headEnd = 3;
+  if (!headEnd || headEnd >= lines.length) {
+    p.textContent = '';
+    linkifyInto(p, lines.join('\n'));
+    return;
+  }
+  var head = document.createElement('div');
+  head.className = 'ib-sec ib-sec-head';
+  linkifyInto(head, lines.slice(0, headEnd).join('\n'));
+  var body = document.createElement('div');
+  body.className = 'ib-sec ib-sec-body';
+  linkifyInto(body, lines.slice(headEnd).join('\n').replace(/^\n+/, ''));
+  p.replaceWith(head);
+  head.after(body);
 }
 
 // Restructure one rendered row into header + collapsible detail. The
@@ -497,6 +561,7 @@ function compactInboxRow(el, it) {
   if (!it || !el.querySelector('p')) return;
   el.classList.add('ib-compact');
   if (!it.is_read) el.classList.add('ib-new');
+  try { sectionInboxDetail(detail); } catch (e) { /* detail stays as-is */ }
   var head = document.createElement('div');
   head.className = 'ib-head';
   var main = document.createElement('div');
@@ -726,7 +791,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks };
 }
 
 })();
