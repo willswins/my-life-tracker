@@ -90,6 +90,22 @@
     ':root[data-theme="dark"] .bee-actions button{background:#22242a;color:var(--ink);}',
     ':root[data-theme="dark"] .bee-foundhead{background:#1b1d21;color:var(--muted);}',
     ':root[data-theme="dark"] .spell-review-item{background:#1b1d21;color:var(--ink);}',
+    // v3 (Winny, 2026-10-31): in-page menus/popovers missed by the v1/v2
+    // pass — .popup-menu is the shared class behind the reminder and
+    // link action menus; its hardcoded #fff panel + var(--ink) text went
+    // white-on-white in dark (only .danger items stayed visible).
+    // Same family: the ⋮ button itself, dropdown fields, snooze options,
+    // habit actions, legacy triage buttons. Surfaces resolve through the
+    // design layer's variables when present (--b-*), else dark grays.
+    ':root[data-theme="dark"] .popup-menu{background:var(--b-surface, #22242a);border-color:var(--line);}',
+    ':root[data-theme="dark"] .popup-menu button{color:var(--ink);}',
+    ':root[data-theme="dark"] .popup-menu button.danger{color:#f87171;}',
+    ':root[data-theme="dark"] .link-menu-btn{background:var(--b-surface2, #22242a);color:var(--ink);border-color:var(--line);}',
+    ':root[data-theme="dark"] .dd-field{background:var(--b-surface2, #22242a);color:var(--ink);}',
+    ':root[data-theme="dark"] .snooze-opts button{background:var(--b-surface2, #22242a);color:var(--ink);}',
+    ':root[data-theme="dark"] .habit-actions button{background:var(--b-surface2, #22242a);color:var(--ink);border-color:var(--line);}',
+    ':root[data-theme="dark"] .habit-check{background:var(--b-surface2, #22242a);border-color:var(--line);}',
+    ':root[data-theme="dark"] .triage-btns button{background:var(--b-surface2, #22242a);color:var(--ink);}',
   ].join('\n');
 
   function storedTheme() {
