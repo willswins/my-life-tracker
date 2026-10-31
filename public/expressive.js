@@ -40,6 +40,10 @@
     // ---- Home: bento ---------------------------------------------------
     '.home-hello{font-size:1.9rem;font-weight:800;letter-spacing:-0.01em;}',
     '.home-stats{grid-template-columns:1fr 1fr;gap:12px;}',
+    // payments.js builds its Home tile with an inline gridColumn span
+    // (an Oct 28 design). Winny (Oct 31): no spanning tile — every stat
+    // is one equal box in the 2x3, Payments included.
+    '.home-stats .home-stat{grid-column:auto !important;}',
     '.home-stat{min-height:104px;justify-content:center;}',
     '.home-stat{border-radius:28px;padding:16px 10px;background:var(--b-surface);}',
     '.home-stat-num{font-size:34px;font-weight:800;}',
@@ -199,40 +203,6 @@
     } catch (e) { /* the view's own Add button remains available */ }
   }
 
-  // ---- Home: a 6th stat so the bento is a uniform 2x3 -------------------
-  // The app ships 4 stats and payments.js appends a 5th (Payments). Five
-  // tiles in two columns strand the last one; Winny wants six equal
-  // boxes. The 6th is "In Next" (cards in the next lane), inserted
-  // before the Payments tile so row 3 reads Next | Payments.
-  function ensureSixthStat() {
-    var stats = $('#view-home .home-stats');
-    if (!stats) return false;
-    var existing = document.getElementById('home-stat-next');
-    if (!existing) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'home-stat';
-      b.id = 'home-stat-next';
-      b.innerHTML = '<span class="home-stat-num" id="home-next">0</span>' +
-        '<span class="home-stat-label">In Next</span>';
-      b.addEventListener('click', function () {
-        if (typeof window.switchView === 'function') window.switchView('tasks');
-      });
-      var pay = null;
-      stats.querySelectorAll('.home-stat').forEach(function (s) {
-        if (s.querySelector && s.querySelector('#home-payments')) pay = s;
-      });
-      if (pay) stats.insertBefore(b, pay); else stats.appendChild(b);
-    }
-    try {
-      var n = (typeof cards !== 'undefined' && cards)
-        ? cards.filter(function (c) { return c.lane === 'next'; }).length : 0;
-      var num = document.getElementById('home-next');
-      if (num) num.textContent = String(n);
-    } catch (e) {}
-    return true;
-  }
-
   function syncChrome() {
     var v = currentViewName();
     var nav = document.getElementById('bnav');
@@ -316,22 +286,12 @@
       };
       window.render._bWrapped = true;
     }
-    if (typeof window.renderHome === 'function' && !window.renderHome._bWrapped) {
-      var origHome = window.renderHome;
-      window.renderHome = function () {
-        var r = origHome.apply(this, arguments);
-        try { ensureSixthStat(); } catch (e) {}
-        return r;
-      };
-      window.renderHome._bWrapped = true;
-    }
     return ok;
   }
 
   function tryInit() {
     injectStyle();
     var ready = buildNav() & buildFab();
-    ensureSixthStat();
     if (ready && wrap()) {
       syncChrome();
       return;
@@ -342,8 +302,7 @@
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CSS: CSS, NAV: NAV, LANES: LANES, FAB_VIEWS: FAB_VIEWS, ACCENT: ACCENT, CORAL: CORAL,
       buildNav: buildNav, buildFab: buildFab, syncChrome: syncChrome, fabAction: fabAction,
-      applyLane: applyLane, ensureLaneBar: ensureLaneBar, wrap: wrap, injectStyle: injectStyle,
-      ensureSixthStat: ensureSixthStat };
+      applyLane: applyLane, ensureLaneBar: ensureLaneBar, wrap: wrap, injectStyle: injectStyle };
     return;
   }
   if (document.readyState === 'loading') {
