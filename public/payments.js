@@ -56,6 +56,20 @@
   function statusColor(s) {
     return s === 'paid' ? '#2e7d32' : s === 'overdue' ? '#c62828' : '#b7791f';
   }
+  // Recurring rows are stored as kind=monthly today. Also honour explicit
+  // recurring flags/frequency fields if a future capture path supplies them.
+  function isRecurringPayment(r) {
+    if (!r) return false;
+    if (r.kind === 'monthly' || r.recurring === true || r.is_recurring === true) return true;
+    var f = String(r.frequency || r.cadence || '').toLowerCase();
+    return f.indexOf('month') !== -1 || f.indexOf('recurr') !== -1;
+  }
+  function recurringCount(rows) {
+    return (rows || []).filter(isRecurringPayment).length;
+  }
+  function payStatusClass(s) {
+    return 'pay-status-' + String(s || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  }
   // Display label for a row's source. New rows carry a precise source at
   // capture (email, parentsquare, infinite-campus, manual). Older email
   // rows predate that, so classify them from the message text: ParentSquare
@@ -88,6 +102,13 @@
         '<input class="pay-f-q" type="search" placeholder="Search payee or note" aria-label="Search payments">' +
         '<button type="button" class="primary" id="pay-add-btn">+ Add</button>' +
       '</div>' +
+      '<div class="pay-overview" aria-label="Payments overview">' +
+        '<div class="pay-overview-copy"><span class="pay-overview-kicker">Quick view</span>' +
+        '<strong>Your payment timeline</strong><span id="pay-overview-count">Loading payments…</span></div>' +
+        '<button type="button" class="pay-recurring-bubble" id="pay-recurring-bubble" aria-pressed="false" title="Show recurring payments">' +
+          '<span class="pay-recurring-symbol" aria-hidden="true">↻</span><span>Recurring payments</span>' +
+          '<strong class="pay-recurring-count" data-recurring-count>0</strong></button>' +
+      '</div>' +
       '<div class="tag-filter-row pay-f-status" role="group" aria-label="Filter by status">' +
         '<button type="button" class="tag-filter active" data-v="all">All</button>' +
         '<button type="button" class="tag-filter" data-v="paid">Paid</button>' +
@@ -97,10 +118,10 @@
         '<button type="button" class="tag-filter active" data-v="all">All</button>' +
         '<button type="button" class="tag-filter" data-v="payment">Payment</button>' +
         '<button type="button" class="tag-filter" data-v="debt">Debt</button>' +
-        '<button type="button" class="tag-filter" data-v="monthly">Monthly</button></div>' +
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0.6rem 0;">' +
-        '<span style="font-size:14px;color:var(--muted);">From</span><input class="pay-f-from" type="date" aria-label="From date">' +
-        '<span style="font-size:14px;color:var(--muted);">To</span><input class="pay-f-to" type="date" aria-label="To date">' +
+        '<button type="button" class="tag-filter" data-v="monthly">↻ Recurring <span class="pay-filter-count" data-recurring-count>0</span></button></div>' +
+      '<div class="pay-date-range">' +
+        '<label>From<input class="pay-f-from" type="date" aria-label="From date"></label>' +
+        '<label>To<input class="pay-f-to" type="date" aria-label="To date"></label>' +
       '</div>' +
       '<div class="pay-table-wrap" style="overflow-x:auto;"></div>' +
       '<div class="pay-pager" style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;"></div>';
@@ -119,6 +140,16 @@
     }
 
     // Board-style tag-filter pills (the bubbles on the work board).
+    var recurringBubble = sec.querySelector('#pay-recurring-bubble');
+    function syncPayKindFilter() {
+      sec.querySelectorAll('.pay-f-kind button').forEach(function (x) {
+        x.classList.toggle('active', x.getAttribute('data-v') === state.kind);
+      });
+      if (recurringBubble) {
+        recurringBubble.classList.toggle('active', state.kind === 'monthly');
+        recurringBubble.setAttribute('aria-pressed', state.kind === 'monthly' ? 'true' : 'false');
+      }
+    }
     function bindPayFilter(groupSel, key) {
       var g = sec.querySelector(groupSel);
       g.addEventListener('click', function (ev) {
@@ -126,11 +157,19 @@
         if (!b) return;
         state[key] = b.getAttribute('data-v');
         g.querySelectorAll('button').forEach(function (x) { x.classList.toggle('active', x === b); });
+        if (key === 'kind') syncPayKindFilter();
         renderPayments();
       });
     }
     bindPayFilter('.pay-f-status', 'status');
     bindPayFilter('.pay-f-kind', 'kind');
+    if (recurringBubble) {
+      recurringBubble.addEventListener('click', function () {
+        state.kind = state.kind === 'monthly' ? 'all' : 'monthly';
+        syncPayKindFilter();
+        renderPayments();
+      });
+    }
     sec.querySelector('#pay-add-btn').addEventListener('click', openPayModal);
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
@@ -198,13 +237,58 @@
     var st = document.createElement('style');
     st.id = 'pay-ux-style';
     st.textContent = [
-      '.pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;',
-      'display:flex;align-items:center;justify-content:center;padding:1rem;}',
+      '.pay-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:50;',
+      'display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px);}',
       '.pay-modal input,.pay-modal select{font-size:16px;padding:10px;}',
-      '.pay-table-wrap th{text-align:left;color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em;padding:0.6rem 0.5rem;border-bottom:1px solid var(--line);}',
-      '.pay-table-wrap td{padding:0.6rem 0.5rem;vertical-align:top;}',
-      '.pay-table-wrap tr.pay-row-attn td{background:#fee2e2;}',
-      '.pay-table-wrap tr.pay-row-ack td{background:#dcfce7;}',
+      '#view-payments{--pay-blue:#2563eb;--pay-violet:#7c3aed;--pay-ink:#172033;--pay-soft:#f6f8fc;}',
+      '#view-payments .view-head{gap:10px;margin-bottom:12px;}',
+      '#view-payments .pay-f-q{border-radius:999px;padding:11px 16px;border:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);background:var(--card,#fff);}',
+      '#view-payments #pay-add-btn{border-radius:999px;padding:10px 16px;box-shadow:0 6px 16px rgba(37,99,235,.22);}',
+      '.pay-overview{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 14px;padding:16px 18px;border:1px solid rgba(124,58,237,.16);border-radius:20px;background:linear-gradient(135deg,#eef4ff 0%,#f5f0ff 52%,#fff7ed 100%);box-shadow:0 10px 28px rgba(37,99,235,.10);}',
+      '.pay-overview-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}',
+      '.pay-overview-kicker{font-size:.68rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--pay-violet);}',
+      '.pay-overview-copy strong{font-size:1.08rem;color:var(--pay-ink);}',
+      '.pay-overview-copy span:last-child{font-size:.86rem;color:#64748b;}',
+      '.pay-recurring-bubble{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(37,99,235,.22);border-radius:999px;padding:8px 10px 8px 8px;background:rgba(255,255,255,.88);color:#1e3a8a;font-weight:750;cursor:pointer;box-shadow:0 5px 16px rgba(37,99,235,.13);white-space:nowrap;}',
+      '.pay-recurring-bubble:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.18);}',
+      '.pay-recurring-bubble.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8;}',
+      '.pay-recurring-symbol{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--pay-blue),var(--pay-violet));color:#fff;font-size:1.05rem;line-height:1;}',
+      '.pay-recurring-bubble.active .pay-recurring-symbol{background:rgba(255,255,255,.22);}',
+      '.pay-recurring-count,.pay-filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#111827;color:#fff;font-size:.78rem;font-weight:850;line-height:1;}',
+      '.pay-filter-count{min-width:21px;height:21px;margin-left:5px;background:#475569;font-size:.72rem;vertical-align:1px;}',
+      '.tag-filter.active .pay-filter-count{background:#fff;color:#1d4ed8;}',
+      '.pay-date-range{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--pay-soft);}',
+      '.pay-date-range label{display:inline-flex;align-items:center;gap:7px;font-size:.86rem;font-weight:650;color:#64748b;}',
+      '.pay-date-range input{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--card,#fff);color:var(--pay-ink);}',
+      '.pay-table-wrap{border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);box-shadow:0 12px 32px rgba(15,23,42,.07);overflow-x:auto;}',
+      '.pay-table-wrap table{min-width:780px;}',
+      '.pay-table-wrap thead th{position:sticky;top:0;z-index:1;text-align:left;color:#64748b;background:#f8fafc;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;padding:.78rem .65rem;border-bottom:1px solid var(--line);}',
+      '.pay-table-wrap td{padding:.72rem .65rem;vertical-align:top;line-height:1.35;}',
+      '.pay-table-wrap tbody tr.pay-data-row{transition:background .15s ease,box-shadow .15s ease;}',
+      '.pay-table-wrap tbody tr.pay-data-row:hover td{background:#f8fbff;}',
+      '.pay-table-wrap tr.pay-row-attn td{background:#fff1f2;}',
+      '.pay-table-wrap tr.pay-row-ack td{background:#f0fdf4;}',
+      '.pay-payee-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}',
+      '.pay-payee{font-weight:780;color:var(--pay-ink);}',
+      '.pay-recurring-icon{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:linear-gradient(135deg,var(--pay-blue),var(--pay-violet));color:#fff;font-size:.86rem;font-weight:900;line-height:1;box-shadow:0 3px 8px rgba(37,99,235,.25);flex:0 0 auto;}',
+      '.pay-recurring-label{margin-top:3px;font-size:.72rem;font-weight:750;letter-spacing:.02em;color:#2563eb;}',
+      '.pay-badge-new{display:inline-flex;border-radius:999px;padding:2px 7px;background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:850;letter-spacing:.04em;}',
+      '.pay-attention-icon{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;background:#fee2e2;color:#b91c1c;font-size:.78rem;}',
+      '.pay-amount{font-weight:850;color:var(--pay-ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;}',
+      '.pay-status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:.76rem;font-weight:800;text-transform:capitalize;white-space:nowrap;}',
+      '.pay-status-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}',
+      '.pay-status-paid{background:#dcfce7;color:#166534;}',
+      '.pay-status-due{background:#fef3c7;color:#92400e;}',
+      '.pay-status-overdue{background:#fee2e2;color:#991b1b;}',
+      '.pay-detail-cell{background:linear-gradient(180deg,#fbfdff,#f6f8fc)!important;padding:16px!important;}',
+      '.pay-detail-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;color:#64748b;font-size:.84rem;}',
+      '.pay-detail-recurring{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;background:#dbeafe;color:#1d4ed8;font-weight:800;}',
+      '.pay-detail-cell button{border-radius:999px;}',
+      '.pay-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:34px 20px;color:#64748b;}',
+      '.pay-empty strong{color:var(--pay-ink);font-size:1rem;}',
+      '.pay-empty-icon{font-size:1.7rem;margin-bottom:2px;}',
+      '.pay-pager button{border-radius:999px;}',
+      '@media (max-width:640px){.pay-overview{align-items:flex-start;flex-direction:column;padding:15px}.pay-recurring-bubble{align-self:flex-start}.pay-table-wrap table{min-width:720px}}',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -222,7 +306,7 @@
       '<label>Payee</label><input name="payee" type="text" required>' +
       '<label>Amount</label><input name="amount" type="number" step="0.01" min="0">' +
       '<label>Status</label><select name="status"><option value="paid">Paid</option><option value="due">Due</option><option value="overdue">Overdue</option></select>' +
-      '<label>Type</label><select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Monthly</option></select>' +
+      '<label>Type</label><select name="kind"><option value="payment">Payment</option><option value="debt">Debt</option><option value="monthly">Recurring (monthly)</option></select>' +
       '<label>Note (optional)</label><input name="description" type="text">' +
       '<label>Comment (optional)</label><input name="comments" type="text">' +
       '<div class="modal-actions"><button type="submit" class="primary">Save</button><button type="button" id="pay-modal-cancel">Cancel</button></div>' +
@@ -308,6 +392,22 @@
     return '';
   }
 
+  function updatePayOverview(filteredCount) {
+    var n = recurringCount(state.rows);
+    document.querySelectorAll('[data-recurring-count]').forEach(function (el) { el.textContent = n; });
+    var count = document.getElementById('pay-overview-count');
+    if (count) {
+      count.textContent = filteredCount === state.rows.length
+        ? state.rows.length + (state.rows.length === 1 ? ' payment record' : ' payment records')
+        : 'Showing ' + filteredCount + ' of ' + state.rows.length + ' payment records';
+    }
+    var bubble = document.getElementById('pay-recurring-bubble');
+    if (bubble) {
+      bubble.classList.toggle('active', state.kind === 'monthly');
+      bubble.setAttribute('aria-pressed', state.kind === 'monthly' ? 'true' : 'false');
+    }
+  }
+
   function filteredRows() {
     var f = { status: state.status, kind: state.kind, q: state.q, from: state.from, to: state.to };
     return state.rows.filter(function (r) { return payRowMatches(r, f); });
@@ -318,8 +418,9 @@
     if (!sec) return;
     var wrap = sec.querySelector('.pay-table-wrap');
     var rows = filteredRows();
+    updatePayOverview(rows.length);
     if (!rows.length) {
-      wrap.innerHTML = '<p>No payment records match. The daily sweep adds receipts and bills here automatically.</p>';
+      wrap.innerHTML = '<div class="pay-empty"><span class="pay-empty-icon" aria-hidden="true">💳</span><strong>No payments match</strong><span>Try a different search or filter. New receipts and bills from the daily sweep will appear here automatically.</span></div>';
       try { var pg0 = sec.querySelector('.pay-pager'); if (pg0) pg0.style.display = 'none'; } catch (e) {}
       return;
     }
@@ -334,24 +435,30 @@
       '<th style="text-align:left;">Note</th><th style="text-align:right;">Amount</th>' +
       '<th style="text-align:left;">Status</th><th style="text-align:left;">Comments</th><th style="text-align:left;">Source</th></tr></thead><tbody>';
     pageRows.forEach(function (r) {
+      var recurring = isRecurringPayment(r);
       var note = (r.description || '').split('\n')[0] || '';
       if (note.length > 60) note = note.slice(0, 60) + '…';
       var comment = r.comments || '';
       if (comment.length > 40) comment = comment.slice(0, 40) + '…';
-      html += '<tr class="' + payRowClass(r) + '" data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
+      html += '<tr class="pay-data-row ' + payRowClass(r) + '" data-pay-id="' + esc(r.id) + '" style="cursor:pointer;border-top:1px solid var(--line);">' +
         '<td>' + payDateCell(r.item_date) + '</td>' +
-        '<td>' + esc(r.payee || '—') +
-          (!r.acknowledged ? ' <span style="font-weight:700;color:#b7791f;">NEW</span>' : '') +
-          (r.attention ? ' <span title="Marked for attention">★</span>' : '') + '</td>' +
+        '<td><div class="pay-payee-line">' +
+          (recurring ? '<span class="pay-recurring-icon" title="Recurring payment" aria-label="Recurring payment">↻</span>' : '') +
+          '<span class="pay-payee">' + esc(r.payee || '—') + '</span>' +
+          (!r.acknowledged ? '<span class="pay-badge-new">NEW</span>' : '') +
+          (r.attention ? '<span class="pay-attention-icon" title="Marked for attention" aria-label="Marked for attention">★</span>' : '') +
+          '</div>' + (recurring ? '<div class="pay-recurring-label">Recurring payment</div>' : '') + '</td>' +
         '<td>' + esc(note) + '</td>' +
-        '<td style="text-align:right;white-space:nowrap;">' + esc(fmtAmt(r.amount)) + '</td>' +
-        '<td style="color:' + statusColor(r.status) + ';font-weight:600;">' + esc(r.status) + '</td>' +
+        '<td class="pay-amount" style="text-align:right;white-space:nowrap;">' + esc(fmtAmt(r.amount)) + '</td>' +
+        '<td><span class="pay-status-pill ' + payStatusClass(r.status) + '"><span class="pay-status-dot"></span>' + esc(r.status) + '</span></td>' +
         '<td>' + esc(comment) + '</td>' +
         '<td style="white-space:nowrap;">' + esc(paySourceLabel(r)) + '</td></tr>';
       if (state.openId === String(r.id)) {
-        html += '<tr><td colspan="7" style="background:var(--lane);">' +
+        html += '<tr class="pay-detail-row"><td colspan="7" class="pay-detail-cell">' +
+          '<div class="pay-detail-meta">' +
+            (recurring ? '<span class="pay-detail-recurring">↻ Recurring payment</span>' : '') +
+            '<span>Source: ' + esc(paySourceLabel(r)) + '</span></div>' +
           '<div style="white-space:pre-wrap;">' + esc(r.description || '') + '</div>' +
-          '<div style="color:var(--muted);">Source: ' + esc(paySourceLabel(r)) + '</div>' +
           '<div style="margin-top:8px;"><textarea class="pay-comment-input" placeholder="Add a comment…" style="width:100%;box-sizing:border-box;">' + esc(r.comments || '') + '</textarea>' +
           '<button data-pay-act="comment" data-pay-id="' + esc(r.id) + '" style="margin-top:4px;">Save comment</button></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
@@ -492,6 +599,6 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell, payRowClass: payRowClass };
+    module.exports = { paySourceLabel: paySourceLabel, payPageSlice: payPageSlice, payPagerText: payPagerText, payNewRowBody: payNewRowBody, payRowMatches: payRowMatches, payDateCell: payDateCell, payRowClass: payRowClass, isRecurringPayment: isRecurringPayment, recurringCount: recurringCount, payStatusClass: payStatusClass };
   }
 })();
