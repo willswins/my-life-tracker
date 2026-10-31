@@ -146,6 +146,11 @@ function injectStyles() {
   const st = document.createElement('style');
   st.id = 'ib-ux-style';
   st.textContent = [
+    // Winny (2026-10-31): remove the "Show triaged" button — in his use
+    // it changed nothing visible. The element stays in the DOM (app.js
+    // wires it at load); it is simply never shown. Default filter state
+    // (untriaged only) is unchanged.
+    '#inbox-toggle-triaged{display:none!important;}',
     // Unification (2026-10-28): the FAB uses the shared .fab class from
     // styles.css; editor + action sheets use the shared centered .modal
     // geometry (dim .4, 14px radius, 480px). Only the sheet/input details
