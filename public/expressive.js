@@ -89,11 +89,22 @@
     '.pay-table-wrap thead{display:none;}',
     '.pay-table-wrap tr.pay-row{background:var(--b-surface);border:1px solid var(--b-line);',
     'border-radius:22px;padding:12px 14px;margin-bottom:12px;}',
-    '.pay-table-wrap tr.pay-detail{background:var(--b-surface);border:1px solid var(--b-line);',
-    'border-radius:22px;padding:12px 14px;margin:-6px 0 12px;}',
+    // the expanded detail row is a classless tr whose td carries an
+    // inline var(--lane) surface — style it as a card, and give its
+    // plain buttons a theme-aware look (they rendered as gray slabs)
+    '.pay-table-wrap tbody tr:not(.pay-row){margin:-6px 0 12px;}',
+    '.pay-table-wrap tbody tr:not(.pay-row) td{border-radius:22px;padding:14px 16px;}',
+    '.pay-table-wrap td button{background:var(--b-surface2);color:var(--b-ink);',
+    'border:1px solid var(--b-line);border-radius:10px;padding:8px 12px;font-family:inherit;cursor:pointer;}',
     // row tints live on the tds in table layout; as cards they must sit
-    // on the tr itself or they paint a framed inner rectangle
-    '.pay-table-wrap td{background:transparent !important;}',
+    // on the tr itself or they paint a framed inner rectangle. Scoped to
+    // .pay-row cells so the detail td keeps its inline surface.
+    '.pay-table-wrap tr.pay-row td{background:transparent !important;}',
+    // payments.js paints status text and the NEW badge with light-theme
+    // colors (#2e7d32 / #b7791f / #c62828) inline — on dark cards they
+    // fall under the contrast floor; lift them, hues intact
+    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row td:nth-child(5){filter:brightness(1.8) saturate(1.25);}',
+    ':root[data-theme="dark"] .pay-table-wrap tr.pay-row td:nth-child(2) span{filter:brightness(1.8) saturate(1.25);}',
     '.pay-table-wrap tr.pay-row-attn{background:#fee2e2;}',
     '.pay-table-wrap tr.pay-row-ack{background:#dcfce7;}',
     ':root[data-theme="dark"] .pay-table-wrap tr.pay-row-attn{background:#3a1d22;}',
@@ -152,8 +163,13 @@
       b.dataset.view = item.view;
       b.innerHTML = '<span class="bnav-ic">' + item.icon + '</span><span>' + item.label + '</span>' +
         (item.badge ? '<span class="bnav-badge zero" id="bnav-badge">0</span>' : '');
-      b.addEventListener('click', function () {
+      b.addEventListener('click', function (ev) {
         if (item.view === '__more') {
+          // app.js closes the menu on any document click outside
+          // .menu-wrap — the real tap that opens it here would bubble
+          // up and close it again in the same tap. Stop it, then use
+          // the app's own toggle.
+          if (ev && ev.stopPropagation) ev.stopPropagation();
           var mb = document.getElementById('menu-btn');
           if (mb) mb.click();
           return;
