@@ -70,10 +70,21 @@
     'font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;line-height:17px;padding:0 4px;text-align:center;}',
     '.bnav-badge.zero{display:none;}',
     // ---- FAB --------------------------------------------------------------
-    '#bfab{position:fixed;right:16px;bottom:calc(96px + 14px);z-index:70;width:58px;height:58px;',
-    'border-radius:20px;background:#ff5d47;color:#fff;font-size:30px;font-weight:700;border:0;cursor:pointer;',
-    'display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(255,93,71,.35);}',
-    '#bfab[hidden]{display:none;}',
+    // ---- More sheet (opened by the bottom-nav More tab) --------------------
+    '#bmore{position:fixed;inset:0;z-index:85;background:rgba(10,8,20,.45);}',
+    '#bmore[hidden]{display:none;}',
+    '.bmore-panel{position:absolute;left:0;right:0;bottom:0;background:var(--b-surface);',
+    'border-radius:24px 24px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom, 0px));}',
+    '.bmore-title{font-size:17px;font-weight:800;color:var(--b-ink);padding:2px 2px 12px;}',
+    '.bmore-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;}',
+    '.bmore-it{background:none;border:0;cursor:pointer;font-family:inherit;display:flex;',
+    'flex-direction:column;align-items:center;gap:6px;color:var(--b-ink);font-size:11.5px;',
+    'font-weight:600;padding:0;position:relative;}',
+    '.bmore-ic{font-size:24px;line-height:1;background:var(--b-surface2);width:54px;height:54px;',
+    'border-radius:17px;display:flex;align-items:center;justify-content:center;}',
+    '.bmore-badge{position:absolute;top:-4px;right:calc(50% - 30px);background:#ff5d47;color:#fff;',
+    'font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;line-height:17px;padding:0 4px;text-align:center;}',
+    '.bmore-badge.zero{display:none;}',
     // ---- Board lane switcher (phone widths) -------------------------------
     '#blane-bar{display:none;}',
     '@media (max-width:899px){',
@@ -103,7 +114,23 @@
     { id: 'waiting', label: 'Waiting' },
     { id: 'done', label: 'Done' },
   ];
-  var FAB_VIEWS = { home: 1, tasks: 1, reminders: 1, inbox: 1, payments: 1, links: 1, journal: 1, shop: 1, longterm: 1, habits: 1 };
+  // Everything not on the bottom nav, in one sheet (Winny, 2026-10-31).
+  // badge = id of the header-menu badge span to mirror, when one exists.
+  var MORE_ITEMS = [
+    { view: 'journal', icon: '📓', label: 'Journal' },
+    { view: 'links', icon: '🔗', label: 'Links', badge: 'badge-links' },
+    { view: 'payments', icon: '💳', label: 'Payments', badge: 'badge-payments' },
+    { view: 'shop', icon: '🛒', label: 'Shop', badge: 'badge-shop' },
+    { view: 'habits', icon: '🔥', label: 'Habits' },
+    { view: 'longterm', icon: '🌱', label: 'Long Term' },
+    { view: 'mood', icon: '🙂', label: 'Mood' },
+    { view: 'game', icon: '🎮', label: 'Sum It Up' },
+    { view: 'spell', icon: '🔤', label: 'Spell It' },
+    { view: 'bee', icon: '🐝', label: 'Spelling Bee' },
+    { view: 'grammar', icon: '✏️', label: 'Grammar Quiz' },
+    { view: 'wordmean', icon: '📖', label: 'Word Meaning' },
+    { view: 'about', icon: 'ℹ️', label: 'About' },
+  ];
   var laneSel = 'now';
 
   function $(sel) { return document.querySelector(sel); }
@@ -134,13 +161,12 @@
         (item.badge ? '<span class="bnav-badge zero" id="bnav-badge">0</span>' : '');
       b.addEventListener('click', function (ev) {
         if (item.view === '__more') {
-          // app.js closes the menu on any document click outside
-          // .menu-wrap — the real tap that opens it here would bubble
-          // up and close it again in the same tap. Stop it, then use
-          // the app's own toggle.
+          // The More sheet is ours (the old design proxied to the header
+          // ☰ menu, whose open/close race with app.js's document closer
+          // made the tap look dead). Open the sheet; keep the tap from
+          // bubbling into other handlers.
           if (ev && ev.stopPropagation) ev.stopPropagation();
-          var mb = document.getElementById('menu-btn');
-          if (mb) mb.click();
+          openMore();
           return;
         }
         if (typeof window.switchView === 'function') window.switchView(item.view);
@@ -151,41 +177,71 @@
     return true;
   }
 
-  function buildFab() {
-    if (document.getElementById('bfab')) return true;
+  // ---- More sheet ---------------------------------------------------------
+  // (The coral + FAB was removed at Winny's order, 2026-10-31 — every
+  // view keeps its own header Add button.)
+  function buildMoreSheet() {
+    if (document.getElementById('bmore')) return true;
     if (!document.body) return false;
-    var f = document.createElement('button');
-    f.type = 'button';
-    f.id = 'bfab';
-    f.textContent = '+';
-    f.title = 'Add';
-    f.setAttribute('aria-label', 'Add');
-    f.addEventListener('click', fabAction);
-    document.body.appendChild(f);
+    var bd = document.createElement('div');
+    bd.id = 'bmore';
+    bd.hidden = true;
+    var panel = document.createElement('div');
+    panel.className = 'bmore-panel';
+    var title = document.createElement('div');
+    title.className = 'bmore-title';
+    title.textContent = 'More';
+    panel.appendChild(title);
+    var grid = document.createElement('div');
+    grid.className = 'bmore-grid';
+    MORE_ITEMS.forEach(function (item) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'bmore-it';
+      b.dataset.view = item.view;
+      var ic = document.createElement('span');
+      ic.className = 'bmore-ic';
+      ic.textContent = item.icon;
+      b.appendChild(ic);
+      var lb = document.createElement('span');
+      lb.textContent = item.label;
+      b.appendChild(lb);
+      if (item.badge) {
+        var bg = document.createElement('span');
+        bg.className = 'bmore-badge zero';
+        bg.dataset.badgeFor = item.badge;
+        bg.textContent = '0';
+        b.appendChild(bg);
+      }
+      b.addEventListener('click', function () {
+        closeMore();
+        if (typeof window.switchView === 'function') window.switchView(item.view);
+      });
+      grid.appendChild(b);
+    });
+    panel.appendChild(grid);
+    bd.appendChild(panel);
+    bd.addEventListener('click', function (ev) { if (ev.target === bd) closeMore(); });
+    document.body.appendChild(bd);
     return true;
   }
-
-  function clickFirst(sel) {
-    var el = $(sel);
-    if (el) { el.click(); return true; }
-    return false;
+  function syncMoreBadges() {
+    document.querySelectorAll('.bmore-badge').forEach(function (bg) {
+      var src = document.getElementById(bg.dataset.badgeFor);
+      var t = src ? src.textContent : '';
+      bg.textContent = t || '0';
+      bg.classList.toggle('zero', !t || t === '0');
+    });
   }
-  function fabAction() {
-    var v = currentViewName();
-    try {
-      if (v === 'tasks' && typeof openModal === 'function') openModal(null);
-      else if (v === 'reminders' && typeof openReminderModal === 'function') openReminderModal(null);
-      else if (v === 'inbox') clickFirst('#ib-add-btn');
-      else if (v === 'payments') clickFirst('#view-payments .search-add button') || clickFirst('#view-payments button.primary');
-      else if (v === 'links' && typeof openLinkModal === 'function') openLinkModal(null);
-      else if (v === 'journal') clickFirst('#j-add');
-      else if (v === 'shop') { var inp = $('#shop-new-name'); if (inp) inp.focus(); }
-      else if (v === 'longterm') clickFirst('#lt-add');
-      else if (v === 'habits') clickFirst('#view-habits .search-add button');
-      else if (v === 'home' && typeof window.switchView === 'function') {
-        window.switchView('tasks').then(function () { if (typeof openModal === 'function') openModal(null); });
-      }
-    } catch (e) { /* the view's own Add button remains available */ }
+  function openMore() {
+    var bd = document.getElementById('bmore');
+    if (!bd) return;
+    syncMoreBadges();
+    bd.hidden = false;
+  }
+  function closeMore() {
+    var bd = document.getElementById('bmore');
+    if (bd) bd.hidden = true;
   }
 
   function syncChrome() {
@@ -203,8 +259,6 @@
         mine.classList.toggle('zero', !src.textContent || src.textContent === '0');
       }
     }
-    var fab = document.getElementById('bfab');
-    if (fab) fab.hidden = !FAB_VIEWS[v];
   }
 
   function ensureLaneBar() {
@@ -276,7 +330,7 @@
 
   function tryInit() {
     injectStyle();
-    var ready = buildNav() & buildFab();
+    var ready = buildNav() & buildMoreSheet();
     if (ready && wrap()) {
       syncChrome();
       return;
@@ -285,8 +339,9 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { CSS: CSS, NAV: NAV, LANES: LANES, FAB_VIEWS: FAB_VIEWS, ACCENT: ACCENT, CORAL: CORAL,
-      buildNav: buildNav, buildFab: buildFab, syncChrome: syncChrome, fabAction: fabAction,
+    module.exports = { CSS: CSS, NAV: NAV, LANES: LANES, MORE_ITEMS: MORE_ITEMS, ACCENT: ACCENT, CORAL: CORAL,
+      buildNav: buildNav, buildMoreSheet: buildMoreSheet, openMore: openMore, closeMore: closeMore,
+      syncChrome: syncChrome, syncMoreBadges: syncMoreBadges,
       applyLane: applyLane, ensureLaneBar: ensureLaneBar, wrap: wrap, injectStyle: injectStyle };
     return;
   }
