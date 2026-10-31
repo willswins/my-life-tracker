@@ -9,6 +9,21 @@ const DESTS = ['task', 'reminder', 'journal', 'link'];
 const TAGS = ['work', 'personal'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Inbox item tags (2026-10-30): clean whatever arrives into a short,
+// deduped string array. The configured tag set is enforced by the UI;
+// the API only guarantees shape.
+function cleanTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const out = [];
+  for (const t of tags) {
+    if (typeof t !== 'string') continue;
+    const v = t.trim().slice(0, 40);
+    if (v && !out.includes(v)) out.push(v);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 function cleanTriageReminder(b) {
   const out = {};
   if (typeof b.title === 'string' && b.title.trim()) out.title = b.title.trim().slice(0, 160);
@@ -125,6 +140,7 @@ module.exports = async (req, res) => {
         text: text.slice(0, 20000),
         source,
         source_ref: typeof body.source_ref === 'string' ? body.source_ref.slice(0, 300) : null,
+        tags: cleanTags(body.tags),
       });
       const item = inserted[0];
       // Optional photo: upload to private Supabase Storage, store the signed
@@ -176,6 +192,19 @@ module.exports = async (req, res) => {
       // Text-only update (used by the body backfill): the owner can replace
       // an item's text, nothing else. Triage still goes through POST.
       const body = await readBody(req);
+      // Tag update (2026-10-30): retag a capture in place. The tags
+      // column has always existed, but the create route dropped tags
+      // and PATCH had no way to set them, so every capture sat
+      // untagged. Create now persists tags too.
+      if (Array.isArray(body.tags)) {
+        const nowTag = new Date().toISOString();
+        const tagPatched = await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(id)}&${scope}`, {
+          tags: cleanTags(body.tags),
+          updated_at: nowTag,
+        });
+        if (!tagPatched[0]) return send(404, { ok: false, error: 'item not found' });
+        return send(200, tagPatched[0]);
+      }
       // Read-state update (2026-10-30): opening a capture marks it read,
       // which un-bolds its row. Only the flag may change this way.
       if (typeof body.is_read === 'boolean') {
