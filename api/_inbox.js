@@ -4,7 +4,7 @@
 const { getSessionEmail } = require('./_session');
 const { readBody, sb, cleanCard } = require('./_db');
 
-const SOURCES = ['manual', 'email', 'chat'];
+const SOURCES = ['manual', 'email', 'chat', 'parentsquare', 'infinite-campus'];
 const DESTS = ['task', 'reminder', 'journal', 'link'];
 const TAGS = ['work', 'personal'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
