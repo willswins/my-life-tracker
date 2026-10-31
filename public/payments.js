@@ -102,13 +102,6 @@
         '<input class="pay-f-q" type="search" placeholder="Search payee or note" aria-label="Search payments">' +
         '<button type="button" class="primary" id="pay-add-btn">+ Add</button>' +
       '</div>' +
-      '<div class="pay-overview" aria-label="Payments overview">' +
-        '<div class="pay-overview-copy"><span class="pay-overview-kicker">Quick view</span>' +
-        '<strong>Your payment timeline</strong><span id="pay-overview-count">Loading payments…</span></div>' +
-        '<button type="button" class="pay-recurring-bubble" id="pay-recurring-bubble" aria-pressed="false" title="Show recurring payments">' +
-          '<span class="pay-recurring-symbol" aria-hidden="true">↻</span><span>Recurring payments</span>' +
-          '<strong class="pay-recurring-count" data-recurring-count>0</strong></button>' +
-      '</div>' +
       '<div class="tag-filter-row pay-f-status" role="group" aria-label="Filter by status">' +
         '<button type="button" class="tag-filter active" data-v="all">All</button>' +
         '<button type="button" class="tag-filter" data-v="paid">Paid</button>' +
@@ -140,15 +133,10 @@
     }
 
     // Board-style tag-filter pills (the bubbles on the work board).
-    var recurringBubble = sec.querySelector('#pay-recurring-bubble');
     function syncPayKindFilter() {
       sec.querySelectorAll('.pay-f-kind button').forEach(function (x) {
         x.classList.toggle('active', x.getAttribute('data-v') === state.kind);
       });
-      if (recurringBubble) {
-        recurringBubble.classList.toggle('active', state.kind === 'monthly');
-        recurringBubble.setAttribute('aria-pressed', state.kind === 'monthly' ? 'true' : 'false');
-      }
     }
     function bindPayFilter(groupSel, key) {
       var g = sec.querySelector(groupSel);
@@ -163,13 +151,6 @@
     }
     bindPayFilter('.pay-f-status', 'status');
     bindPayFilter('.pay-f-kind', 'kind');
-    if (recurringBubble) {
-      recurringBubble.addEventListener('click', function () {
-        state.kind = state.kind === 'monthly' ? 'all' : 'monthly';
-        syncPayKindFilter();
-        renderPayments();
-      });
-    }
     sec.querySelector('#pay-add-btn').addEventListener('click', openPayModal);
     sec.querySelector('.pay-f-q').addEventListener('input', function (ev) {
       state.q = ev.target.value.trim().toLowerCase();
@@ -244,17 +225,7 @@
       '#view-payments .view-head{gap:10px;margin-bottom:12px;}',
       '#view-payments .pay-f-q{border-radius:999px;padding:11px 16px;border:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.05);background:var(--card,#fff);}',
       '#view-payments #pay-add-btn{border-radius:999px;padding:10px 16px;box-shadow:0 6px 16px rgba(37,99,235,.22);}',
-      '.pay-overview{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 14px;padding:16px 18px;border:1px solid rgba(124,58,237,.16);border-radius:20px;background:linear-gradient(135deg,#eef4ff 0%,#f5f0ff 52%,#fff7ed 100%);box-shadow:0 10px 28px rgba(37,99,235,.10);}',
-      '.pay-overview-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}',
-      '.pay-overview-kicker{font-size:.68rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--pay-violet);}',
-      '.pay-overview-copy strong{font-size:1.08rem;color:var(--pay-ink);}',
-      '.pay-overview-copy span:last-child{font-size:.86rem;color:#64748b;}',
-      '.pay-recurring-bubble{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(37,99,235,.22);border-radius:999px;padding:8px 10px 8px 8px;background:rgba(255,255,255,.88);color:#1e3a8a;font-weight:750;cursor:pointer;box-shadow:0 5px 16px rgba(37,99,235,.13);white-space:nowrap;}',
-      '.pay-recurring-bubble:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.18);}',
-      '.pay-recurring-bubble.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8;}',
-      '.pay-recurring-symbol{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--pay-blue),var(--pay-violet));color:#fff;font-size:1.05rem;line-height:1;}',
-      '.pay-recurring-bubble.active .pay-recurring-symbol{background:rgba(255,255,255,.22);}',
-      '.pay-recurring-count,.pay-filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#111827;color:#fff;font-size:.78rem;font-weight:850;line-height:1;}',
+      '.pay-filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:21px;height:21px;padding:0 7px;border-radius:999px;background:#111827;color:#fff;font-size:.72rem;font-weight:850;line-height:1;}',
       '.pay-filter-count{min-width:21px;height:21px;margin-left:5px;background:#475569;font-size:.72rem;vertical-align:1px;}',
       '.tag-filter.active .pay-filter-count{background:#fff;color:#1d4ed8;}',
       '.pay-date-range{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--pay-soft);}',
@@ -288,7 +259,7 @@
       '.pay-empty strong{color:var(--pay-ink);font-size:1rem;}',
       '.pay-empty-icon{font-size:1.7rem;margin-bottom:2px;}',
       '.pay-pager button{border-radius:999px;}',
-      '@media (max-width:640px){.pay-overview{align-items:flex-start;flex-direction:column;padding:15px}.pay-recurring-bubble{align-self:flex-start}.pay-table-wrap table{min-width:720px}}',
+      '@media (max-width:640px){.pay-table-wrap table{min-width:720px}}',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -392,20 +363,9 @@
     return '';
   }
 
-  function updatePayOverview(filteredCount) {
+  function updateRecurringCounts() {
     var n = recurringCount(state.rows);
     document.querySelectorAll('[data-recurring-count]').forEach(function (el) { el.textContent = n; });
-    var count = document.getElementById('pay-overview-count');
-    if (count) {
-      count.textContent = filteredCount === state.rows.length
-        ? state.rows.length + (state.rows.length === 1 ? ' payment record' : ' payment records')
-        : 'Showing ' + filteredCount + ' of ' + state.rows.length + ' payment records';
-    }
-    var bubble = document.getElementById('pay-recurring-bubble');
-    if (bubble) {
-      bubble.classList.toggle('active', state.kind === 'monthly');
-      bubble.setAttribute('aria-pressed', state.kind === 'monthly' ? 'true' : 'false');
-    }
   }
 
   function filteredRows() {
@@ -418,7 +378,7 @@
     if (!sec) return;
     var wrap = sec.querySelector('.pay-table-wrap');
     var rows = filteredRows();
-    updatePayOverview(rows.length);
+    updateRecurringCounts();
     if (!rows.length) {
       wrap.innerHTML = '<div class="pay-empty"><span class="pay-empty-icon" aria-hidden="true">💳</span><strong>No payments match</strong><span>Try a different search or filter. New receipts and bills from the daily sweep will appear here automatically.</span></div>';
       try { var pg0 = sec.querySelector('.pay-pager'); if (pg0) pg0.style.display = 'none'; } catch (e) {}
