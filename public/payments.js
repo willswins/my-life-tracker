@@ -65,7 +65,7 @@
     if (s === 'parentsquare') return 'ParentSquare';
     if (s === 'infinite-campus' || s === 'infinite_campus') return 'Infinite Campus';
     if (s === 'manual') return 'Manual';
-    if (s === 'chat') return 'Chat';
+    if (s === 'chat') return 'Luttu';
     if (s === 'email') {
       var hay = ((r.description || '') + ' ' + (r.payee || '')).toLowerCase();
       if (hay.indexOf('parentsquare') !== -1 || hay.indexOf('posted in ') !== -1) return 'ParentSquare';
