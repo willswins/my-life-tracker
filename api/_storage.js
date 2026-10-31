@@ -93,9 +93,10 @@ async function deleteFile(storagePath) {
 }
 
 // Upload a base64-encoded file and return a signed URL good for ~1 year.
+// Images for captures; PDFs for email attachments (Winny, 2026-10-31).
 async function uploadBase64({ userEmail, cardId, filename, contentType, base64 }) {
-  if (!/^image\/(jpeg|png|gif|webp|heic|heif)$/i.test(contentType || '')) {
-    throw new Error('only image uploads are supported');
+  if (!/^(image\/(jpeg|png|gif|webp|heic|heif)|application\/pdf)$/i.test(contentType || '')) {
+    throw new Error('only image and PDF uploads are supported');
   }
   const buf = Buffer.from(base64, 'base64');
   if (!buf.length || buf.length > 8 * 1024 * 1024) {
