@@ -569,9 +569,23 @@ function specialsKeywords(name) {
   return { strong: strong, all: toks, phrase: phrase };
 }
 
+// Tech tokens that never appear in a grocery item — if any of them is
+// anywhere in the item name, the item is tech (Winny, 2026-10-31: 'Mac
+// mini' slipped the old last-token gate and matched Mini Bagels).
+var SPECIALS_STRONG_TECH = { iphone: 1, ipad: 1, macbook: 1, airpods: 1,
+  laptop: 1, notebook: 1, computer: 1, tablet: 1, monitor: 1,
+  headphones: 1, earbuds: 1, camera: 1, printer: 1, router: 1,
+  console: 1, drone: 1, kindle: 1, pixel: 1 };
+// 'mac' is tech only beside another Apple word ('mac & cheese' is food).
+var SPECIALS_MAC_PAIR = { mini: 1, book: 1, pro: 1, air: 1, studio: 1, max: 1, imac: 1 };
+
 function isTechItem(name, toks) {
   var norm = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (norm.indexOf('airpod') !== -1) return true;
+  if (norm.indexOf('airpod') !== -1 || norm.indexOf('macbook') !== -1) return true;
+  var set = {};
+  toks.forEach(function(t) { set[t] = 1; });
+  if (toks.some(function(t) { return SPECIALS_STRONG_TECH[t]; })) return true;
+  if (set.mac && toks.some(function(t) { return SPECIALS_MAC_PAIR[t]; })) return true;
   return toks.length > 0 && !!SPECIALS_TECH[toks[toks.length - 1]];
 }
 
@@ -760,17 +774,20 @@ function specialsStoreLink(e) {
   return name;
 }
 
-// Catalog deals (shop_deals table, refreshed by the shop watch) fill in
-// items the weekly ads don't cover. Same {store, text, price} shape plus
-// the product-page url when the deal came from the online catalog, so
-// specialsLineFor can link the store name. Ads always win when present;
-// deals never override an ad line.
+// Catalog deals (shop_deals table, refreshed by the daily deal sweep)
+// fill in items the weekly ads don't cover. Same {store, text, price}
+// shape plus the product-page url when the deal came from the online
+// catalog, so specialsLineFor can link the store name. Ads always win
+// when present; deals never override an ad line.
+var REFURB_RX = /refurb|renewed|pre[- ]?owned|open[- ]box/i;
 function mergeDealLines(byItem, itemKeys, deals) {
   itemKeys.forEach(function(key) {
     if (byItem[key] && byItem[key].length) return;
     var sellers = deals[key];
     if (!Array.isArray(sellers) || !sellers.length) return;
-    var entries = sellers.slice(0, 3).map(function(s) {
+    // Never render refurbished/renewed/open-box lines (Winny, 2026-10-31:
+    // no refurbished deals unless he specifically asks for them).
+    var entries = sellers.filter(function(s) { return !REFURB_RX.test(String((s && s.text) || '')); }).slice(0, 3).map(function(s) {
       return { store: s.store || '', text: s.text || '', price: (typeof s.price === 'number') ? s.price : null, url: (typeof s.url === 'string') ? s.url : '' };
     }).filter(function(e) { return e.store; });
     if (entries.length) byItem[key] = entries;
