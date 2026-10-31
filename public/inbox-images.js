@@ -189,6 +189,8 @@ function injectStyles() {
     '.ib-h-meta{color:#64748b;font-size:.92em;}',
     '.ib-sec-body{white-space:pre-wrap;word-break:break-word;padding:6px 2px 0;}',
     '.ib-sec a{color:var(--work);}',
+    '.ib-atts{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}',
+    '.ib-att{display:inline-block;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#f9fafb;color:var(--work);font-size:13px;text-decoration:none;}',
     '.ib-compact.ib-open .ib-subject{white-space:normal;}',
   ].join('\n');
   document.head.appendChild(st);
@@ -688,6 +690,28 @@ function wrapInboxRow() {
       if (meta) el.insertBefore(img, meta);
       else el.appendChild(img);
     }
+    // PDF attachments (email captures, 2026-10-31): one tappable chip
+    // per file, opening the signed URL. Sits with the photo, above the
+    // meta line; the compact restructure moves it into the detail.
+    if (it && Array.isArray(it.attachments) && it.attachments.length) {
+      const attBox = document.createElement('div');
+      attBox.className = 'ib-atts';
+      it.attachments.forEach(function (a) {
+        if (!a || !a.url) return;
+        const link = document.createElement('a');
+        link.className = 'ib-att';
+        link.href = a.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '📄 ' + (a.name || 'attachment.pdf');
+        attBox.appendChild(link);
+      });
+      if (attBox.children.length) {
+        const meta2 = el.querySelector('.inbox-meta');
+        if (meta2) el.insertBefore(attBox, meta2);
+        else el.appendChild(attBox);
+      }
+    }
     // Render stored markdown back to formatted text — only for the user's
     // own manual captures, so email/chat items (which may contain stray
     // asterisks) always render as plain text exactly as before.
@@ -847,7 +871,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, compactInboxRow, sectionInboxDetail };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, compactInboxRow, sectionInboxDetail, wrapInboxRow };
 }
 
 })();
