@@ -10,23 +10,24 @@ const TAGS = ['work', 'personal'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_ATTACHMENTS = 6;
 
-// Upload PDF attachments (sweep-captured email, Winny 2026-10-31) to
-// private Storage; returns [{name, url}] for the item's attachments
-// column. Non-fatal per file: a failed upload is skipped so the text
-// capture is never lost over an attachment.
+// Upload file attachments (sweep-captured email, Winny 2026-10-31: any
+// non-text item, not just PDFs) to private Storage; returns
+// [{name, url}] for the item's attachments column. Non-fatal per file:
+// a failed upload is skipped so the text capture is never lost over an
+// attachment.
 async function uploadAttachments(email, itemId, list) {
   const { uploadBase64 } = require('./_storage');
   const out = [];
   const arr = Array.isArray(list) ? list.slice(0, MAX_ATTACHMENTS) : [];
   for (const a of arr) {
     if (!a || typeof a !== 'object' || typeof a.base64 !== 'string') continue;
-    const name = (typeof a.filename === 'string' && a.filename.trim() ? a.filename.trim() : 'attachment.pdf').slice(0, 120);
+    const name = (typeof a.filename === 'string' && a.filename.trim() ? a.filename.trim() : 'attachment').slice(0, 120);
     try {
       const url = await uploadBase64({
         userEmail: email,
         cardId: itemId,
         filename: name,
-        contentType: 'application/pdf',
+        contentType: typeof a.contentType === 'string' ? a.contentType : 'application/octet-stream',
         base64: a.base64,
       });
       out.push({ name, url });
@@ -35,6 +36,49 @@ async function uploadAttachments(email, itemId, list) {
     }
   }
   return out;
+}
+
+// Storage cap (Winny, 2026-10-31): the user's stored files stay under
+// 1 GB; when they exceed it, the OLDEST files are deleted to make room
+// — newer items always win. References on inbox items (photo +
+// attachment chips) are scrubbed so nothing renders a dead link.
+// Best-effort: a cap failure never fails the capture that triggered it.
+const STORAGE_CAP_BYTES = 1024 * 1024 * 1024;
+async function enforceStorageCap(email, keepUrls) {
+  try {
+    const { listUserFiles, deleteFile, pathFromSignedUrl } = require('./_storage');
+    const keep = new Set((keepUrls || []).map((u) => pathFromSignedUrl(u)).filter(Boolean));
+    const files = await listUserFiles(email);
+    let total = files.reduce((s, f) => s + (f.size || 0), 0);
+    if (total <= STORAGE_CAP_BYTES) return;
+    const scope = `user_email=eq.${encodeURIComponent(email)}`;
+    const items = await sb('GET', `/rest/v1/inbox_items?${scope}&select=id,image_url,attachments`);
+    const deletedPaths = [];
+    files.sort((a, b) => a.stamp - b.stamp);
+    for (const f of files) {
+      if (total <= STORAGE_CAP_BYTES) break;
+      if (keep.has(f.path)) continue;
+      await deleteFile(f.path);
+      total -= f.size || 0;
+      deletedPaths.push(f.path);
+    }
+    if (!deletedPaths.length) return;
+    const gone = new Set(deletedPaths);
+    for (const it of items) {
+      const patch = {};
+      if (it.image_url && gone.has(pathFromSignedUrl(it.image_url))) patch.image_url = null;
+      if (Array.isArray(it.attachments)) {
+        const kept = it.attachments.filter((a) => !(a && a.url && gone.has(pathFromSignedUrl(a.url))));
+        if (kept.length !== it.attachments.length) patch.attachments = kept;
+      }
+      if (Object.keys(patch).length) {
+        patch.updated_at = new Date().toISOString();
+        await sb('PATCH', `/rest/v1/inbox_items?id=eq.${encodeURIComponent(it.id)}&${scope}`, patch);
+      }
+    }
+  } catch (e) {
+    console.error('storage cap enforcement failed:', e.message);
+  }
 }
 
 function cleanTriageReminder(b) {
@@ -187,6 +231,12 @@ module.exports = async (req, res) => {
           item.attachments_error = 'attachments could not be saved';
         }
       }
+      const keepUrls = [];
+      if (item.image_url) keepUrls.push(item.image_url);
+      if (Array.isArray(item.attachments)) {
+        item.attachments.forEach((a) => { if (a && a.url) keepUrls.push(a.url); });
+      }
+      if (keepUrls.length) await enforceStorageCap(email, keepUrls);
       return send(201, item);
     }
     if (req.method === 'POST' && id) {
@@ -241,6 +291,7 @@ module.exports = async (req, res) => {
           updated_at: new Date().toISOString(),
         });
         if (!attPatched[0]) return send(404, { ok: false, error: 'item not found' });
+        await enforceStorageCap(email, merged.map((a) => a && a.url).filter(Boolean));
         return send(200, attPatched[0]);
       }
       if (typeof body.text !== 'string' || !body.text.trim()) {
