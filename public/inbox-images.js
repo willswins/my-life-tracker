@@ -545,6 +545,7 @@ function markInboxRead(el, it) {
   el.classList.remove('ib-new');
   try {
     api('PATCH', '/api/app?r=daybook&view=inbox&id=' + encodeURIComponent(it.id), { is_read: true })
+      .then(function () { try { updateBadges(); } catch (e) { /* badge refresh is best-effort */ } })
       .catch(function () { /* keep the local un-bold */ });
   } catch (e) { /* read state is best-effort */ }
 }
