@@ -5,14 +5,38 @@
 
 let showCompleted = false;
 
-// --- Toggle button ---
+// --- Completed toggle pill ---
+// Winny (2026-10-31): "Show completed" was a plain text link. It is now a
+// .tag-filter bubble that sits in the tag-filter row with the other
+// bubbles (same pattern as the board's Deleted pill). Default off: the
+// list shows the un-completed reminders (active + snoozed). Pill on
+// (ink-filled) switches the list to the completed ones.
 const tglBtn = document.getElementById('rem-show-completed');
+function syncCompletedPill() {
+  if (!tglBtn) return;
+  tglBtn.classList.toggle('active', showCompleted);
+  tglBtn.setAttribute('aria-pressed', showCompleted ? 'true' : 'false');
+}
 if (tglBtn) {
+  tglBtn.classList.remove('link-btn');
+  tglBtn.classList.add('tag-filter');
+  tglBtn.textContent = 'Completed';
+  tglBtn.title = 'Show completed reminders';
+  syncCompletedPill();
   tglBtn.addEventListener('click', () => {
     showCompleted = !showCompleted;
-    tglBtn.textContent = showCompleted ? 'Hide' : 'Show';
+    syncCompletedPill();
     renderReminders();
   });
+  // Collapse the old link wrapper once the pill moves into the tag row.
+  try {
+    if (!document.getElementById('rem-views-style')) {
+      const st = document.createElement('style');
+      st.id = 'rem-views-style';
+      st.textContent = '.rem-view-toggle:empty{display:none;}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+  } catch (e) {}
 }
 
 // --- Enhanced renderReminders (completed filter) ---
@@ -21,6 +45,10 @@ window.renderReminders = function() {
     reminderTagFilter = v;
     renderReminders();
   });
+  // renderTagFilter rebuilt the tag row (innerHTML wipe); put the
+  // Completed pill back at the end of it, next to the other bubbles.
+  const tagRow = document.getElementById('rem-tag-filter');
+  if (tagRow && tglBtn) { tagRow.appendChild(tglBtn); syncCompletedPill(); }
   const box = document.getElementById('reminder-timeline');
   const now = new Date();
   const startToday = new Date(now);
