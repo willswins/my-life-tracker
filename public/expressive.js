@@ -59,7 +59,15 @@
     // ---- Bottom navigation ----------------------------------------------
     '#bnav{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;',
     'background:var(--b-surface);border-top:1px solid var(--b-line);',
-    'padding-bottom:env(safe-area-inset-bottom, 0px);}',
+    'padding-bottom:env(safe-area-inset-bottom, 0px);transform:translate3d(0,0,0);}',
+    // iOS anti-zoom (Winny, 2026-11-01 — "on the reminder page once I
+    // scroll, the bottom menu bar also scrolls up"): form fields under
+    // 16px make iOS auto-zoom the page on focus, and a zoomed page drags
+    // position:fixed bars (the bottom nav) with the content. The app's
+    // search/modal fields were 0.85-0.9rem (13.6-14.4px). Forcing every
+    // field to 16px removes the zoom at the source; the translate3d on
+    // #bnav above additionally keeps the bar on its own layer.
+    'input,textarea,select{font-size:16px !important;}',
     // The header hamburger is retired (Winny, 2026-10-31): the bottom nav
     // + More sheet carry every destination it had. The .menu-wrap element
     // stays in the DOM (app.js binds it at load; modules file badge spans
@@ -96,8 +104,8 @@
     '.blane-chip{flex:none;font-family:inherit;font-size:14.5px;font-weight:700;padding:9px 16px;',
     'border-radius:999px;border:0;background:var(--b-surface2);color:var(--b-muted);cursor:pointer;}',
     '.blane-chip.on{background:#6c5ce7;color:#fff;}',
-    '#board #lanes .lane{display:none;}',
-    '#board #lanes .lane.b-on{display:block;}',
+    '#view-tasks #lanes .lane{display:none;}',
+    '#view-tasks #lanes .lane.b-on{display:block;}',
     // ---- Bottom sheets for add/edit (phone widths) -------------------------
     '#modal-backdrop,#reminder-backdrop,#detail-backdrop,#invite-backdrop,#keys-backdrop,.pay-backdrop{align-items:flex-end;padding:0;}',
     '.modal,.pay-modal{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:92vh;}',
