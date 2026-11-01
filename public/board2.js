@@ -120,12 +120,12 @@
   }
   function cardHTML(c, opts) {
     var open = !!opts.open;
-    var chip = dueChip(c, opts.today);
+    // No dates on the Board screen (Winny, 2026-10-31): due dates live
+    // on the card's detail/edit screens and in Reminders, not here.
     var sizeLabel = (typeof SIZE_LABELS !== 'undefined' && SIZE_LABELS[c.priority]) || SIZE_LABELS_LOCAL[c.priority] || c.priority;
     var h = '<div class="b2-bar" style="background:' + tagColor(c) + '"></div>';
     h += '<div class="b2-title">' + esc(c.title) + '</div>';
     var meta = '';
-    if (chip) meta += '<span class="b2-chip ' + chip.cls + '">' + esc(chip.text) + '</span>';
     if (c.priority === 'high') meta += '<span class="b2-chip">' + esc(sizeLabel) + '</span>';
     if (c.owner) meta += '<span class="b2-chip">👤 ' + esc(c.owner) + '</span>';
     if (opts.deleted) meta += '<span class="b2-chip due-over">Deleted</span>';
