@@ -96,8 +96,8 @@
     '.blane-chip{flex:none;font-family:inherit;font-size:14.5px;font-weight:700;padding:9px 16px;',
     'border-radius:999px;border:0;background:var(--b-surface2);color:var(--b-muted);cursor:pointer;}',
     '.blane-chip.on{background:#6c5ce7;color:#fff;}',
-    '#view-tasks #lanes .lane{display:none;}',
-    '#view-tasks #lanes .lane.b-on{display:block;}',
+    '#board #lanes .lane{display:none;}',
+    '#board #lanes .lane.b-on{display:block;}',
     // ---- Bottom sheets for add/edit (phone widths) -------------------------
     '#modal-backdrop,#reminder-backdrop,#detail-backdrop,#invite-backdrop,#keys-backdrop,.pay-backdrop{align-items:flex-end;padding:0;}',
     '.modal,.pay-modal{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:92vh;}',
