@@ -433,6 +433,10 @@
   // ---------------- data + badges ---------------------------------------------
   async function loadPayments() {
     ensureShell();
+    if (!state.rows.length) {
+      var pvList = document.querySelector('#view-payments .pv-list');
+      if (pvList && !pvList.children.length) pvList.innerHTML = '<div class="view-loading">Loading\u2026</div>';
+    }
     var list = document.querySelector('#view-payments .pv-list');
     try {
       var rows = await api('GET', '/api/app?r=daybook&view=payments');

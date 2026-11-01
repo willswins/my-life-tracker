@@ -93,6 +93,8 @@
     '.bmore-panel{position:absolute;left:0;right:0;bottom:0;background:var(--b-surface);',
     'border-radius:24px 24px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom, 0px));}',
     '.bmore-title{font-size:17px;font-weight:800;color:var(--b-ink);padding:2px 2px 12px;}',
+    '.bmore-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}',
+    '.bmore-x{flex:none;width:44px;height:44px;margin:-8px -6px 0 0;border:0;border-radius:12px;background:var(--b-chip);color:var(--b-ink);font-size:17px;line-height:1;cursor:pointer;font-family:inherit;}',
     '.bmore-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;}',
     '.bmore-it{background:none;border:0;cursor:pointer;font-family:inherit;display:flex;',
     'flex-direction:column;align-items:center;gap:6px;color:var(--b-ink);font-size:11.5px;',
@@ -218,10 +220,20 @@
     bd.hidden = true;
     var panel = document.createElement('div');
     panel.className = 'bmore-panel';
+    var head = document.createElement('div');
+    head.className = 'bmore-head';
     var title = document.createElement('div');
     title.className = 'bmore-title';
     title.textContent = 'More';
-    panel.appendChild(title);
+    head.appendChild(title);
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'bmore-x';
+    x.textContent = '\u2715';
+    x.setAttribute('aria-label', 'Close');
+    x.addEventListener('click', closeMore);
+    head.appendChild(x);
+    panel.appendChild(head);
     var grid = document.createElement('div');
     grid.className = 'bmore-grid';
     MORE_ITEMS.forEach(function (item) {
@@ -252,6 +264,9 @@
     panel.appendChild(grid);
     bd.appendChild(panel);
     bd.addEventListener('click', function (ev) { if (ev.target === bd) closeMore(); });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && !bd.hidden) closeMore();
+    });
     document.body.appendChild(bd);
     return true;
   }

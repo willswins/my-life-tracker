@@ -281,7 +281,7 @@ function renderShop() {
     h += '<p class="shop-progress-text">' + doneCount + ' of ' + items.length + ' picked</p>';
     h += '<div class="shop-list">';
     groupShopItems(items).forEach(function(g) {
-      h += '<div class="shop-section-header">' + esc(g.section) + '<span class="shop-section-count">' + g.items.length + '</span></div>';
+      h += '<div class="shop-section-header">' + esc(g.section) + '<span class="shop-section-count">' + '\u00b7 ' + g.items.length + '</span></div>';
       g.items.forEach(function(it) {
         h += '<label class="shop-item' + (it.done ? ' done' : '') + '">';
         h += '<input type="checkbox" class="shop-check" data-id="' + esc(it.id) + '"' + (it.done ? ' checked' : '') + '>';

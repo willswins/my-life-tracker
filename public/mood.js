@@ -84,7 +84,7 @@ function moodEntryHtml(e) {
   return '<div class="mood-entry" style="border-left-color:' + md.color + '">' +
     '<span class="mood-entry-e">' + md.e + "</span>" +
     '<div class="mood-entry-b"><div class="mood-entry-t">' + escHtml(md.label) +
-    (t ? ' <span class="mood-entry-time">' + escHtml(t) + "</span>" : "") + "</div>" +
+    (t ? ' \u00b7 <span class="mood-entry-time">' + escHtml(t) + "</span>" : "") + "</div>" +
     (e.note ? '<div class="mood-entry-n">' + escHtml(e.note) + "</div>" : "") + "</div>" +
     '<button class="mood-del" data-id="' + escHtml(e.id) + '" aria-label="Delete check-in">\u00d7</button></div>';
 }

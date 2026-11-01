@@ -4,6 +4,7 @@ const LANES = ['now', 'next', 'waiting', 'done'];
 const LANE_LABELS = { now: 'Now', next: 'Next', waiting: 'Waiting on others', done: 'Done' };
 const SIZE_LABELS = { high: 'Big rock', normal: 'Medium', low: 'Small' };
 const APP_VERSION = '1.2.0';
+const BUILD_DATE = '__BUILD_DATE__'; // replaced by build.js at deploy time
 
 let cards = [];
 let searchText = '';
@@ -1272,7 +1273,11 @@ document.querySelectorAll('[data-gram-diff]').forEach((b) => {
 });
 
 async function switchView(name, push = true) {
+  const requestedView = name;
   if (!VIEWS.includes(name)) name = 'tasks';
+  if (name !== requestedView && location.hash && location.hash !== '#/' + name) {
+    try { history.replaceState(null, '', '#/' + name); } catch (e) {}
+  }
   currentView = name;
   document.body.dataset.view = name;
   Object.entries(VIEW_IDS).forEach(([v, id]) => {
@@ -1284,6 +1289,20 @@ async function switchView(name, push = true) {
   document.getElementById('view-title').textContent = VIEW_TITLES[name] || 'DayBook';
   menuEl.classList.add('hidden');
   if (push && location.hash !== '#/' + name) location.hash = '#/' + name;
+  const sec = document.getElementById(VIEW_IDS[name]);
+  let loadEl = null, loadTimer = null;
+  if (sec) {
+    loadTimer = setTimeout(() => {
+      loadEl = document.createElement('div');
+      loadEl.className = 'view-loading';
+      loadEl.textContent = 'Loading\u2026';
+      sec.appendChild(loadEl);
+    }, 180);
+  }
+  const hideLoading = () => {
+    if (loadTimer) clearTimeout(loadTimer);
+    if (loadEl) loadEl.remove();
+  };
   try {
     await updateBadges();
     if (name === 'reminders') renderReminders();
@@ -1301,6 +1320,8 @@ async function switchView(name, push = true) {
     else render();
   } catch (e) {
     console.error('view load failed:', e);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1378,8 +1399,10 @@ if (profileBtn && profileMenu) {
 }
 
 function renderAbout() {
-  document.getElementById('about-version').textContent = APP_VERSION;
-  document.getElementById('about-build').textContent = BUILD_DATE;
+  const v = document.getElementById('about-version');
+  if (v) v.textContent = APP_VERSION;
+  const b = document.getElementById('about-build');
+  if (b) b.textContent = BUILD_DATE;
 }
 
 function setBadge(id, n, hot) {
@@ -1792,7 +1815,8 @@ document.addEventListener('click', (e) => {
   const id = btn.dataset.dd;
   const menu = document.getElementById('dd-menu');
   if (!menu.classList.contains('hidden') && menu.dataset.for === id) { closeDropdown(); return; }
-  const cur = document.getElementById(id).value;
+  const hidEl = document.getElementById(id);
+  const cur = hidEl ? hidEl.value : '';
   let items = DD_DEFS[id]();
   if ((id === 'r-rrule' || id === 't-rrule') && cur && !items.some(([iv]) => iv === cur)) {
     items = items.concat([[cur, (rruleLabel(cur) || 'Custom') + ' (custom)']]);

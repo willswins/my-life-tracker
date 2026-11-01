@@ -62,6 +62,8 @@
     'body.compact .b2-card{padding:7px 32px 7px 15px;}',
     'body.compact .b2-meta{margin-top:4px;}',
     'body.compact .b2-chip:not(.due-over){display:none;}',
+    '#lanes{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}',
+    '@media (pointer:coarse){.b2-chev{width:44px;height:44px;top:2px;right:2px;}.b2-abtn{min-height:44px;}}',
   ].join('\n');
 
   var expanded = {}; // card id -> true, session only
