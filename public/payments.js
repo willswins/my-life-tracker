@@ -28,7 +28,7 @@
   if (typeof VIEW_TITLES !== 'undefined') VIEW_TITLES['payments'] = 'Payments';
 
   var PAGE_SIZE = 20;
-  var state = { rows: [], status: 'all', kind: 'all', q: '', from: '', to: '', openId: null, page: 1, pageSig: null };
+  var state = { rows: [], status: 'all', kind: 'all', q: '', from: '', to: '', openId: null, page: 1, pageSig: null, descOpen: {} };
 
   var CSS = [
     // ---- module theme tokens (both themes, owned here) ---------------
@@ -69,6 +69,8 @@
     // ---- expanded detail (inside the card) -------------------------------
     '.pv-detail{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;cursor:default;}',
     '.pv-desc{white-space:pre-wrap;font-size:14.5px;color:var(--ink);}',
+    '.pv-desc.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+    '.pv-more{background:none;border:0;color:#6c5ce7;font-family:inherit;font-size:13.5px;font-weight:700;padding:6px 0 0;cursor:pointer;}',
     '.pv-src{color:var(--muted);font-size:13px;margin-top:6px;}',
     '.pv-comment{width:100%;box-sizing:border-box;margin-top:10px;}',
     '.pv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}',
@@ -204,8 +206,12 @@
       '<span class="pv-st pv-st-' + esc(r.status) + '">' + esc(r.status) + '</span></div>' +
       '</div>';
     if (state.openId === String(r.id)) {
+      var desc = r.description || '';
+      var dLong = desc.split('\n').length > 2 || desc.length > 160;
+      var dOpen = !!state.descOpen[String(r.id)];
       h += '<div class="pv-detail">' +
-        '<div class="pv-desc">' + esc(r.description || '') + '</div>' +
+        '<div class="pv-desc' + (dLong && !dOpen ? ' clamp' : '') + '">' + esc(desc) + '</div>' +
+        (dLong ? '<button type="button" class="pv-more" data-pv-act="desc">' + (dOpen ? 'Show less' : 'Show more') + '</button>' : '') +
         '<div class="pv-src">Source: ' + esc(paySourceLabel(r)) + (kindLabel(r) ? ' · ' + esc(kindLabel(r)) : '') + '</div>' +
         '<textarea class="pv-comment" placeholder="Add a comment…">' + esc(r.comments || '') + '</textarea>' +
         '<div class="pv-actions">' +
@@ -334,6 +340,12 @@
       if (btn) {
         ev.stopPropagation();
         var act = btn.getAttribute('data-pv-act');
+        if (act === 'desc') {
+          var dk = String(id);
+          state.descOpen[dk] = !state.descOpen[dk];
+          renderPayments();
+          return;
+        }
         try {
           var base = '/api/app?r=daybook&view=payments&id=' + encodeURIComponent(id);
           if (act === 'paid') await api('PATCH', base, { status: 'paid' });
