@@ -68,6 +68,11 @@
     // field to 16px removes the zoom at the source; the translate3d on
     // #bnav above additionally keeps the bar on its own layer.
     'input,textarea,select{font-size:16px !important;}',
+    // Scroll lock (Winny, 2026-11-01: "on this screen when we scroll,
+    // screen in the back is moving"): while a backdrop/sheet is open,
+    // initScrollLock() puts .lb-lock on <html> and the board behind
+    // cannot scroll; overscroll-behavior on the sheets stops chaining.
+    'html.lb-lock,html.lb-lock body{overflow:hidden !important;}',
     // The header hamburger is retired (Winny, 2026-10-31): the bottom nav
     // + More sheet carry every destination it had. The .menu-wrap element
     // stays in the DOM (app.js binds it at load; modules file badge spans
@@ -104,11 +109,11 @@
     '.blane-chip{flex:none;font-family:inherit;font-size:14.5px;font-weight:700;padding:9px 16px;',
     'border-radius:999px;border:0;background:var(--b-surface2);color:var(--b-muted);cursor:pointer;}',
     '.blane-chip.on{background:#6c5ce7;color:#fff;}',
-    '#view-tasks #lanes .lane{display:none;}',
-    '#view-tasks #lanes .lane.b-on{display:block;}',
+    '#board #lanes .lane{display:none;}',
+    '#board #lanes .lane.b-on{display:block;}',
     // ---- Bottom sheets for add/edit (phone widths) -------------------------
-    '#modal-backdrop,#reminder-backdrop,#detail-backdrop,#invite-backdrop,#keys-backdrop,.pay-backdrop{align-items:flex-end;padding:0;}',
-    '.modal,.pay-modal{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:92vh;}',
+    '#modal-backdrop,#reminder-backdrop,#detail-backdrop,#invite-backdrop,#keys-backdrop,.pay-backdrop{align-items:flex-end;padding:0;z-index:90;overscroll-behavior:contain;}',
+    '.modal,.pay-modal{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:92dvh;padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));overscroll-behavior:contain;}',
     '}',
   ].join('\n');
 
@@ -354,8 +359,31 @@
     return ok;
   }
 
+  var _slDone = false;
+  function anySheetOpen() {
+    var els = document.querySelectorAll('[id$="-backdrop"], .pay-backdrop, #bmore');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.id === 'bmore') { if (!el.hasAttribute('hidden')) return true; }
+      else if (!el.classList.contains('hidden')) return true;
+    }
+    return false;
+  }
+  function initScrollLock() {
+    if (_slDone) return;
+    _slDone = true;
+    var apply = function () {
+      document.documentElement.classList.toggle('lb-lock', anySheetOpen());
+    };
+    new MutationObserver(apply).observe(document.body, {
+      attributes: true, attributeFilter: ['class', 'hidden'], subtree: true,
+    });
+    apply();
+  }
+
   function tryInit() {
     injectStyle();
+    initScrollLock();
     var ready = buildNav() & buildMoreSheet();
     if (ready && wrap()) {
       syncChrome();
@@ -368,7 +396,8 @@
     module.exports = { CSS: CSS, NAV: NAV, LANES: LANES, MORE_ITEMS: MORE_ITEMS, ACCENT: ACCENT, CORAL: CORAL,
       buildNav: buildNav, buildMoreSheet: buildMoreSheet, openMore: openMore, closeMore: closeMore,
       syncChrome: syncChrome, syncMoreBadges: syncMoreBadges,
-      applyLane: applyLane, ensureLaneBar: ensureLaneBar, wrap: wrap, injectStyle: injectStyle };
+      applyLane: applyLane, ensureLaneBar: ensureLaneBar, wrap: wrap, injectStyle: injectStyle,
+      initScrollLock: initScrollLock, anySheetOpen: anySheetOpen };
     return;
   }
   if (document.readyState === 'loading') {
