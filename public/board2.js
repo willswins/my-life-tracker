@@ -104,6 +104,25 @@
     function p(n) { return (n < 10 ? '0' : '') + n; }
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
   }
+  // No dates on the Board screen (Winny, 2026-10-31) — expanded details
+  // included: capture chrome lines (From:/Date:/Gmail ID:/Source:) are
+  // dropped and date tokens are stripped from the RENDERED text. The
+  // stored card is untouched; the detail modal still shows everything.
+  var MONTH_RX = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+20\\d{2})?';
+  function boardDetails(text) {
+    var t = String(text == null ? '' : text);
+    t = t.split('\n').filter(function (l) { return !/^(From|Date|Gmail ID|Source):/.test(l.trim()); }).join('\n');
+    t = t.replace(new RegExp('\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\\s+(?=' + MONTH_RX + ')', 'g'), '');
+    t = t.replace(new RegExp('\\b' + MONTH_RX + '\\b', 'g'), '');
+    t = t.replace(/\b20\d{2}-\d{2}-\d{2}\b/g, '');
+    t = t.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, '');
+    t = t.replace(/\(due\s*\)/gi, '');
+    t = t.replace(/\(\s*\)/g, '');
+    t = t.split('\n').map(function (l) {
+      return l.replace(/[ \t]{2,}/g, ' ').replace(/^\s*[:\-–—]\s*/, '').trim();
+    }).filter(function (l) { return l.length > 0; }).join('\n');
+    return t;
+  }
   function reminderPayload(c, nowMs) {
     var ev = new Date(nowMs + 24 * 3600 * 1000);
     var remindAt = new Date(ev.getTime() - 3600 * 1000);
@@ -132,8 +151,9 @@
     if (meta) h += '<div class="b2-meta">' + meta + '</div>';
     if (open) {
       if (c.details) {
-        var det = (typeof renderDetails === 'function') ? renderDetails(c.details) : esc(c.details);
-        h += '<div class="b2-details">' + det + '</div>';
+        var cleaned = boardDetails(c.details);
+        var det = (typeof renderDetails === 'function') ? renderDetails(cleaned) : esc(cleaned);
+        if (cleaned) h += '<div class="b2-details">' + det + '</div>';
       }
       if ((c.tags || []).length && typeof tagBubblesHtml === 'function') {
         h += '<div class="b2-tags">' + tagBubblesHtml(c.tags) + '</div>';
@@ -374,7 +394,7 @@
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CSS: CSS, LANES: LANES, HIDDEN_TAGS: HIDDEN_TAGS,
       visibleCards: visibleCards, dueChip: dueChip, reminderPayload: reminderPayload,
-      cardHTML: cardHTML, tagColor: tagColor, render: render };
+      cardHTML: cardHTML, tagColor: tagColor, boardDetails: boardDetails, render: render };
     return;
   }
   if (document.readyState === 'loading') {
