@@ -26,6 +26,16 @@ module.exports = async (req, res) => {
     const url = new URL(req.url, 'https://localhost');
     const cardId = url.searchParams.get('card_id');
 
+    if (req.method === 'GET' && !cardId) {
+      // List ALL of the user's comments (connector backup/restore reads).
+      // Added 2026-11-02: previously comments were only readable per-card,
+      // which left them out of connector backups.
+      const rows = await sb(
+        'GET',
+        `/rest/v1/comments?user_email=eq.${encodeURIComponent(email)}&order=created_at.asc&select=id,card_id,body,user_email,created_at`
+      );
+      return send(200, rows);
+    }
     if (req.method === 'GET' && cardId) {
       if (!(await ownsCard(cardId, email))) return send(404, { ok: false });
       const rows = await sb(
