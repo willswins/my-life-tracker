@@ -166,7 +166,7 @@
       } else {
         var idx = LANES.findIndex(function (l) { return l.id === c.lane; });
         if (idx > 0) h += '<button type="button" class="b2-abtn" data-b2act="left">← ' + esc(LANES[idx - 1].label) + '</button>';
-        if (idx >= 0 && idx < LANES.length - 1) h += '<button type="button" class="b2-abtn" data-b2act="right">' + esc(LANES[idx + 1].label) + ' →</button>';
+        if (idx >= 0 && idx < LANES.length - 1 && LANES[idx + 1].id !== 'done') h += '<button type="button" class="b2-abtn" data-b2act="right">' + esc(LANES[idx + 1].label) + ' →</button>';
         if (c.lane !== 'done') h += '<button type="button" class="b2-abtn done" data-b2act="done">✓ Done</button>';
         h += '<button type="button" class="b2-abtn" data-b2act="edit">Edit</button>';
         h += '<button type="button" class="b2-abtn" data-b2act="menu">⋯ Send to</button>';
