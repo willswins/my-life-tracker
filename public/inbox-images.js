@@ -191,6 +191,7 @@ function injectStyles() {
     '.ib-sec a{color:var(--work);}',
     '.ib-atts{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}',
     '.ib-att{display:inline-block;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#f9fafb;color:var(--work);font-size:13px;text-decoration:none;}',
+    '.ib-att-badge{margin-left:6px;font-size:12px;color:#64748b;white-space:nowrap;}',
     '.ib-compact.ib-open .ib-subject{white-space:normal;}',
   ].join('\n');
   document.head.appendChild(st);
@@ -646,6 +647,17 @@ function compactInboxRow(el, it) {
   src.className = 'ib-source';
   src.textContent = ibSourceLabel(it);
   line2.appendChild(src);
+  // Attachment badge (Winny, 2026-11-17): the file chips live inside the
+  // collapsed detail, so a row with files showed nothing on the list.
+  // Show a count on the header so attachments are visible unexpanded.
+  var attCount = (it.attachments && it.attachments.length) || 0;
+  if (it.image_url) attCount += 1;
+  if (attCount) {
+    var attBadge = document.createElement('span');
+    attBadge.className = 'ib-att-badge';
+    attBadge.textContent = '📎 ' + attCount;
+    line2.appendChild(attBadge);
+  }
   main.appendChild(line1);
   main.appendChild(line2);
   head.appendChild(main);
