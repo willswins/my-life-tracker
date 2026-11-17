@@ -21,7 +21,12 @@
     ':root[data-theme="dark"]{--card:#1c1a26;--lane:#232130;--line:#2b2838;--ink:#f2f0fa;--muted:#9d97b5;',
     '--work:#a79bff;--work-bg:#35304d;--personal:#3ecf6f;--personal-bg:#12351f;',
     '--b-bg:#0e0d13;--b-surface:#1c1a26;--b-surface2:#232130;--b-ink:#f2f0fa;--b-muted:#9d97b5;--b-line:#2b2838;}',
-    'body{background:var(--b-bg);padding-bottom:96px;}',
+    'body{background:var(--b-bg);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}',
+    // Sticky-footer layout (Winny, 2026-11-17 — "the bottom menu moves
+    // around when I scroll"): the visible view grows to push the nav to
+    // the screen bottom on short pages; on long pages the sticky bar
+    // stays glued while content scrolls.
+    'main.view,#board{flex:1 0 auto;}',
     'header{background:var(--b-surface);}',
     // ---- Shapes & components ------------------------------------------
     '.card{border-radius:24px;box-shadow:0 2px 10px rgba(20,16,50,.07);}',
@@ -57,7 +62,13 @@
     '.home-up-when{color:#d9d2ff;}',
     '#home-upnext .home-empty{color:#d9d2ff;}',
     // ---- Bottom navigation ----------------------------------------------
-    '#bnav{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;',
+    // position:sticky, not fixed (Winny, 2026-11-17): a fixed bar rides
+    // iOS Safari's collapsing toolbar — the visual viewport grows/shrinks
+    // as you scroll, so bottom:0 slides the bar up and down. Sticky pins
+    // the bar to the scroll container instead, so it never moves. The
+    // 96px body padding is gone with it: the bar is in flow now, so
+    // content ends above it naturally.
+    '#bnav{position:sticky;bottom:0;flex:none;z-index:70;display:flex;',
     'background:var(--b-surface);border-top:1px solid var(--b-line);',
     'padding-bottom:env(safe-area-inset-bottom, 0px);transform:translate3d(0,0,0);}',
     // iOS anti-zoom (Winny, 2026-11-01 — "on the reminder page once I
