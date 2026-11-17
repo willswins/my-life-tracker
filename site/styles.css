@@ -876,8 +876,14 @@ pre#ingest-docs {
  * All shared UI — per the common-CSS rule, no page-specific styles.
  */
 @media (max-width: 768px) {
-  /* Prevent horizontal scroll from overflowing elements */
-  html, body { overflow-x: hidden; }
+  /* Prevent horizontal scroll from overflowing elements.
+   * overflow-x: clip (not hidden) — hidden makes html/body a scroll
+   * container, which breaks position:sticky descendants (the bottom nav
+   * stops sticking and sits at the page bottom; Winny, 2026-11-17).
+   * clip blocks horizontal scrolling the same way without creating a
+   * scroll container, so sticky keeps working. The hidden line stays
+   * as the fallback for browsers without clip support. */
+  html, body { overflow-x: hidden; overflow-x: clip; }
 
   /* Safe area: Dynamic Island (top) and home indicator (bottom) */
   header, .app-header, #topbar {
