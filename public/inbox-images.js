@@ -188,6 +188,13 @@ function injectStyles() {
     '.ib-h-subject{color:var(--work);font-weight:700;}',
     '.ib-h-meta{color:#64748b;font-size:.92em;}',
     '.ib-sec-body{white-space:pre-wrap;word-break:break-word;padding:6px 2px 0;}',
+    // Structured body (Winny, 2026-11-17): real paragraph spacing, lists,
+    // and bold label lines so long captures stop reading as a wall of text.
+    '.ib-sec-body p{margin:0 0 10px;line-height:1.55;}',
+    '.ib-sec-body ul,.ib-sec-body ol{margin:0 0 10px;padding-left:22px;}',
+    '.ib-sec-body li{margin:3px 0;line-height:1.55;}',
+    '.ib-sec-body p.ib-label{margin:12px 0 5px;}',
+    '.ib-sec-body p.ib-label:first-child{margin-top:0;}',
     '.ib-sec a{color:var(--work);}',
     '.ib-atts{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}',
     '.ib-att{display:inline-block;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#f9fafb;color:var(--work);font-size:13px;text-decoration:none;}',
@@ -586,10 +593,95 @@ function linkifyInto(el, text) {
   });
 }
 
+// Inline formatting inside one line of body text: **bold** and *italic*
+// runs become <strong>/<em>, bare URLs and [label](url) become labeled
+// links. DOM-safe: only text nodes and elements built here, never
+// innerHTML from capture text. (linkifyInto already handles both URL
+// shapes.) Bold splits first so **x** is never read as two italics.
+function inlineInto(el, text) {
+  String(text || '').split(/(\*\*[^*\n]+\*\*)/g).forEach(function (part) {
+    if (!part) return;
+    var b = /^\*\*([^*\n]+)\*\*$/.exec(part);
+    if (b) {
+      var strong = document.createElement('strong');
+      strong.textContent = b[1];
+      el.appendChild(strong);
+      return;
+    }
+    part.split(/(\*[^*\n]+\*)/g).forEach(function (seg) {
+      if (!seg) return;
+      var em = /^\*([^*\n]+)\*$/.exec(seg);
+      if (em) {
+        var emEl = document.createElement('em');
+        emEl.textContent = em[1];
+        el.appendChild(emEl);
+      } else {
+        linkifyInto(el, seg);
+      }
+    });
+  });
+}
+
+// Structured body for the expanded capture (Winny, 2026-11-17): the old
+// body was one pre-wrapped block — line breaks survived, but there were
+// no paragraphs, lists, or emphasis, so long captures read as a wall of
+// text. This splits the capture into paragraphs, "- "/"• "/numbered
+// lists, and bold label lines ("Summary:", "Thread summary:"), all built
+// as DOM nodes from text (never innerHTML from capture text).
+function formatBodyInto(el, text) {
+  var lines = String(text || '').split('\n');
+  var para = null;
+  var list = null;
+  var listKind = '';
+  function closePara() { para = null; }
+  function closeList() { list = null; listKind = ''; }
+  function ensurePara() {
+    if (!para) { para = document.createElement('p'); el.appendChild(para); }
+    return para;
+  }
+  lines.forEach(function (raw) {
+    var line = raw.replace(/\s+$/, '');
+    if (!line.trim()) { closePara(); closeList(); return; }
+    var bullet = /^[-•*]\s+(.+)$/.exec(line);
+    var numbered = /^(\d+)[.)]\s+(.+)$/.exec(line);
+    if (bullet || numbered) {
+      var kind = bullet ? 'ul' : 'ol';
+      var content = bullet ? bullet[1] : numbered[2];
+      closePara();
+      if (!list || listKind !== kind) {
+        list = document.createElement(kind);
+        listKind = kind;
+        el.appendChild(list);
+      }
+      var li = document.createElement('li');
+      inlineInto(li, content);
+      list.appendChild(li);
+      return;
+    }
+    closeList();
+    // Short line ending in a colon, no sentence punctuation: a section
+    // label ("Summary:", "Thread summary:", "Roster — 43 students:").
+    if (/^[^.!?\n]{1,60}:$/.test(line)) {
+      closePara();
+      var lab = document.createElement('p');
+      lab.className = 'ib-label';
+      var b = document.createElement('strong');
+      b.textContent = line;
+      lab.appendChild(b);
+      el.appendChild(lab);
+      return;
+    }
+    var p = ensurePara();
+    if (p.childNodes.length) p.appendChild(document.createElement('br'));
+    inlineInto(p, line);
+  });
+}
+
 // Readable sections for the expanded capture (Winny, 2026-10-31): the
 // header block (subject / From / Date) sits on a light tinted band, the
-// body below it plain, links clickable. Only the standard plain-text
-// capture shape is restructured; anything else is linkified in place.
+// body below it structured (paragraphs, lists, bold labels — Winny,
+// 2026-11-17), links clickable. Only the standard plain-text capture
+// shape gets the header band; anything else is formatted in place.
 function sectionInboxDetail(detail) {
   var p = null;
   for (var i = 0; i < detail.children.length; i++) {
@@ -600,8 +692,10 @@ function sectionInboxDetail(detail) {
   var headEnd = 0;
   if (lines.length > 3 && /^From:/.test(lines[1]) && /^Date:/.test(lines[2])) headEnd = 3;
   if (!headEnd || headEnd >= lines.length) {
-    p.textContent = '';
-    linkifyInto(p, lines.join('\n'));
+    var bodyOnly = document.createElement('div');
+    bodyOnly.className = 'ib-sec ib-sec-body';
+    formatBodyInto(bodyOnly, lines.join('\n'));
+    p.replaceWith(bodyOnly);
     return;
   }
   var head = document.createElement('div');
@@ -614,7 +708,7 @@ function sectionInboxDetail(detail) {
   });
   var body = document.createElement('div');
   body.className = 'ib-sec ib-sec-body';
-  linkifyInto(body, lines.slice(headEnd).join('\n').replace(/^\n+/, ''));
+  formatBodyInto(body, lines.slice(headEnd).join('\n').replace(/^\n+/, ''));
   p.replaceWith(head);
   head.after(body);
 }
@@ -737,13 +831,11 @@ function wrapInboxRow() {
         else el.appendChild(attBox);
       }
     }
-    // Render stored markdown back to formatted text — only for the user's
-    // own manual captures, so email/chat items (which may contain stray
-    // asterisks) always render as plain text exactly as before.
-    if (it && it.source === 'manual' && hasMarkdown(it.text)) {
-      const p = el.querySelector('p');
-      if (p) p.innerHTML = mdToHtml(it.text);
-    }
+    // No markdown pre-render here (removed 2026-11-17): sectionInboxDetail
+    // now formats every item from its raw text (paragraphs, lists, bold),
+    // and pre-rendering markdown into the <p> corrupted that step — its
+    // textContent read dropped <br>/<li> boundaries, running lines
+    // together. mdToHtml stays exported for the node tests.
     if (it && !it.triaged) {
       const bar = el.querySelector('.triage-btns');
       if (bar) bar.remove();
@@ -896,7 +988,7 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, ibAttIcon, compactInboxRow, sectionInboxDetail, wrapInboxRow };
+  module.exports = { mdToHtml, htmlToMd, hasMarkdown, ibPageSlice, ibSubject, ibDateShort, ibSourceLabel, ibSplitLinks, ibLinkLabel, ibAttIcon, compactInboxRow, sectionInboxDetail, wrapInboxRow, inlineInto, formatBodyInto };
 }
 
 })();
